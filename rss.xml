@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+    <rss version="2.0">
+      <channel>
+        <title>Joyas Colombia</title>
+        <description>Catalogo de joyeria colombiana en oro laminado, plata 925, esmeraldas, diamantes y piezas listas para comprar por WhatsApp.</description>
+        <link>https://joyas-colombia.com</link>
+        
+        <item>
+          <title><![CDATA[Que es oro laminado y cuanto dura]]></title>
+          <description><![CDATA[Una guia clara para entender si el oro laminado es real, como cuidarlo y por que dura mas que un bano comun.]]></description>
+          <link>https://joyas-colombia.com/blog/que-es-oro-laminado</link>
+          <guid>https://joyas-colombia.com/blog/que-es-oro-laminado</guid>
+        </item>
+        <item>
+          <title><![CDATA[Como limpiar joyas de plata 925]]></title>
+          <description><![CDATA[Pasos sencillos para recuperar brillo, evitar manchas y guardar tus piezas de plata sin que se oxiden rapido.]]></description>
+          <link>https://joyas-colombia.com/blog/como-limpiar-plata-925</link>
+          <guid>https://joyas-colombia.com/blog/como-limpiar-plata-925</guid>
+        </item>
+        <item>
+          <title><![CDATA[Gold filled vs gold plated: diferencias reales]]></title>
+          <description><![CDATA[La diferencia entre capas de oro, banos, duracion y que preguntar antes de comprar una joya dorada.]]></description>
+          <link>https://joyas-colombia.com/blog/gold-filled-vs-gold-plated</link>
+          <guid>https://joyas-colombia.com/blog/gold-filled-vs-gold-plated</guid>
+        </item>
+        <item>
+          <title><![CDATA[Oro 18K vs 14K: cual elegir]]></title>
+          <description><![CDATA[Compara pureza, resistencia, color y uso diario para escoger el oro que mejor se ajusta a tu pieza.]]></description>
+          <link>https://joyas-colombia.com/blog/oro-18k-vs-14k</link>
+          <guid>https://joyas-colombia.com/blog/oro-18k-vs-14k</guid>
+        </item>
+        <item>
+          <title><![CDATA[Como medir tu talla de anillo]]></title>
+          <description><![CDATA[Una guia practica para medir en casa, evitar errores comunes y confirmar talla antes de comprar.]]></description>
+          <link>https://joyas-colombia.com/blog/como-medir-talla-anillo</link>
+          <guid>https://joyas-colombia.com/blog/como-medir-talla-anillo</guid>
+        </item>
+        <item>
+          <title><![CDATA[Como elegir aretes para cada dia]]></title>
+          <description><![CDATA[Forma del rostro, comodidad, brillo y combinaciones para que tus aretes funcionen con tu rutina.]]></description>
+          <link>https://joyas-colombia.com/blog/como-elegir-aretes</link>
+          <guid>https://joyas-colombia.com/blog/como-elegir-aretes</guid>
+        </item>
+        <item>
+          <title><![CDATA[Como limpiar joyas con esmeraldas]]></title>
+          <description><![CDATA[Cuidados suaves para una piedra preciosa colombiana que merece limpieza delicada y proteccion.]]></description>
+          <link>https://joyas-colombia.com/blog/como-limpiar-esmeraldas</link>
+          <guid>https://joyas-colombia.com/blog/como-limpiar-esmeraldas</guid>
+        </item>
+      </channel>
+    </rss>
