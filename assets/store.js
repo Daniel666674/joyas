@@ -89,13 +89,13 @@
     ".hje-item-info{flex:1;min-width:0}",
     ".hje-item-info a{font-weight:600;text-decoration:none;color:#1a1a1a;font-size:.92rem}",
     ".hje-item-info p{margin:2px 0 0;font-size:.8rem;color:#77706a}",
-    ".hje-item-remove{background:none;border:0;cursor:pointer;color:#a8443a;padding:6px;align-self:flex-start;border-radius:6px}",
-    ".hje-item-remove:hover{background:#f3e2df}",
+    ".hje-item-remove{background:none;border:0;cursor:pointer;color:#7a1c28;padding:6px;align-self:flex-start;border-radius:6px}",
+    ".hje-item-remove:hover{background:rgba(122,28,40,.1)}",
     ".hje-drawer-foot{padding:16px 20px;border-top:1px solid #e6ddcd}",
-    ".hje-btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:8px;border:0;cursor:pointer;background:#1a1a1a;color:#fff;font-weight:600;font-size:.9rem;text-decoration:none}",
-    ".hje-btn-primary:hover{opacity:.9}",
+    ".hje-btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:8px;border:0;cursor:pointer;background-image:linear-gradient(135deg,#f7e6b0 0%,#dfb968 22%,#a8782a 48%,#7a5320 68%,#e3c077 88%,#f7e6b0 100%);color:#2a1c08;font-weight:700;font-size:.9rem;text-decoration:none;box-shadow:0 8px 20px -6px rgba(168,120,42,.45);transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s}",
+    ".hje-btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 26px -6px rgba(168,120,42,.55)}",
     ".hje-btn-primary[disabled]{opacity:.4;pointer-events:none}",
-    ".hje-badge{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 3px;border-radius:999px;background:#a8443a;color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:700;pointer-events:none}",
+    ".hje-badge{position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 3px;border-radius:999px;background:#7a1c28;color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:700;pointer-events:none}",
     ".hje-card-cart-btn{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:6px;border:0;background:transparent;color:inherit;cursor:pointer}",
     ".hje-card-cart-btn:hover{background:rgba(0,0,0,.06)}",
     ".hje-card-cart-btn.added,.hje-detail-cart-btn.added{color:#2f6d3c}",
@@ -342,7 +342,7 @@
           var saved = findItem(wishlist, product.slug) !== -1;
           var svg = btn.querySelector("svg");
           if (svg) svg.setAttribute("fill", saved ? "currentColor" : "none");
-          btn.style.color = saved ? "#a8443a" : "";
+          btn.style.color = saved ? "#7a1c28" : "";
           // only replay the pop animation on an actual state change, not on
           // every scan() re-run
           var wasSaved = btn.classList.contains("hje-fav-active");
