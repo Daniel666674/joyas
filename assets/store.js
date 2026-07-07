@@ -51,7 +51,10 @@
   function productFromDetailPage() {
     var h1 = document.querySelector("main h1");
     var img = document.querySelector("main img");
-    var badge = document.querySelector("main .flex.flex-wrap.gap-2 span");
+    // scoped to the category/material/availability pill row specifically -
+    // a plain ".flex.flex-wrap.gap-2 span" also matches the breadcrumb <ol>
+    // (same classes) and picks up its "/" separator instead
+    var badge = document.querySelector("main span.rounded-full.border-border.bg-background");
     var slug = window.location.pathname.replace(/\/$/, "").split("/producto/").pop();
     return {
       slug: slug,
@@ -322,6 +325,10 @@
       // below would see as a fresh mutation and re-scan forever.
       if (badge.textContent !== text) {
         badge.textContent = text;
+        badge.classList.remove("hje-pulse");
+        // eslint-disable-next-line no-unused-expressions
+        void badge.offsetWidth; // restart the CSS animation
+        badge.classList.add("hje-pulse");
       }
     }
 
@@ -336,6 +343,14 @@
           var svg = btn.querySelector("svg");
           if (svg) svg.setAttribute("fill", saved ? "currentColor" : "none");
           btn.style.color = saved ? "#a8443a" : "";
+          // only replay the pop animation on an actual state change, not on
+          // every scan() re-run
+          var wasSaved = btn.classList.contains("hje-fav-active");
+          if (saved && !wasSaved) {
+            btn.classList.add("hje-fav-active");
+          } else if (!saved && wasSaved) {
+            btn.classList.remove("hje-fav-active");
+          }
         }
       );
     }
