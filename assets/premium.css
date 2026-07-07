@@ -473,65 +473,20 @@ a[aria-label="Abrir WhatsApp"]:hover {
   box-shadow: 0 0 0 1px rgba(223, 185, 104, 0.6), var(--hje-shadow-lg);
 }
 
-/* on phones the floating buttons must clear the fixed bottom nav (h-14 = 56px)
-   plus its own gap — otherwise (as on the live site today) the WhatsApp
-   bubble overlaps the "WhatsApp" tab label underneath it */
-@media (max-width: 767px) {
-  .fixed.bottom-4.right-4.z-40.flex.flex-col {
-    bottom: calc(56px + 14px);
-  }
-}
-
-/* ---------- mobile bottom tab bar: full rebuild ---------- */
+/* ---------- mobile bottom tab bar: removed entirely per feedback ----------
+   Was previously restyled; the call is now to drop it, not polish it. The
+   header nav + floating WhatsApp/call buttons already cover its job. */
 .fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3 {
-  background-image: linear-gradient(180deg, var(--hje-black-soft) 0%, var(--hje-black) 100%);
-  border-top: none;
-  box-shadow: 0 -12px 28px -12px rgba(20, 16, 12, 0.5);
-  /* stay position:fixed (Tailwind's .fixed) - do NOT override to relative,
-     that would break its viewport-pinned positioning entirely */
+  display: none !important;
 }
-.fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-image: var(--hje-gold-foil);
-  background-size: 300% 100%;
+/* the footer reserved bottom padding on mobile specifically to clear that
+   bar (pb-20, zeroed again at md:) — with the bar gone, zero it too so the
+   footer doesn't end in a slab of dead space */
+footer.pb-20 {
+  padding-bottom: 0;
 }
-.fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3 > a {
-  color: rgba(243, 234, 217, 0.72);
-  transition: color 0.25s var(--hje-ease-soft), transform 0.25s var(--hje-ease-soft);
-  position: relative;
-}
-.fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3 > a:active {
-  transform: scale(0.94);
-}
-.fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3 > a:not(:last-child):hover {
-  color: #f3ead9;
-}
-.fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3 > a:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  bottom: 6px;
-  left: 50%;
-  width: 0;
-  height: 2px;
-  background: var(--hje-gold);
-  transform: translateX(-50%);
-  transition: width 0.3s var(--hje-ease);
-}
-.fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3 > a:not(:last-child):hover::after {
-  width: 22px;
-}
-/* the WhatsApp tab: the row's primary CTA, so it gets the gold-foil treatment */
-.fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3 > a.bg-foreground.text-background {
-  background-image: var(--hje-gold-foil);
-  background-size: 220% 220%;
-  color: #2a1c08 !important;
-  font-weight: 700;
-}
+/* the floating buttons no longer need to clear anything, they were
+   previously offset upward to avoid the (now-removed) bottom bar */
 
 /* ---------- decorative gold rule under the hero eyebrow ---------- */
 p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700 {
@@ -552,4 +507,95 @@ p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700::after {
 /* ---------- card hover shadow: burgundy + gold instead of plain neutral ---------- */
 article.group:hover > a.block.overflow-hidden.rounded-md.bg-muted {
   box-shadow: var(--hje-shadow-lg), var(--hje-shadow-burgundy);
+}
+
+/* =========================================================================
+   HERO REDESIGN — the original layout crammed a big portrait photo plus two
+   small square photos into a cropped grid that reads as cluttered and
+   unbalanced on phones. Rebuilt with CSS only (no DOM changes, so zero
+   hydration risk): one full-bleed hero image on mobile instead of a
+   three-photo collage, a soft gold/burgundy glow behind the whole section,
+   a gold frame on the desktop photo collage, and a clearer, less
+   competitive button hierarchy (one bold gold CTA, one quiet outline CTA).
+   ========================================================================= */
+
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] {
+  isolation: isolate;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(55% 45% at 12% 18%, rgba(223, 185, 104, 0.22), transparent 62%),
+    radial-gradient(45% 40% at 92% 85%, rgba(122, 28, 40, 0.12), transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+  position: relative;
+  z-index: 1;
+}
+
+/* eyebrow + heading get a touch more room to breathe against the new glow */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* clearer CTA hierarchy: gold stays bold, the dark button becomes a quiet
+   outline so the two don't visually compete as two equal black/gold slabs */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90 {
+  background-image: none;
+  background-color: transparent;
+  color: var(--hje-black);
+  border: 1.5px solid rgba(20, 16, 12, 0.55);
+  box-shadow: none;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90:hover {
+  background-color: var(--hje-black);
+  color: #f3ead9;
+  border-color: var(--hje-black);
+  box-shadow: var(--hje-shadow-md);
+}
+
+/* desktop (lg+): keep the two-column layout, just frame the collage in gold */
+@media (min-width: 1024px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] .relative.aspect-\[4\/5\].overflow-hidden.rounded-md.bg-muted.shadow-soft,
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] a.group.relative.aspect-square.overflow-hidden.rounded-md.bg-muted.shadow-soft {
+    box-shadow: 0 0 0 1px rgba(223, 185, 104, 0.45), var(--hje-shadow-lg);
+  }
+}
+
+/* below lg: one dominant full-bleed image instead of a cramped triptych */
+@media (max-width: 1023px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+    display: flex;
+    flex-direction: column;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.max-w-2xl {
+    order: 2;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+    order: 1;
+    display: block;
+    width: 100vw;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    margin-top: -3rem;
+    margin-bottom: 2.5rem;
+  }
+  /* hide the small stacked pair, keep only the first (big) photo */
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 {
+    display: none;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] {
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+    box-shadow: inset 0 -40px 60px -30px rgba(20, 16, 12, 0.35);
+  }
+}
+
+@media (max-width: 639px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+    margin-top: -1.5rem;
+  }
 }
