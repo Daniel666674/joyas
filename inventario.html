@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel de Inventario | Habibi Eisaa</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" href="/joyas/brand/favicon-32.png" sizes="32x32" />
+<link rel="stylesheet" href="/joyas/assets/fonts.css" />
+<link rel="stylesheet" href="/joyas/assets/inventario.css" />
+</head>
+<body>
+
+<header class="hje-inv-header">
+  <img src="/joyas/brand/logo-mark.png" alt="Habibi Eisaa" />
+  <div>
+    <div class="hje-inv-title">Habibi Eisaa</div>
+    <div class="hje-inv-subtitle">Panel de inventario — uso interno</div>
+  </div>
+</header>
+
+<div id="hje-inv-gate" class="hje-inv-gate">
+  <div class="hje-inv-gate-card">
+    <div class="hje-inv-subtitle" style="color:#a8782a">Acceso restringido</div>
+    <h1>Ingresa la clave</h1>
+    <p>Esta pagina es para el equipo de Habibi Eisaa. Pide la clave de acceso si no la tienes.</p>
+    <form id="hje-inv-gate-form">
+      <input type="password" id="hje-inv-passcode" placeholder="Clave de acceso" autocomplete="off" required />
+      <button type="submit" class="hje-inv-btn">Entrar</button>
+      <p class="hje-inv-gate-error" id="hje-inv-gate-error">Clave incorrecta. Intenta de nuevo.</p>
+    </form>
+  </div>
+</div>
+
+<div id="hje-inv-main" class="hje-inv-main">
+  <div class="hje-inv-toolbar">
+    <input type="search" id="hje-inv-search" placeholder="Buscar por nombre o SKU..." />
+    <select id="hje-inv-filter-category">
+      <option value="">Todas las categorias</option>
+    </select>
+    <select id="hje-inv-filter-material">
+      <option value="">Todos los materiales</option>
+    </select>
+    <button type="button" id="hje-inv-new-product-btn" class="hje-inv-btn hje-inv-new-btn">+ Solicitar producto nuevo</button>
+  </div>
+  <div class="hje-inv-count" id="hje-inv-count"></div>
+  <div class="hje-inv-grid" id="hje-inv-grid"></div>
+</div>
+
+<div class="hje-inv-modal-backdrop" id="hje-inv-modal-backdrop">
+  <div class="hje-inv-modal">
+    <h2 id="hje-inv-modal-title">Solicitar cambio</h2>
+    <p class="hje-inv-modal-product" id="hje-inv-modal-product"></p>
+    <label for="hje-inv-modal-type">Tipo de solicitud</label>
+    <select id="hje-inv-modal-type"></select>
+    <label for="hje-inv-modal-note">Nota (opcional)</label>
+    <textarea id="hje-inv-modal-note" rows="3" placeholder="Detalles adicionales (opcional)"></textarea>
+    <div class="hje-inv-modal-actions">
+      <button type="button" class="hje-inv-modal-cancel" id="hje-inv-modal-cancel">Cancelar</button>
+      <button type="button" class="hje-inv-btn" id="hje-inv-modal-send">Enviar por WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<script defer src="/joyas/assets/inventario.js"></script>
+</body>
+</html>
