@@ -1,0 +1,601 @@
+/* Habibi Eisaa — premium visual layer.
+   Pure CSS only: extends the existing Tailwind design tokens (cream/charcoal/
+   bronze-gold, Cormorant Garamond + Inter) without touching any DOM structure,
+   so it carries zero hydration risk. Loaded after the compiled Tailwind sheet,
+   so equal-specificity rules here win on source order; most selectors below
+   chain 2+ existing utility classes to comfortably out-specify single utilities. */
+
+:root {
+  --hje-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hje-ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --hje-gold: #a8782a;
+  --hje-gold-deep: #72501c;
+  --hje-shadow-sm: 0 1px 2px rgba(40, 30, 12, 0.06), 0 1px 1px rgba(40, 30, 12, 0.04);
+  --hje-shadow-md: 0 8px 24px -8px rgba(40, 30, 12, 0.18), 0 2px 8px -2px rgba(40, 30, 12, 0.08);
+  --hje-shadow-lg: 0 24px 48px -12px rgba(40, 30, 12, 0.28), 0 8px 16px -4px rgba(40, 30, 12, 0.1);
+  --hje-shadow-gold: 0 8px 20px -6px rgba(168, 120, 42, 0.45);
+
+  /* ---------- maximized palette ----------
+     Burgundy is lifted straight from the red velvet jewelry box in every
+     single product photo, so the site's own chrome now echoes the actual
+     product photography instead of a generic neutral. Gold moves from a
+     flat fill to a multi-stop metallic-foil gradient. */
+  --hje-burgundy: #7a1c28;
+  --hje-burgundy-deep: #4a1017;
+  --hje-burgundy-light: #a8354a;
+  --hje-black: #14100c;
+  --hje-black-soft: #221a13;
+  --hje-gold-foil: linear-gradient(135deg, #f7e6b0 0%, #dfb968 22%, #a8782a 48%, #7a5320 68%, #e3c077 88%, #f7e6b0 100%);
+  --hje-gold-foil-flat: linear-gradient(180deg, #c99a44, #a8782a 55%, #8a5f21);
+  --hje-shadow-burgundy: 0 10px 26px -8px rgba(122, 28, 40, 0.4), 0 2px 10px -3px rgba(20, 16, 12, 0.3);
+  --hje-shadow-gold-glow: 0 0 0 1px rgba(223, 185, 104, 0.35), 0 10px 30px -8px rgba(168, 120, 42, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(168, 120, 42, 0.22);
+  color: #1c130a;
+}
+
+/* thin gold-tinted scrollbar (webkit) */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+::-webkit-scrollbar-track {
+  background: #f3ead9;
+}
+::-webkit-scrollbar-thumb {
+  background: #d9c6a0;
+  border-radius: 999px;
+  border: 3px solid #f3ead9;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--hje-gold);
+}
+
+/* refined focus ring: replace the flat ring with a soft gold glow */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--hje-gold) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px rgba(168, 120, 42, 0.16) !important;
+  transition: box-shadow 0.2s var(--hje-ease-soft);
+}
+
+/* ---------- header ---------- */
+header.sticky {
+  transition: box-shadow 0.35s var(--hje-ease-soft), background-color 0.35s var(--hje-ease-soft);
+}
+header.sticky.hje-scrolled {
+  box-shadow: 0 1px 0 rgba(40, 30, 12, 0.06), 0 12px 24px -18px rgba(40, 30, 12, 0.35);
+}
+
+/* logo mark: subtle glow on hover */
+header a[href="/joyas"] img {
+  transition: transform 0.5s var(--hje-ease), box-shadow 0.5s var(--hje-ease-soft);
+}
+header a[href="/joyas"]:hover img {
+  transform: rotate(-4deg) scale(1.05);
+  box-shadow: 0 0 0 3px rgba(168, 120, 42, 0.25);
+}
+
+/* nav links: sliding gold underline instead of a flat color swap */
+nav a.text-muted-foreground.transition.hover\:text-foreground {
+  position: relative;
+  padding-bottom: 3px;
+}
+nav a.text-muted-foreground.transition.hover\:text-foreground::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1.5px;
+  background: var(--hje-gold);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.4s var(--hje-ease);
+}
+nav a.text-muted-foreground.transition.hover\:text-foreground:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* header icon buttons (search / wishlist / cart): soft lift */
+header .flex.items-center.gap-1 > button {
+  transition: transform 0.3s var(--hje-ease), background-color 0.25s var(--hje-ease-soft);
+}
+header .flex.items-center.gap-1 > button:hover {
+  transform: translateY(-1px);
+}
+header .flex.items-center.gap-1 > button:active {
+  transform: translateY(0) scale(0.94);
+}
+
+/* ---------- buttons ---------- */
+.bg-primary.text-primary-foreground.hover\:bg-primary\/90 {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(165deg, #2a2119 0%, var(--hje-black) 55%, #0d0a07 100%);
+  border: 1px solid transparent;
+  box-shadow: var(--hje-shadow-sm);
+  transition: box-shadow 0.35s var(--hje-ease-soft), transform 0.25s var(--hje-ease-soft),
+    border-color 0.35s var(--hje-ease-soft);
+}
+.bg-primary.text-primary-foreground.hover\:bg-primary\/90:hover {
+  box-shadow: var(--hje-shadow-gold-glow);
+  border-color: rgba(223, 185, 104, 0.55);
+  transform: translateY(-2px);
+}
+.bg-primary.text-primary-foreground.hover\:bg-primary\/90:active {
+  transform: translateY(0);
+  box-shadow: var(--hje-shadow-sm);
+}
+
+.border.border-border.bg-background.hover\:bg-muted {
+  transition: box-shadow 0.35s var(--hje-ease-soft), transform 0.25s var(--hje-ease-soft),
+    border-color 0.25s var(--hje-ease-soft), background-color 0.25s;
+}
+.border.border-border.bg-background.hover\:bg-muted:hover {
+  border-color: var(--hje-gold);
+  box-shadow: var(--hje-shadow-sm);
+  transform: translateY(-2px);
+}
+.border.border-border.bg-background.hover\:bg-muted:active {
+  transform: translateY(0);
+}
+
+/* gold WhatsApp CTA: true metallic-foil gradient + diagonal shine sweep on hover */
+.bg-gold-500.text-white.hover\:bg-gold-700 {
+  position: relative;
+  overflow: hidden;
+  background-image: var(--hje-gold-foil);
+  background-size: 220% 220%;
+  background-position: 30% 30%;
+  box-shadow: var(--hje-shadow-gold);
+  transition: box-shadow 0.35s var(--hje-ease-soft), transform 0.25s var(--hje-ease-soft),
+    background-position 0.6s var(--hje-ease);
+}
+.bg-gold-500.text-white.hover\:bg-gold-700::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.75s var(--hje-ease);
+  pointer-events: none;
+}
+.bg-gold-500.text-white.hover\:bg-gold-700:hover::before {
+  left: 130%;
+}
+.bg-gold-500.text-white.hover\:bg-gold-700:hover {
+  background-position: 70% 70%;
+  box-shadow: 0 14px 32px -6px rgba(168, 120, 42, 0.6);
+  transform: translateY(-2px);
+}
+.bg-gold-500.text-white.hover\:bg-gold-700:active {
+  transform: translateY(0);
+}
+
+/* arrow-nudge on CTAs that carry a trailing icon (e.g. "Ver catalogo") */
+.bg-primary.text-primary-foreground svg,
+.bg-gold-500.text-white svg {
+  transition: transform 0.35s var(--hje-ease);
+}
+a.bg-primary:hover svg,
+button.bg-primary:hover svg {
+  transform: translateX(3px);
+}
+
+/* ---------- product cards ---------- */
+article.group {
+  transition: transform 0.45s var(--hje-ease);
+}
+article.group > a.block.overflow-hidden.rounded-md.bg-muted {
+  position: relative;
+  box-shadow: var(--hje-shadow-sm);
+  transition: box-shadow 0.45s var(--hje-ease-soft);
+}
+article.group:hover {
+  transform: translateY(-5px);
+}
+article.group:hover > a.block.overflow-hidden.rounded-md.bg-muted {
+  box-shadow: var(--hje-shadow-lg);
+}
+/* subtle warm-light sweep over the product photo on hover, echoes light on a jewel */
+article.group .relative.aspect-\[4\/5\]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 40%, rgba(255, 248, 230, 0.35) 50%, transparent 60%);
+  background-size: 250% 250%;
+  background-position: 120% 0;
+  opacity: 0;
+  transition: opacity 0.4s var(--hje-ease-soft), background-position 0.9s var(--hje-ease);
+  pointer-events: none;
+}
+article.group:hover .relative.aspect-\[4\/5\]::after {
+  opacity: 1;
+  background-position: -20% 100%;
+}
+
+/* Destacado badge: metallic-gold pill instead of a flat, barely-there white one */
+span.inline-flex.items-center.rounded-full.border.border-border.px-2\.5.py-1.text-xs.font-medium.absolute.left-3.top-3.bg-white\/90.text-gold-700 {
+  background-image: var(--hje-gold-foil);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #2a1c08;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: var(--hje-shadow-gold);
+}
+
+/* wishlist heart button on cards: lift + gold-tinted hover, pop on active */
+article.group button[aria-label^="Guardar"],
+article.group button[aria-label^="Agregar"] {
+  transition: transform 0.3s var(--hje-ease-soft), box-shadow 0.3s var(--hje-ease-soft), color 0.25s;
+  box-shadow: var(--hje-shadow-sm);
+}
+article.group button[aria-label^="Guardar"]:hover,
+article.group button[aria-label^="Agregar"]:hover {
+  transform: scale(1.1);
+  box-shadow: var(--hje-shadow-md);
+}
+article.group button[aria-label^="Guardar"]:active,
+article.group button[aria-label^="Agregar"]:active {
+  transform: scale(0.92);
+}
+@keyframes hje-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35); }
+  60% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+article.group button[aria-label^="Guardar"].hje-fav-active svg {
+  animation: hje-pop 0.45s var(--hje-ease);
+}
+
+/* product name: gold underline grows in on hover */
+a.font-medium.hover\:text-gold-700 {
+  position: relative;
+  transition: color 0.25s;
+}
+a.font-medium.hover\:text-gold-700::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.35s var(--hje-ease);
+}
+a.font-medium.hover\:text-gold-700:hover::after {
+  width: 100%;
+}
+
+/* card action icons (instagram / whatsapp / add-to-cart) */
+article.group .flex.items-center.gap-1 a,
+article.group .flex.items-center.gap-1 button {
+  transition: transform 0.3s var(--hje-ease-soft), color 0.25s, background-color 0.25s;
+}
+article.group .flex.items-center.gap-1 a:hover,
+article.group .flex.items-center.gap-1 button:hover {
+  transform: translateY(-2px);
+  color: var(--hje-gold);
+}
+
+/* ---------- product detail page ---------- */
+main img[data-nimg] {
+  transition: transform 0.6s var(--hje-ease);
+}
+
+/* spec table rows: soft gold hover to invite scanning */
+dl.mt-4.grid.gap-3.text-sm > div {
+  transition: background-color 0.25s var(--hje-ease-soft), padding-left 0.25s var(--hje-ease-soft);
+  border-radius: 6px;
+}
+dl.mt-4.grid.gap-3.text-sm > div:hover {
+  background: rgba(168, 120, 42, 0.06);
+  padding-left: 6px;
+}
+
+/* category / material / availability pill tags on product page */
+main span.inline-flex.items-center.rounded-full.border.border-border.bg-background.px-2\.5.py-1.text-xs.font-medium.text-muted-foreground {
+  transition: border-color 0.25s, color 0.25s;
+}
+main span.inline-flex.items-center.rounded-full.border.border-border.bg-background.px-2\.5.py-1.text-xs.font-medium.text-muted-foreground:hover {
+  border-color: var(--hje-gold);
+  color: var(--hje-gold-deep);
+}
+
+/* ---------- filter bar (shop page) ---------- */
+input[placeholder="cadena, anillo..."],
+select[name="category"],
+select[name="material"],
+select[name="sort"] {
+  transition: border-color 0.25s var(--hje-ease-soft), box-shadow 0.25s var(--hje-ease-soft);
+}
+input[placeholder="cadena, anillo..."]:hover,
+select[name="category"]:hover,
+select[name="material"]:hover,
+select[name="sort"]:hover {
+  border-color: var(--hje-gold);
+}
+
+/* ---------- floating call / whatsapp buttons ---------- */
+.fixed.bottom-4.right-4 a,
+.fixed.bottom-6.right-6 a {
+  transition: transform 0.35s var(--hje-ease), box-shadow 0.35s var(--hje-ease-soft);
+}
+.fixed.bottom-4.right-4 a:hover {
+  box-shadow: var(--hje-shadow-lg);
+}
+
+/* ---------- footer links ---------- */
+footer a.hover\:text-foreground {
+  position: relative;
+  transition: color 0.25s;
+}
+footer a.hover\:text-foreground:hover {
+  color: var(--hje-gold);
+}
+
+/* ---------- newsletter input ---------- */
+footer input[type="email"] {
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+/* ---------- scroll reveal (paired with premium.js toggling .hje-in) ---------- */
+.hje-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.7s var(--hje-ease), transform 0.7s var(--hje-ease);
+}
+.hje-reveal.hje-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---------- image load-in ----------
+   Additive only: the hidden state is applied BY JS, only to images it has
+   confirmed are still loading, and only for as long as the image takes to
+   load. If premium.js never runs, images simply keep their normal, always-
+   visible default — they can never get stuck invisible. */
+img.hje-loading {
+  opacity: 0;
+  transform: scale(1.015);
+}
+img.hje-loaded {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.6s var(--hje-ease-soft), transform 0.8s var(--hje-ease);
+}
+
+/* ---------- cart / wishlist header badge pulse ---------- */
+@keyframes hje-badge-pop {
+  0% { transform: scale(0.6); }
+  55% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.hje-badge.hje-pulse {
+  animation: hje-badge-pop 0.4s var(--hje-ease);
+}
+
+/* =========================================================================
+   MAXIMIZED PALETTE PASS — burgundy (from the product photography's velvet
+   box) + true metallic gold + richer blacks, applied to the highest-impact
+   surfaces: the mobile bottom nav, floating action buttons, header, and the
+   site's one full-bleed dark section.
+   ========================================================================= */
+
+/* header: slim gold foil line always visible, not just a shadow on scroll.
+   position:sticky (Tailwind's .sticky) is already a valid containing block
+   for the absolutely-positioned ::after below - do NOT override it to
+   relative, that silently breaks the header's stick-on-scroll behavior. */
+header.sticky::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1.5px;
+  height: 2px;
+  background-image: var(--hje-gold-foil);
+  background-size: 300% 100%;
+  opacity: 0.9;
+}
+
+/* the one full-bleed dark ("Novedades" newsletter) section: layer a
+   burgundy-to-black gradient + soft gold glow on top of bg-foreground,
+   instead of a single flat brown fill */
+section.bg-foreground.text-background {
+  position: relative;
+  background-image: radial-gradient(120% 160% at 15% 15%, rgba(122, 28, 40, 0.55), transparent 55%),
+    linear-gradient(155deg, var(--hje-black-soft) 0%, var(--hje-black) 65%, #0c0906 100%);
+  overflow: hidden;
+}
+section.bg-foreground.text-background::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 90% at 88% 100%, rgba(223, 185, 104, 0.16), transparent 60%);
+  pointer-events: none;
+}
+section.bg-foreground.text-background input[type="email"] {
+  border-color: rgba(223, 185, 104, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f3ead9;
+}
+section.bg-foreground.text-background input[type="email"]::placeholder {
+  color: rgba(243, 234, 217, 0.5);
+}
+section.bg-foreground.text-background input[type="email"]:focus-visible {
+  border-color: var(--hje-gold);
+}
+section.bg-foreground.text-background .bg-gold-500.text-white.hover\:bg-gold-700 {
+  color: #2a1c08;
+}
+
+/* floating call / WhatsApp buttons: gold ring + glow instead of a plain flat circle */
+a[aria-label="Llamar"] {
+  background-image: linear-gradient(165deg, #2a2119, var(--hje-black)) !important;
+  box-shadow: 0 0 0 1px rgba(223, 185, 104, 0.4), var(--hje-shadow-md);
+}
+a[aria-label="Abrir WhatsApp"] {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25), 0 10px 24px -6px rgba(31, 143, 84, 0.55);
+}
+a[aria-label="Llamar"]:hover,
+a[aria-label="Abrir WhatsApp"]:hover {
+  box-shadow: 0 0 0 1px rgba(223, 185, 104, 0.6), var(--hje-shadow-lg);
+}
+
+/* ---------- mobile bottom tab bar: removed entirely per feedback ----------
+   Was previously restyled; the call is now to drop it, not polish it. The
+   header nav + floating WhatsApp/call buttons already cover its job. */
+.fixed.inset-x-0.bottom-0.z-30.grid.grid-cols-3 {
+  display: none !important;
+}
+/* the footer reserved bottom padding on mobile specifically to clear that
+   bar (pb-20, zeroed again at md:) — with the bar gone, zero it too so the
+   footer doesn't end in a slab of dead space */
+footer.pb-20 {
+  padding-bottom: 0;
+}
+/* the floating buttons no longer need to clear anything, they were
+   previously offset upward to avoid the (now-removed) bottom bar */
+
+/* ---------- decorative gold rule under the hero eyebrow ---------- */
+p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700 {
+  position: relative;
+  padding-bottom: 14px;
+}
+p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 46px;
+  height: 2px;
+  background-image: var(--hje-gold-foil);
+  background-size: 300% 100%;
+}
+
+/* ---------- card hover shadow: burgundy + gold instead of plain neutral ---------- */
+article.group:hover > a.block.overflow-hidden.rounded-md.bg-muted {
+  box-shadow: var(--hje-shadow-lg), var(--hje-shadow-burgundy);
+}
+
+/* =========================================================================
+   HERO REDESIGN — the original layout crammed a big portrait photo plus two
+   small square photos into a cropped grid that reads as cluttered and
+   unbalanced on phones. Rebuilt with CSS only (no DOM changes, so zero
+   hydration risk): one full-bleed hero image on mobile instead of a
+   three-photo collage, a soft gold/burgundy glow behind the whole section,
+   a gold frame on the desktop photo collage, and a clearer, less
+   competitive button hierarchy (one bold gold CTA, one quiet outline CTA).
+   ========================================================================= */
+
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] {
+  isolation: isolate;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(55% 45% at 12% 18%, rgba(223, 185, 104, 0.22), transparent 62%),
+    radial-gradient(45% 40% at 92% 85%, rgba(122, 28, 40, 0.12), transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+  position: relative;
+  z-index: 1;
+}
+
+/* eyebrow + heading get a touch more room to breathe against the new glow */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* clearer CTA hierarchy: gold stays bold, the dark button becomes a quiet
+   outline so the two don't visually compete as two equal black/gold slabs */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90 {
+  background-image: none;
+  background-color: transparent;
+  color: var(--hje-black);
+  border: 1.5px solid rgba(20, 16, 12, 0.55);
+  box-shadow: none;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90:hover {
+  background-color: var(--hje-black);
+  color: #f3ead9;
+  border-color: var(--hje-black);
+  box-shadow: var(--hje-shadow-md);
+}
+
+/* desktop (lg+): keep the two-column layout, just frame the collage in gold */
+@media (min-width: 1024px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] .relative.aspect-\[4\/5\].overflow-hidden.rounded-md.bg-muted.shadow-soft,
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] a.group.relative.aspect-square.overflow-hidden.rounded-md.bg-muted.shadow-soft {
+    box-shadow: 0 0 0 1px rgba(223, 185, 104, 0.45), var(--hje-shadow-lg);
+  }
+}
+
+/* below lg: one dominant full-bleed image instead of a cramped triptych */
+@media (max-width: 1023px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+    display: flex;
+    flex-direction: column;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.max-w-2xl {
+    order: 2;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+    order: 1;
+    display: block;
+    width: 100vw;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    margin-top: -3rem;
+    margin-bottom: 2.5rem;
+  }
+  /* hide the small stacked pair, keep only the first (big) photo */
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 {
+    display: none;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] {
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+    box-shadow: inset 0 -40px 60px -30px rgba(20, 16, 12, 0.35);
+  }
+}
+
+@media (max-width: 639px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+    margin-top: -1.5rem;
+  }
+}
