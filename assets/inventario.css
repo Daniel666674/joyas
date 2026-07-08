@@ -1,0 +1,313 @@
+/* Habibi Eisaa — internal inventory tool.
+   Deliberately self-contained: this page has no Next.js/React on it at all
+   (see CLAUDE.md's hydration notes for why that matters), so it doesn't
+   depend on premium.css's Next-targeting selectors. Root variables below
+   are intentionally duplicated from premium.css's palette rather than
+   linking that stylesheet, to keep this tool independent of the marketing
+   site's markup. */
+
+:root {
+  --hje-burgundy: #7a1c28;
+  --hje-burgundy-deep: #4a1017;
+  --hje-black: #14100c;
+  --hje-cream: #f8f3eb;
+  --hje-gold: #a8782a;
+  --hje-gold-foil: linear-gradient(135deg, #f7e6b0 0%, #dfb968 22%, #a8782a 48%, #7a5320 68%, #e3c077 88%, #f7e6b0 100%);
+  --hje-border: #e4dccd;
+  --hje-shadow-md: 0 8px 24px -8px rgba(40, 30, 12, 0.18), 0 2px 8px -2px rgba(40, 30, 12, 0.08);
+  --hje-shadow-lg: 0 24px 48px -12px rgba(40, 30, 12, 0.28), 0 8px 16px -4px rgba(40, 30, 12, 0.1);
+  --hje-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--hje-cream);
+  color: var(--hje-black);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hje-inv-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid var(--hje-border);
+}
+.hje-inv-header img {
+  height: 2.5rem;
+  width: 2.5rem;
+  border-radius: 999px;
+  object-fit: cover;
+}
+.hje-inv-header .hje-inv-title {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.4rem;
+  line-height: 1.1;
+}
+.hje-inv-header .hje-inv-subtitle {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a7a5f;
+  margin-top: 0.15rem;
+}
+
+/* ---------- gate ---------- */
+.hje-inv-gate {
+  min-height: calc(100vh - 4.6rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+.hje-inv-gate-card {
+  width: min(92vw, 380px);
+  background: #fff;
+  border: 1px solid var(--hje-border);
+  border-radius: 0.75rem;
+  padding: 2rem 1.75rem;
+  box-shadow: var(--hje-shadow-lg);
+  text-align: center;
+}
+.hje-inv-gate-card h1 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.6rem;
+  margin: 0.75rem 0 0.4rem;
+}
+.hje-inv-gate-card p {
+  font-size: 0.875rem;
+  color: #6b5f4c;
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
+.hje-inv-gate-card input[type="password"] {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1.5px solid var(--hje-border);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+.hje-inv-gate-card input[type="password"]:focus {
+  outline: none;
+  border-color: var(--hje-gold);
+}
+.hje-inv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-image: var(--hje-gold-foil);
+  color: #221604;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.15s var(--hje-ease), box-shadow 0.15s var(--hje-ease);
+}
+.hje-inv-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--hje-shadow-md);
+}
+.hje-inv-gate-error {
+  color: var(--hje-burgundy);
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+  display: none;
+}
+.hje-inv-gate-error.hje-show {
+  display: block;
+}
+
+/* ---------- main panel ---------- */
+.hje-inv-main {
+  display: none;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 4rem;
+}
+.hje-inv-main.hje-show {
+  display: block;
+}
+
+.hje-inv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+.hje-inv-toolbar input,
+.hje-inv-toolbar select {
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid var(--hje-border);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: #fff;
+  font-family: inherit;
+}
+.hje-inv-toolbar input[type="search"] {
+  flex: 1 1 220px;
+}
+.hje-inv-toolbar .hje-inv-new-btn {
+  width: auto;
+  padding: 0.6rem 1.1rem;
+  white-space: nowrap;
+}
+
+.hje-inv-count {
+  font-size: 0.8rem;
+  color: #8a7a5f;
+  margin-bottom: 0.9rem;
+}
+
+.hje-inv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.9rem;
+}
+.hje-inv-card {
+  background: #fff;
+  border: 1px solid var(--hje-border);
+  border-radius: 0.625rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.hje-inv-card img {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: #ece5d6;
+}
+.hje-inv-card-body {
+  padding: 0.85rem 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+}
+.hje-inv-card-name {
+  font-weight: 600;
+  font-size: 0.925rem;
+  line-height: 1.25;
+}
+.hje-inv-card-meta {
+  font-size: 0.78rem;
+  color: #8a7a5f;
+}
+.hje-inv-badge {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(122, 28, 40, 0.08);
+  color: var(--hje-burgundy);
+}
+.hje-inv-badge.hje-inv-badge-ok {
+  background: rgba(76, 122, 60, 0.1);
+  color: #3d6b32;
+}
+.hje-inv-card-request {
+  margin-top: auto;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--hje-burgundy);
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--hje-burgundy);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.hje-inv-card-request:hover {
+  background: var(--hje-burgundy);
+  color: #fff;
+}
+
+/* ---------- request modal ---------- */
+.hje-inv-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 16, 12, 0.55);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.hje-inv-modal-backdrop.hje-show {
+  display: flex;
+}
+.hje-inv-modal {
+  width: min(92vw, 420px);
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem 1.5rem 1.65rem;
+  box-shadow: var(--hje-shadow-lg);
+}
+.hje-inv-modal h2 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.3rem;
+  margin: 0 0 0.2rem;
+}
+.hje-inv-modal .hje-inv-modal-product {
+  font-size: 0.8rem;
+  color: #8a7a5f;
+  margin-bottom: 1rem;
+}
+.hje-inv-modal label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+.hje-inv-modal select,
+.hje-inv-modal textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--hje-border);
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  margin-bottom: 0.9rem;
+  resize: vertical;
+}
+.hje-inv-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+.hje-inv-modal-cancel {
+  flex: none;
+  padding: 0.7rem 1rem;
+  border: 1.5px solid var(--hje-border);
+  border-radius: 0.5rem;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #6b5f4c;
+}
+.hje-inv-modal-actions .hje-inv-btn {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .hje-inv-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .hje-inv-card-name {
+    font-size: 0.85rem;
+  }
+}
