@@ -588,7 +588,11 @@ section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foregr
     display: none;
   }
   section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] {
-    aspect-ratio: 4 / 3;
+    /* taller than the 4/3 a static landscape photo would want - this slot
+       now often holds a vertical 9:16 video, so give it more height to work
+       with instead of cropping most of the clip away */
+    aspect-ratio: 4 / 5;
+    max-height: 78vh;
     border-radius: 0;
     box-shadow: inset 0 -40px 60px -30px rgba(20, 16, 12, 0.35);
   }
