@@ -46,15 +46,17 @@
       ".hje-hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity " + CROSSFADE_MS + "ms ease;pointer-events:none}",
       ".hje-hero-video.hje-showing{opacity:1}",
       ".hje-hero-vignette{position:absolute;inset:0;pointer-events:none;background:" +
-        /* the source clips are downloaded Instagram reels with the app's own
-           watermark (handle + camera icon) burned into the top-right corner;
-           this patch sits on top of the general vignette to fade that
-           specific corner into the surrounding dark edge rather than leaving
-           it stark */
-        "radial-gradient(38% 30% at 88% 22%, rgba(10,7,4,.85) 0%, rgba(10,7,4,.5) 55%, transparent 100%)," +
-        "radial-gradient(120% 100% at 50% 40%, transparent 55%, rgba(10,7,4,.55) 100%)," +
-        "linear-gradient(180deg, rgba(10,7,4,.16), transparent 22%, transparent 72%, rgba(10,7,4,.3))," +
-        "linear-gradient(90deg, rgba(10,7,4,.22), transparent 18%, transparent 82%, rgba(10,7,4,.22))}"
+        /* premium.css now owns the main full-bleed legibility scrim (it's
+           strongest over the left/text side and intentionally fades out
+           toward the top-right, since nothing needs covering there once
+           the hero is a static photo). But the source clips are downloaded
+           Instagram reels with the app's own watermark (handle + camera
+           icon) burned into that same top-right corner, so this patch
+           exists solely to blend the corner into the frame regardless of
+           how object-fit:cover ends up cropping the clip on a given
+           viewport - anchored to the corner itself rather than a fixed
+           percentage so it stays correct at any aspect ratio */
+        "radial-gradient(55% 45% at 100% 0%, rgba(10,7,4,.8) 0%, rgba(10,7,4,.42) 55%, transparent 100%)}"
     ].join("\n");
     document.head.appendChild(style);
 
