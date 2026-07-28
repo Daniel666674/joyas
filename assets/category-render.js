@@ -44,6 +44,12 @@
     return "https://wa.me/573001234567?text=" + encodeURIComponent(text);
   }
 
+  function formatPrice(price) {
+    var n = Number(price) || 0;
+    if (n <= 0) return null;
+    return "$" + Math.round(n).toLocaleString("es-CO");
+  }
+
   // Exact article.group markup used sitewide for a product card (verified
   // against cadenas.html's grid and the related-products block on a real
   // product detail page). Keep this in sync with the equivalent template
@@ -70,7 +76,7 @@
       '<p class="mt-1 text-sm text-muted-foreground">' + esc(p.category) + '<!-- --> · <!-- -->' + esc(p.material) + "</p>" +
       "</div>" +
       '<div class="flex items-center justify-between gap-3">' +
-      '<span class="text-sm font-semibold">Consultar precio</span>' +
+      '<span class="text-sm font-semibold">' + esc(formatPrice(p.price) || "Consultar precio") + "</span>" +
       '<div class="flex items-center gap-1">' +
       '<a href="' + esc(p.instagramUrl || "https://www.instagram.com/") + '" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Ver en Instagram">' +
       '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg>' +

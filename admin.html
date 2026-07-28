@@ -13,11 +13,14 @@
 
 <header class="hje-adm-header">
   <img src="/joyas/brand/logo-mark.png" alt="Habibi Eisaa" />
-  <div>
-    <div class="hje-adm-title">Habibi Eisaa</div>
-    <div class="hje-adm-subtitle">Panel de administracion — uso interno</div>
+  <div class="hje-adm-header-text">
+    <div class="hje-adm-title">Habibi Eisaa Admin</div>
+    <div class="hje-adm-subtitle">Panel interno</div>
   </div>
-  <button type="button" class="hje-adm-logout" id="hje-adm-logout">Cerrar sesion</button>
+  <div class="hje-adm-header-actions">
+    <a class="hje-adm-btn-outline" href="/joyas/index.html">Ver tienda</a>
+    <button type="button" class="hje-adm-btn-outline hje-adm-logout" id="hje-adm-logout">Cerrar sesion</button>
+  </div>
 </header>
 
 <div id="hje-adm-gate-passcode" class="hje-adm-gate">
@@ -27,7 +30,7 @@
     <p>Esta pagina es solo para administracion del catalogo. Pide la clave si no la tienes.</p>
     <form id="hje-adm-passcode-form">
       <input type="password" id="hje-adm-passcode" placeholder="Clave de acceso" autocomplete="off" required />
-      <button type="submit" class="hje-adm-btn">Continuar</button>
+      <button type="submit" class="hje-adm-btn-primary">Continuar</button>
       <p class="hje-adm-gate-error" id="hje-adm-passcode-error">Clave incorrecta. Intenta de nuevo.</p>
     </form>
   </div>
@@ -44,7 +47,7 @@
       <label for="hje-adm-name">Tu nombre (opcional)</label>
       <input type="text" id="hje-adm-name" placeholder="Para identificar tus cambios en el registro" autocomplete="off" />
       <p class="hje-adm-gate-help">El token no se envia a ningun servidor propio: solo se usa desde tu navegador para hablar directamente con la API de GitHub, y se guarda unicamente en esta sesion del navegador.</p>
-      <button type="submit" class="hje-adm-btn" id="hje-adm-pat-submit">Conectar</button>
+      <button type="submit" class="hje-adm-btn-primary" id="hje-adm-pat-submit">Conectar</button>
       <p class="hje-adm-gate-error" id="hje-adm-pat-error"></p>
     </form>
   </div>
@@ -57,39 +60,31 @@
   </div>
 
   <div class="hje-adm-panel hje-show" id="hje-adm-panel-productos">
-    <div class="hje-adm-toolbar">
+    <div class="hje-adm-filter-row">
+      <select id="hje-adm-filter-status" class="hje-adm-status-select">
+        <option value="">Todos los estados</option>
+        <option value="Disponible">Disponible</option>
+        <option value="Bajo stock">Bajo stock</option>
+        <option value="Agotado">Agotado</option>
+      </select>
       <input type="search" id="hje-adm-search" placeholder="Buscar por nombre o SKU..." />
       <select id="hje-adm-filter-category"><option value="">Todas las categorias</option></select>
       <select id="hje-adm-filter-material"><option value="">Todos los materiales</option></select>
-      <select id="hje-adm-filter-availability">
-        <option value="">Toda disponibilidad</option>
-        <option value="Disponible">Disponible</option>
-        <option value="Agotado">Agotado</option>
-      </select>
-      <button type="button" class="hje-adm-btn hje-adm-new-btn" id="hje-adm-new-product-btn">+ Nuevo producto</button>
     </div>
+
+    <div class="hje-adm-action-grid">
+      <button type="button" class="hje-adm-btn-outline" id="hje-adm-new-product-btn">+ Agregar producto</button>
+      <button type="button" class="hje-adm-btn-outline" id="hje-adm-bulk-btn" disabled>Edicion masiva</button>
+      <button type="button" class="hje-adm-btn-outline" id="hje-adm-discard-btn">Descartar cambios</button>
+      <button type="button" class="hje-adm-btn-primary" id="hje-adm-publish-btn" disabled>Publicar cambios</button>
+    </div>
+    <div class="hje-adm-selection-count" id="hje-adm-selection-count"></div>
+
     <div class="hje-adm-count" id="hje-adm-count"></div>
-    <div class="hje-adm-table-wrap">
-      <table class="hje-adm-table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Nombre</th>
-            <th>SKU</th>
-            <th>Categoria</th>
-            <th>Material</th>
-            <th>Disponibilidad</th>
-            <th>Destacado</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="hje-adm-table-body"></tbody>
-      </table>
-    </div>
+    <div class="hje-adm-card-list" id="hje-adm-card-list"></div>
 
     <div class="hje-adm-publish-bar">
       <div class="hje-adm-publish-status" id="hje-adm-publish-status">Sin cambios pendientes.</div>
-      <button type="button" class="hje-adm-btn" id="hje-adm-publish-btn" disabled>Publicar cambios</button>
     </div>
     <div class="hje-adm-publish-log" id="hje-adm-publish-log"></div>
   </div>
@@ -128,6 +123,14 @@
         <div>
           <label for="hje-adm-f-material">Material</label>
           <select id="hje-adm-f-material" required></select>
+        </div>
+        <div>
+          <label for="hje-adm-f-price">Precio (COP)</label>
+          <input type="number" id="hje-adm-f-price" min="0" step="1000" placeholder="0 = Consultar precio" />
+        </div>
+        <div>
+          <label for="hje-adm-f-units">Unidades en stock</label>
+          <input type="number" id="hje-adm-f-units" min="0" step="1" />
         </div>
         <div>
           <label for="hje-adm-f-availability">Disponibilidad</label>
@@ -177,10 +180,52 @@
         </div>
       </div>
       <div class="hje-adm-modal-actions">
-        <button type="button" class="hje-adm-modal-cancel" id="hje-adm-modal-cancel">Cancelar</button>
-        <button type="submit" class="hje-adm-btn" id="hje-adm-modal-save">Guardar</button>
+        <button type="button" class="hje-adm-btn-outline" id="hje-adm-modal-cancel">Cancelar</button>
+        <button type="submit" class="hje-adm-btn-primary" id="hje-adm-modal-save">Guardar</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- bulk edit modal -->
+<div class="hje-adm-modal-backdrop" id="hje-adm-bulk-backdrop">
+  <div class="hje-adm-modal">
+    <h2>Edicion masiva</h2>
+    <p class="hje-adm-modal-sub" id="hje-adm-bulk-count"></p>
+    <div class="hje-adm-form-grid">
+      <div>
+        <label for="hje-adm-bulk-category">Categoria</label>
+        <select id="hje-adm-bulk-category">
+          <option value="">Sin cambio</option>
+        </select>
+      </div>
+      <div>
+        <label for="hje-adm-bulk-material">Material</label>
+        <select id="hje-adm-bulk-material">
+          <option value="">Sin cambio</option>
+        </select>
+      </div>
+      <div>
+        <label for="hje-adm-bulk-availability">Disponibilidad</label>
+        <select id="hje-adm-bulk-availability">
+          <option value="">Sin cambio</option>
+          <option value="Disponible">Disponible</option>
+          <option value="Agotado">Agotado</option>
+        </select>
+      </div>
+      <div>
+        <label for="hje-adm-bulk-featured">Destacado</label>
+        <select id="hje-adm-bulk-featured">
+          <option value="">Sin cambio</option>
+          <option value="si">Marcar como destacado</option>
+          <option value="no">Quitar destacado</option>
+        </select>
+      </div>
+    </div>
+    <div class="hje-adm-modal-actions">
+      <button type="button" class="hje-adm-btn-outline" id="hje-adm-bulk-cancel">Cancelar</button>
+      <button type="button" class="hje-adm-btn-primary" id="hje-adm-bulk-apply">Aplicar a seleccionados</button>
+    </div>
   </div>
 </div>
 
@@ -190,11 +235,16 @@
     <h2>Eliminar producto</h2>
     <p id="hje-adm-confirm-text"></p>
     <div class="hje-adm-modal-actions">
-      <button type="button" class="hje-adm-modal-cancel" id="hje-adm-confirm-cancel">Cancelar</button>
-      <button type="button" class="hje-adm-btn" id="hje-adm-confirm-delete">Eliminar</button>
+      <button type="button" class="hje-adm-btn-outline" id="hje-adm-confirm-cancel">Cancelar</button>
+      <button type="button" class="hje-adm-btn-primary" id="hje-adm-confirm-delete">Eliminar</button>
     </div>
   </div>
 </div>
+
+<a class="hje-adm-support-bubble" href="https://wa.me/573136662777?text=Hola%2C%20necesito%20ayuda%20con%20el%20panel%20de%20administracion" target="_blank" rel="noreferrer" aria-label="Soporte por WhatsApp">
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
+  <span>Soporte</span>
+</a>
 
 <script defer src="/joyas/assets/admin.js"></script>
 </body>

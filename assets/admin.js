@@ -16,10 +16,12 @@
   var GITHUB_API = "https://api.github.com";
   var GITHUB_BRANCH = "main";
   var WHATSAPP_NUMBER = "573001234567";
+  var SUPPORT_WHATSAPP_NUMBER = "573136662777";
   var PASSCODE = "hjeadmin2026";
   var SESSION_PASSCODE_KEY = "hje_admin_unlocked";
   var SESSION_PAT_KEY = "hje_admin_pat";
   var SESSION_NAME_KEY = "hje_admin_name";
+  var LOW_STOCK_THRESHOLD = 3;
 
   var CATEGORIES = ["Cadenas", "Pulseras", "Anillos", "Argollas", "Aretes", "Collares", "Dijes"];
   var MATERIALS = ["Oro Laminado", "Oro 18K", "Oro 14K", "Oro 10K", "Plata 925", "Oro Rosa", "Esmeraldas", "Diamantes"];
@@ -29,11 +31,29 @@
     editingSlug: null,
     dirty: {},
     deleted: {},
+    selected: {}, // slug -> true, for bulk edit
     photo: null, // { main: Blob, thumb: Blob }
     photoPath: null, // computed path for the pending photo, set when a new upload is processed
     pat: null,
     adminName: ""
   };
+
+  // units === 0 -> Agotado, else Bajo stock below the threshold, else
+  // Disponible. This 3-tier badge is admin-side only, for quick restock
+  // triage - the storefront still only ever reads the plain Disponible/
+  // Agotado `availability` field, unchanged everywhere else on the site.
+  function stockStatus(units) {
+    var n = Number(units) || 0;
+    if (n === 0) return "Agotado";
+    if (n <= LOW_STOCK_THRESHOLD) return "Bajo stock";
+    return "Disponible";
+  }
+
+  function formatPrice(price) {
+    var n = Number(price) || 0;
+    if (n <= 0) return null;
+    return "$" + Math.round(n).toLocaleString("es-CO");
+  }
 
   function $(sel, ctx) {
     return (ctx || document).querySelector(sel);
@@ -290,6 +310,21 @@
     var matSel = $("#hje-adm-f-material");
     catSel.innerHTML = CATEGORIES.map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + "</option>"; }).join("");
     matSel.innerHTML = MATERIALS.map(function (m) { return '<option value="' + esc(m) + '">' + esc(m) + "</option>"; }).join("");
+
+    var bulkCatSel = $("#hje-adm-bulk-category");
+    var bulkMatSel = $("#hje-adm-bulk-material");
+    CATEGORIES.forEach(function (c) {
+      var opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      bulkCatSel.appendChild(opt);
+    });
+    MATERIALS.forEach(function (m) {
+      var opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      bulkMatSel.appendChild(opt);
+    });
   }
 
   function populateFilterSelects() {
@@ -313,61 +348,94 @@
     var q = $("#hje-adm-search").value.trim().toLowerCase();
     var category = $("#hje-adm-filter-category").value;
     var material = $("#hje-adm-filter-material").value;
-    var availability = $("#hje-adm-filter-availability").value;
+    var status = $("#hje-adm-filter-status").value;
 
     return displayProducts().filter(function (p) {
       if (state.deleted[p.slug]) return true; // keep visible, struck through
       if (category && p.category !== category) return false;
       if (material && p.material !== material) return false;
-      if (availability && p.availability !== availability) return false;
+      if (status && stockStatus(p.units) !== status) return false;
       if (q && p.name.toLowerCase().indexOf(q) === -1 && p.sku.toLowerCase().indexOf(q) === -1) return false;
       return true;
     });
   }
 
+  function statusBadgeClass(status) {
+    if (status === "Disponible") return "hje-adm-badge-ok";
+    if (status === "Bajo stock") return "hje-adm-badge-warn";
+    return "hje-adm-badge-off";
+  }
+
   function renderTable() {
-    var body = $("#hje-adm-table-body");
+    var list = $("#hje-adm-card-list");
     var rows = applyFilters();
     $("#hje-adm-count").textContent = rows.length + " de " + displayProducts().length + " productos";
 
-    body.innerHTML = rows.map(function (p) {
+    list.innerHTML = rows.map(function (p) {
       var isDeleted = !!state.deleted[p.slug];
       var isDirty = !!state.dirty[p.slug] && !isDeleted;
+      var isSelected = !!state.selected[p.slug];
       var img = p.images && p.images[0] ? p.images[0].thumbnail || p.images[0].src : "";
-      var rowClass = isDeleted ? "hje-adm-row-deleted" : isDirty ? "hje-adm-row-dirty" : "";
+      var status = stockStatus(p.units);
+      var priceLabel = formatPrice(p.price) || "Consultar precio";
+      var cardClass = "hje-adm-card" +
+        (isDeleted ? " hje-adm-card-deleted" : "") +
+        (isDirty ? " hje-adm-card-dirty" : "");
       return (
-        '<tr class="' + rowClass + '" data-hje-slug="' + esc(p.slug) + '">' +
-        "<td><img src=\"" + esc(img) + "\" alt=\"\" loading=\"lazy\"/></td>" +
-        "<td>" + esc(p.name) + "</td>" +
-        "<td>" + esc(p.sku) + "</td>" +
-        "<td>" + esc(p.category) + "</td>" +
-        "<td>" + esc(p.material) + "</td>" +
-        '<td><span class="hje-adm-badge' + (p.availability === "Disponible" ? " hje-adm-badge-ok" : "") + '">' + esc(p.availability) + "</span></td>" +
-        "<td>" + (p.featured ? "Si" : "-") + "</td>" +
-        '<td><div class="hje-adm-row-actions">' +
+        '<div class="' + cardClass + '" data-hje-slug="' + esc(p.slug) + '">' +
+        '<div class="hje-adm-card-top">' +
+        (isDeleted ? "" : '<input type="checkbox" class="hje-adm-card-check" data-hje-slug="' + esc(p.slug) + '"' + (isSelected ? " checked" : "") + '/>') +
+        '<img class="hje-adm-card-thumb" src="' + esc(img) + '" alt="" loading="lazy"/>' +
+        "</div>" +
+        '<div class="hje-adm-card-body">' +
+        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Nombre</span><span class="hje-adm-card-value hje-adm-card-value-strong">' + esc(p.name) + "</span></div>" +
+        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">SKU</span><span class="hje-adm-card-value">' + esc(p.sku) + "</span></div>" +
+        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Categoria</span><span class="hje-adm-card-value">' + esc(p.category) + "</span></div>" +
+        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Material</span><span class="hje-adm-card-value">' + esc(p.material) + "</span></div>" +
+        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Precio</span><span class="hje-adm-card-value">' + esc(priceLabel) + "</span></div>" +
+        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Unidades</span><span class="hje-adm-card-value hje-adm-card-value-strong">' + (Number(p.units) || 0) + "</span></div>" +
+        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Estado</span><span class="hje-adm-badge ' + statusBadgeClass(status) + '">' + esc(status) + "</span></div>" +
+        '<div class="hje-adm-card-actions">' +
         (isDeleted
-          ? '<button type="button" class="hje-adm-undo-btn" data-hje-slug="' + esc(p.slug) + '">Deshacer</button>'
-          : '<button type="button" class="hje-adm-edit-btn" data-hje-slug="' + esc(p.slug) + '">Editar</button>' +
-            '<button type="button" class="hje-adm-delete-btn" data-hje-slug="' + esc(p.slug) + '">Eliminar</button>') +
-        "</div></td></tr>"
+          ? '<button type="button" class="hje-adm-card-btn hje-adm-undo-btn" data-hje-slug="' + esc(p.slug) + '">Deshacer</button>'
+          : '<button type="button" class="hje-adm-card-btn hje-adm-edit-btn" data-hje-slug="' + esc(p.slug) + '">Editar</button>' +
+            '<button type="button" class="hje-adm-card-btn hje-adm-card-btn-danger hje-adm-delete-btn" data-hje-slug="' + esc(p.slug) + '">Eliminar</button>') +
+        "</div></div></div>"
       );
     }).join("");
 
-    $all(".hje-adm-edit-btn", body).forEach(function (btn) {
+    $all(".hje-adm-edit-btn", list).forEach(function (btn) {
       btn.addEventListener("click", function () { openEditForm(btn.getAttribute("data-hje-slug")); });
     });
-    $all(".hje-adm-delete-btn", body).forEach(function (btn) {
+    $all(".hje-adm-delete-btn", list).forEach(function (btn) {
       btn.addEventListener("click", function () { openDeleteConfirm(btn.getAttribute("data-hje-slug")); });
     });
-    $all(".hje-adm-undo-btn", body).forEach(function (btn) {
+    $all(".hje-adm-undo-btn", list).forEach(function (btn) {
       btn.addEventListener("click", function () {
         delete state.deleted[btn.getAttribute("data-hje-slug")];
         renderTable();
         updatePublishBar();
       });
     });
+    $all(".hje-adm-card-check", list).forEach(function (box) {
+      box.addEventListener("change", function () {
+        var slug = box.getAttribute("data-hje-slug");
+        if (box.checked) state.selected[slug] = true;
+        else delete state.selected[slug];
+        updateSelectionBar();
+      });
+    });
 
     updatePublishBar();
+    updateSelectionBar();
+  }
+
+  function updateSelectionBar() {
+    var count = Object.keys(state.selected).length;
+    var bulkBtn = $("#hje-adm-bulk-btn");
+    var indicator = $("#hje-adm-selection-count");
+    bulkBtn.disabled = count === 0;
+    indicator.textContent = count > 0 ? count + " seleccionado(s)" : "";
   }
 
   function updatePublishBar() {
@@ -417,6 +485,8 @@
     $("#hje-adm-f-sku").value = "JOY-" + id;
     $("#hje-adm-f-availability").value = "Disponible";
     $("#hje-adm-f-popularity").value = "50";
+    $("#hje-adm-f-price").value = "0";
+    $("#hje-adm-f-units").value = "5";
     $("#hje-adm-f-instagram").value = "https://www.instagram.com/";
     $("#hje-adm-f-spec-acabado").value = "Pulido brillante";
     $("#hje-adm-f-spec-cuidado").value = "Evitar perfumes, piscinas y humedad prolongada";
@@ -436,8 +506,22 @@
     };
     slugInput.oninput = function () { slugInput.dataset.hjeTouched = "1"; };
     delete slugInput.dataset.hjeTouched;
+    wireUnitsAvailabilitySuggestion();
 
     $("#hje-adm-modal-backdrop").classList.add("hje-show");
+  }
+
+  // Auto-suggests Disponible/Agotado from the units field whenever it
+  // changes, but the dropdown stays a normal, independently-editable
+  // select - the admin can override the suggestion immediately after,
+  // e.g. to hide an in-stock item temporarily without zeroing its count.
+  function wireUnitsAvailabilitySuggestion() {
+    var unitsInput = $("#hje-adm-f-units");
+    var availSelect = $("#hje-adm-f-availability");
+    unitsInput.oninput = function () {
+      var n = parseInt(unitsInput.value, 10);
+      availSelect.value = n === 0 ? "Agotado" : "Disponible";
+    };
   }
 
   function openEditForm(slug) {
@@ -459,6 +543,8 @@
     $("#hje-adm-f-material").value = product.material;
     $("#hje-adm-f-availability").value = product.availability;
     $("#hje-adm-f-popularity").value = product.popularity || 50;
+    $("#hje-adm-f-price").value = product.price || 0;
+    $("#hje-adm-f-units").value = Number(product.units) || 0;
     $("#hje-adm-f-featured").checked = !!product.featured;
     $("#hje-adm-f-description").value = product.description || "";
     $("#hje-adm-f-spec-acabado").value = (product.specifications || {}).acabado || "";
@@ -466,6 +552,7 @@
     $("#hje-adm-f-spec-origen").value = (product.specifications || {}).origen || "";
     $("#hje-adm-f-spec-garantia").value = (product.specifications || {}).garantia || "";
     $("#hje-adm-f-instagram").value = product.instagramUrl || "https://www.instagram.com/";
+    wireUnitsAvailabilitySuggestion();
 
     var preview = $("#hje-adm-photo-preview");
     preview.innerHTML = "";
@@ -624,9 +711,10 @@
       name: $("#hje-adm-f-name").value.trim(),
       category: $("#hje-adm-f-category").value,
       material: $("#hje-adm-f-material").value,
-      price: (existing && existing.price) || 0,
+      price: parseInt($("#hje-adm-f-price").value, 10) || 0,
       currency: (existing && existing.currency) || "COP",
       availability: $("#hje-adm-f-availability").value,
+      units: Math.max(0, parseInt($("#hje-adm-f-units").value, 10) || 0),
       featured: $("#hje-adm-f-featured").checked,
       popularity: parseInt($("#hje-adm-f-popularity").value, 10) || 0,
       images: existing ? existing.images : [],
@@ -701,6 +789,63 @@
   }
 
   // =========================================================================
+  // Bulk edit: applies only the fields the admin actually touched (left at
+  // "Sin cambio" otherwise) to every currently-selected product, merged
+  // onto each product's own current data - same dirty-tracking mechanism
+  // as a single edit, just looped over the selection.
+  // =========================================================================
+
+  function openBulkEditForm() {
+    var count = Object.keys(state.selected).length;
+    if (count === 0) return;
+    $("#hje-adm-bulk-count").textContent = count + " producto(s) seleccionados";
+    $("#hje-adm-bulk-category").value = "";
+    $("#hje-adm-bulk-material").value = "";
+    $("#hje-adm-bulk-availability").value = "";
+    $("#hje-adm-bulk-featured").value = "";
+    $("#hje-adm-bulk-backdrop").classList.add("hje-show");
+  }
+
+  function closeBulkEditForm() {
+    $("#hje-adm-bulk-backdrop").classList.remove("hje-show");
+  }
+
+  function applyBulkEdit() {
+    var category = $("#hje-adm-bulk-category").value;
+    var material = $("#hje-adm-bulk-material").value;
+    var availability = $("#hje-adm-bulk-availability").value;
+    var featured = $("#hje-adm-bulk-featured").value;
+
+    var all = displayProducts();
+    Object.keys(state.selected).forEach(function (slug) {
+      var product = all.find(function (p) { return p.slug === slug; });
+      if (!product || state.deleted[slug]) return;
+      var updated = JSON.parse(JSON.stringify(product));
+      if (category) updated.category = category;
+      if (material) updated.material = material;
+      if (availability) {
+        updated.availability = availability;
+        if (availability === "Agotado") updated.units = 0;
+        else if (Number(updated.units) === 0) updated.units = LOW_STOCK_THRESHOLD + 1;
+      }
+      if (featured) updated.featured = featured === "si";
+      state.dirty[slug] = updated;
+    });
+
+    state.selected = {};
+    closeBulkEditForm();
+    renderTable();
+  }
+
+  function discardChanges() {
+    state.dirty = {};
+    state.deleted = {};
+    state.selected = {};
+    logPublish("");
+    renderTable();
+  }
+
+  // =========================================================================
   // Product-detail page generation
   // =========================================================================
   // Verbatim header/footer/floating-buttons captured from a real Next.js
@@ -735,7 +880,7 @@
       badge +
       '<button class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-soft transition hover:bg-white" aria-label="Guardar ' + esc(p.name) + ' en favoritos"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart h-4 w-4"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg></button></div></a>' +
       '<div class="mt-4 space-y-3"><div><a class="font-medium hover:text-gold-700" href="' + href + '">' + esc(p.name) + '</a><p class="mt-1 text-sm text-muted-foreground">' + esc(p.category) + '<!-- --> · <!-- -->' + esc(p.material) + '</p></div>' +
-      '<div class="flex items-center justify-between gap-3"><span class="text-sm font-semibold">Consultar precio</span><div class="flex items-center gap-1">' +
+      '<div class="flex items-center justify-between gap-3"><span class="text-sm font-semibold">' + esc(formatPrice(p.price) || "Consultar precio") + '</span><div class="flex items-center gap-1">' +
       '<a href="' + esc(p.instagramUrl || "https://www.instagram.com/") + '" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Ver en Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg></a>' +
       '<a href="' + waHref("Hola, quiero consultar " + p.name) + '" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Consultar por WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-4 w-4"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></a>' +
       "</div></div></div></article>"
@@ -765,13 +910,15 @@
     function safeJsonLd(text) {
       return text.replace(/<\/script/gi, "<\\/script").replace(/<!--/g, "<\\!--");
     }
+    var offers = { "@type": "Offer", priceCurrency: product.currency || "COP", availability: offerAvailability, url: canonical };
+    if (product.price > 0) offers.price = product.price;
     var jsonLdProduct = JSON.stringify({
       "@context": "https://schema.org", "@type": "Product", name: product.name, sku: product.sku,
       image: ["https://joyas-colombia.com/joyas" + img.src.replace(/^\/joyas/, "")],
       description: product.description,
       brand: { "@type": "Brand", name: "Habibi Eisaa" },
       material: product.material, category: product.category,
-      offers: { "@type": "Offer", priceCurrency: product.currency || "COP", availability: offerAvailability, url: canonical }
+      offers: offers
     });
     var jsonLdBreadcrumb = JSON.stringify({
       "@context": "https://schema.org", "@type": "BreadcrumbList",
@@ -807,7 +954,7 @@
       "<div>" +
       '<div class="flex flex-wrap gap-2">' + pillHtml + "</div>" +
       '<h1 class="mt-5 font-serif text-5xl">' + esc(product.name) + "</h1>" +
-      '<p class="mt-3 text-2xl font-semibold">Consultar precio</p>' +
+      '<p class="mt-3 text-2xl font-semibold">' + esc(formatPrice(product.price) || "Consultar precio") + "</p>" +
       '<p class="mt-5 leading-7 text-muted-foreground">' + esc(product.description) + "</p>" +
       '<div class="mt-8 grid gap-3 sm:grid-cols-2">' +
       '<a href="' + waHref("Hola, quiero consultar " + product.name + " SKU " + product.sku) + '" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-4 w-4"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>Consultar por WhatsApp</a>' +
@@ -1094,7 +1241,7 @@
     $("#hje-adm-search").addEventListener("input", renderTable);
     $("#hje-adm-filter-category").addEventListener("change", renderTable);
     $("#hje-adm-filter-material").addEventListener("change", renderTable);
-    $("#hje-adm-filter-availability").addEventListener("change", renderTable);
+    $("#hje-adm-filter-status").addEventListener("change", renderTable);
     $("#hje-adm-new-product-btn").addEventListener("click", openNewForm);
     $("#hje-adm-modal-cancel").addEventListener("click", closeForm);
     $("#hje-adm-product-form").addEventListener("submit", saveForm);
@@ -1109,12 +1256,23 @@
       if (e.target === this) { pendingDeleteSlug = null; this.classList.remove("hje-show"); }
     });
 
+    $("#hje-adm-bulk-btn").addEventListener("click", openBulkEditForm);
+    $("#hje-adm-bulk-cancel").addEventListener("click", closeBulkEditForm);
+    $("#hje-adm-bulk-apply").addEventListener("click", applyBulkEdit);
+    $("#hje-adm-bulk-backdrop").addEventListener("click", function (e) { if (e.target === this) closeBulkEditForm(); });
+
+    $("#hje-adm-discard-btn").addEventListener("click", function () {
+      if (Object.keys(state.dirty).length + Object.keys(state.deleted).length === 0) return;
+      if (window.confirm("¿Descartar todos los cambios sin publicar?")) discardChanges();
+    });
+
     $("#hje-adm-publish-btn").addEventListener("click", publish);
 
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         closeForm();
         $("#hje-adm-confirm-backdrop").classList.remove("hje-show");
+        closeBulkEditForm();
       }
     });
   }
