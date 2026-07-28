@@ -103,11 +103,38 @@ Contents API, and the storefront's category/material pages, `shop.html`,
 and the homepage's featured section all render from it at runtime (see
 "Category/material listing pages are now runtime-rendered" below). Each
 entry has `id, slug, sku, name, category, material, price, currency,
-availability, featured, popularity, images[] (src/thumbnail/alt/width/
-height), description, specifications{acabado,cuidado,origen,garantia},
-seo{title,description}, instagramUrl`. `price`/`currency` are vestigial —
-the UI always shows the literal string "Consultar precio", never a number
-(WhatsApp-inquiry business model, no real pricing/checkout anywhere).
+availability, units, featured, popularity, images[] (src/thumbnail/alt/
+width/height), description, specifications{acabado,cuidado,origen,
+garantia}, seo{title,description}, instagramUrl`.
+
+**`price` became real and customer-facing on 2026-07-28** (previously
+vestigial — every page always showed the literal string "Consultar
+precio"). `formatPrice()` (duplicated in `admin.js`,
+`category-render.js`, and `homepage-featured-refresh.js` — keep all
+three in sync) renders `price > 0` as a Colombian-peso-grouped string
+(`"$180.000"`, via `toLocaleString("es-CO")`); `price === 0` still falls
+back to "Consultar precio" everywhere. All 66 original products still
+have `price: 0` today — nothing shows a number until the admin sets a
+real one per product. The 66 legacy Next.js-hydrated product pages were
+deliberately left untouched by this change (nothing to update while
+they're all still 0), since any product edited via `admin.html` gets
+fully regenerated as a hand-authored page anyway, which is where a real
+price would first render.
+
+**`units` was added 2026-07-28** as a real stock-count field, editable
+in `admin.html`. It's admin-side bookkeeping only — the storefront still
+only ever reads the pre-existing binary `availability` field
+(Disponible/Agotado), unchanged. `admin.js`'s `stockStatus()` computes a
+3-tier badge from it for the admin's own restock triage (`0` → Agotado,
+`1-3` → Bajo stock, `4+` → Disponible, threshold in
+`LOW_STOCK_THRESHOLD`) and auto-suggests `availability` when `units`
+changes in the form — but `availability` stays a normal, independently
+overridable dropdown (e.g. to hide an in-stock item temporarily without
+zeroing its count). All 66 existing products were backfilled with
+`units: 5` as a placeholder when this shipped — not real counts, the
+admin needs to correct them over time as the tool gets used. No
+size/color variant system exists (explicitly out of scope — would also
+need a variant selector built on the storefront, which doesn't have one).
 
 The **original 66 SKUs are still also baked into a webpack chunk** as a
 plain JS array — `_next/static/chunks/370-38b28494715c6f30.js` (filename is
@@ -198,6 +225,24 @@ appends one entry to `assets/admin-changelog.json` (shown in the panel's
 "Registro de cambios" tab; every Contents API write is additionally tagged
 `[admin] <message>` in the commit message itself as a second, independent
 audit trail in `git log`).
+
+**Visual style (2026-07-28 restyle)**: bold black-bordered rectangular
+buttons (`.hje-adm-btn-outline`/`.hje-adm-btn-primary` in `admin.css`,
+not the gold-gradient pills used sitewide elsewhere), a mobile-first
+card list (`.hje-adm-card`) instead of a table, colored 3-tier status
+badges, an action-button grid, and a floating WhatsApp support bubble
+(owner's own number, distinct from the storefront's customer-facing
+one) — matched to a reference tool screenshot the owner shared, kept in
+Habibi Eisaa's cream/burgundy/gold palette rather than the reference's
+black/white.
+
+**Bulk edit**: each card has a selection checkbox (`state.selected`);
+"Edición masiva" opens a modal with Categoría/Material/Disponibilidad/
+Destacado fields each defaulting to "Sin cambio" — only fields the admin
+actually sets get applied, to every selected product, merged onto that
+product's own current data via the same dirty-tracking mechanism as a
+single edit. "Descartar cambios" clears all pending dirty/deleted/
+selected state without publishing.
 
 **Delete removes the product page, sitemap entry, and category-page
 presence outright** (not an archive) — there's no order history or

@@ -1,7 +1,13 @@
 /* Habibi Eisaa — internal admin panel (add/edit/delete products).
    Same self-contained approach as inventario.css: no Next.js on this page
    at all, so palette variables are duplicated here rather than depending
-   on premium.css. See CLAUDE.md for why that matters. */
+   on premium.css. See CLAUDE.md for why that matters.
+
+   Visual language restyled (2026-07-28) to match a reference tool the
+   owner shared: bold black-bordered rectangular buttons, a mobile-first
+   card list instead of a dense table, an action-button grid, colored
+   status badges, a floating support bubble - kept in Habibi Eisaa's own
+   cream/burgundy/gold palette rather than the reference's black/white. */
 
 :root {
   --hje-burgundy: #7a1c28;
@@ -15,6 +21,8 @@
   --hje-shadow-lg: 0 24px 48px -12px rgba(40, 30, 12, 0.28), 0 8px 16px -4px rgba(40, 30, 12, 0.1);
   --hje-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --hje-green: #3d6b32;
+  --hje-amber: #92600f;
+  --hje-amber-bg: rgba(168, 120, 42, 0.12);
 }
 
 * {
@@ -27,53 +35,116 @@ body {
   color: var(--hje-black);
   font-family: "Inter", "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
+  padding-bottom: 5rem;
 }
 
+/* ---------- shared button primitives ---------- */
+.hje-adm-btn-outline,
+.hje-adm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.12s var(--hje-ease), box-shadow 0.12s var(--hje-ease), background 0.12s ease;
+}
+.hje-adm-btn-outline {
+  background: #fff;
+  border: 2px solid var(--hje-black);
+  color: var(--hje-black);
+}
+.hje-adm-btn-outline:hover {
+  background: var(--hje-black);
+  color: #fff;
+}
+.hje-adm-btn-primary {
+  background: var(--hje-black);
+  border: 2px solid var(--hje-black);
+  color: #fff;
+}
+.hje-adm-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--hje-shadow-md);
+}
+.hje-adm-btn-outline:disabled,
+.hje-adm-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  background: #fff;
+  color: var(--hje-black);
+}
+.hje-adm-btn-primary:disabled {
+  background: #cfc6b4;
+  border-color: #cfc6b4;
+  color: #fff;
+}
+
+/* ---------- header ---------- */
 .hje-adm-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1.1rem 1.5rem;
+  gap: 0.85rem;
+  padding: 1.1rem 1.25rem;
   background: #fff;
-  border-bottom: 1px solid var(--hje-border);
+  border-bottom: 2px solid var(--hje-black);
+  flex-wrap: wrap;
 }
 .hje-adm-header img {
-  height: 2.5rem;
-  width: 2.5rem;
+  height: 2.75rem;
+  width: 2.75rem;
   border-radius: 999px;
   object-fit: cover;
+  flex: none;
+}
+.hje-adm-header-text {
+  flex: 1 1 auto;
 }
 .hje-adm-header .hje-adm-title {
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   line-height: 1.1;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 .hje-adm-header .hje-adm-subtitle {
-  font-size: 0.75rem;
-  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8a7a5f;
   margin-top: 0.15rem;
-}
-.hje-adm-header .hje-adm-logout {
-  margin-left: auto;
-  border: 1.5px solid var(--hje-border);
-  background: transparent;
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.9rem;
-  font-size: 0.8rem;
   font-weight: 600;
-  color: #6b5f4c;
-  cursor: pointer;
+}
+.hje-adm-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.hje-adm-header-actions .hje-adm-btn-outline {
+  width: auto;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.75rem;
+  border-width: 1.5px;
+}
+.hje-adm-logout {
   display: none;
 }
-.hje-adm-header .hje-adm-logout.hje-show {
+.hje-adm-logout.hje-show {
   display: inline-flex;
 }
 
 /* ---------- gates (passcode, then PAT) ---------- */
 .hje-adm-gate {
-  min-height: calc(100vh - 4.6rem);
+  min-height: calc(100vh - 5.2rem);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -82,10 +153,9 @@ body {
 .hje-adm-gate-card {
   width: min(92vw, 420px);
   background: #fff;
-  border: 1px solid var(--hje-border);
+  border: 2px solid var(--hje-black);
   border-radius: 0.75rem;
   padding: 2rem 1.75rem;
-  box-shadow: var(--hje-shadow-lg);
   text-align: center;
 }
 .hje-adm-gate-card h1 {
@@ -126,31 +196,6 @@ body {
   margin: -0.35rem 0 0.9rem;
   line-height: 1.4;
 }
-.hje-adm-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: none;
-  border-radius: 0.5rem;
-  background-image: var(--hje-gold-foil);
-  color: #221604;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: transform 0.15s var(--hje-ease), box-shadow 0.15s var(--hje-ease);
-}
-.hje-adm-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--hje-shadow-md);
-}
-.hje-adm-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
 .hje-adm-gate-error {
   color: var(--hje-burgundy);
   font-size: 0.8rem;
@@ -165,9 +210,9 @@ body {
 /* ---------- main panel ---------- */
 .hje-adm-main {
   display: none;
-  max-width: 1180px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 1.75rem 1.25rem 4rem;
+  padding: 1.5rem 1rem 4rem;
 }
 .hje-adm-main.hje-show {
   display: block;
@@ -176,7 +221,7 @@ body {
 .hje-adm-tabs {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   border-bottom: 1px solid var(--hje-border);
 }
 .hje-adm-tab {
@@ -184,15 +229,15 @@ body {
   background: transparent;
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #8a7a5f;
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
 }
 .hje-adm-tab.hje-active {
-  color: var(--hje-burgundy);
-  border-bottom-color: var(--hje-burgundy);
+  color: var(--hje-black);
+  border-bottom-color: var(--hje-black);
 }
 .hje-adm-panel {
   display: none;
@@ -201,29 +246,40 @@ body {
   display: block;
 }
 
-.hje-adm-toolbar {
+/* ---------- filter row ---------- */
+.hje-adm-filter-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.6rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
-.hje-adm-toolbar input,
-.hje-adm-toolbar select {
-  padding: 0.6rem 0.85rem;
-  border: 1.5px solid var(--hje-border);
+.hje-adm-filter-row input,
+.hje-adm-filter-row select {
+  padding: 0.75rem 0.9rem;
+  border: 1.5px solid var(--hje-black);
   border-radius: 0.5rem;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   background: #fff;
   font-family: inherit;
+  width: 100%;
 }
-.hje-adm-toolbar input[type="search"] {
-  flex: 1 1 200px;
+.hje-adm-status-select {
+  font-weight: 700;
 }
-.hje-adm-toolbar .hje-adm-new-btn {
-  width: auto;
-  padding: 0.6rem 1.1rem;
-  white-space: nowrap;
-  margin-left: auto;
+
+/* ---------- action button grid ---------- */
+.hje-adm-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.hje-adm-selection-count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--hje-burgundy);
+  margin-bottom: 0.9rem;
+  min-height: 1em;
 }
 
 .hje-adm-count {
@@ -232,108 +288,141 @@ body {
   margin-bottom: 0.9rem;
 }
 
-/* ---------- product table ---------- */
-.hje-adm-table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--hje-border);
-  border-radius: 0.625rem;
+/* ---------- product card list ---------- */
+.hje-adm-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.hje-adm-card {
   background: #fff;
+  border: 2px solid var(--hje-black);
+  border-radius: 0.75rem;
+  padding: 1.1rem;
 }
-table.hje-adm-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
+.hje-adm-card.hje-adm-card-dirty {
+  border-color: var(--hje-gold);
+  background: rgba(168, 120, 42, 0.04);
 }
-.hje-adm-table th,
-.hje-adm-table td {
-  padding: 0.65rem 0.85rem;
-  text-align: left;
-  border-bottom: 1px solid var(--hje-border);
-  white-space: nowrap;
+.hje-adm-card.hje-adm-card-deleted {
+  opacity: 0.5;
 }
-.hje-adm-table th {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #8a7a5f;
-  background: #faf7f0;
-}
-.hje-adm-table tr:last-child td {
-  border-bottom: none;
-}
-.hje-adm-table img {
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 0.375rem;
-  object-fit: cover;
-  background: #ece5d6;
-}
-.hje-adm-table tr.hje-adm-row-dirty {
-  background: rgba(168, 120, 42, 0.06);
-}
-.hje-adm-table tr.hje-adm-row-deleted td {
-  opacity: 0.4;
+.hje-adm-card.hje-adm-card-deleted .hje-adm-card-value,
+.hje-adm-card.hje-adm-card-deleted .hje-adm-card-value-strong {
   text-decoration: line-through;
 }
+.hje-adm-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+.hje-adm-card-check {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.3rem;
+  flex: none;
+  accent-color: var(--hje-black);
+}
+.hje-adm-card-thumb {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 0.625rem;
+  object-fit: cover;
+  border: 1.5px dashed var(--hje-border);
+  background: #ece5d6;
+  flex: none;
+}
+.hje-adm-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.hje-adm-card-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.hje-adm-card-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8a7a5f;
+  flex: none;
+}
+.hje-adm-card-value {
+  font-size: 0.9rem;
+  text-align: right;
+}
+.hje-adm-card-value-strong {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
 .hje-adm-badge {
   display: inline-flex;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.7rem;
   border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 600;
-  background: rgba(122, 28, 40, 0.08);
-  color: var(--hje-burgundy);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
-.hje-adm-badge.hje-adm-badge-ok {
-  background: rgba(61, 107, 50, 0.1);
+.hje-adm-badge-ok {
+  background: rgba(61, 107, 50, 0.12);
   color: var(--hje-green);
 }
-.hje-adm-row-actions {
+.hje-adm-badge-warn {
+  background: var(--hje-amber-bg);
+  color: var(--hje-amber);
+}
+.hje-adm-badge-off {
+  background: rgba(122, 28, 40, 0.1);
+  color: var(--hje-burgundy);
+}
+
+.hje-adm-card-actions {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
 }
-.hje-adm-row-actions button {
-  border: 1.5px solid var(--hje-border);
-  background: transparent;
-  border-radius: 0.4rem;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.78rem;
-  font-weight: 600;
+.hje-adm-card-btn {
+  flex: 1;
+  border: 2px solid var(--hje-black);
+  background: #fff;
+  border-radius: 0.5rem;
+  padding: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
   cursor: pointer;
-  color: #6b5f4c;
-}
-.hje-adm-row-actions button.hje-adm-edit-btn:hover {
-  border-color: var(--hje-gold);
   color: var(--hje-black);
 }
-.hje-adm-row-actions button.hje-adm-delete-btn:hover {
+.hje-adm-card-btn:hover {
+  background: var(--hje-black);
+  color: #fff;
+}
+.hje-adm-card-btn.hje-adm-card-btn-danger {
   border-color: var(--hje-burgundy);
   color: var(--hje-burgundy);
+}
+.hje-adm-card-btn.hje-adm-card-btn-danger:hover {
+  background: var(--hje-burgundy);
+  color: #fff;
 }
 
 /* ---------- publish bar ---------- */
 .hje-adm-publish-bar {
-  position: sticky;
-  bottom: 0;
   margin-top: 1.5rem;
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.1rem;
   background: #fff;
-  border: 1px solid var(--hje-border);
+  border: 2px solid var(--hje-black);
   border-radius: 0.75rem;
-  box-shadow: var(--hje-shadow-lg);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  text-align: center;
 }
 .hje-adm-publish-bar .hje-adm-publish-status {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   color: #6b5f4c;
-  flex: 1 1 auto;
-}
-.hje-adm-publish-bar .hje-adm-btn {
-  width: auto;
-  padding: 0.65rem 1.4rem;
 }
 .hje-adm-publish-log {
   margin-top: 0.75rem;
@@ -345,7 +434,7 @@ table.hje-adm-table {
   color: var(--hje-burgundy);
 }
 
-/* ---------- add/edit form modal ---------- */
+/* ---------- add/edit + bulk-edit modal ---------- */
 .hje-adm-modal-backdrop {
   display: none;
   position: fixed;
@@ -363,14 +452,19 @@ table.hje-adm-table {
 .hje-adm-modal {
   width: min(92vw, 640px);
   background: #fff;
+  border: 2px solid var(--hje-black);
   border-radius: 0.75rem;
   padding: 1.75rem 1.75rem 1.9rem;
-  box-shadow: var(--hje-shadow-lg);
 }
 .hje-adm-modal h2 {
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 1.5rem;
   margin: 0 0 1.1rem;
+}
+.hje-adm-modal-sub {
+  font-size: 0.82rem;
+  color: #8a7a5f;
+  margin: -0.6rem 0 1.1rem;
 }
 .hje-adm-form-grid {
   display: grid;
@@ -383,7 +477,7 @@ table.hje-adm-table {
 .hje-adm-modal label {
   display: block;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.35rem;
 }
 .hje-adm-modal input,
@@ -447,18 +541,8 @@ table.hje-adm-table {
   gap: 0.6rem;
   margin-top: 1.4rem;
 }
-.hje-adm-modal-cancel {
-  flex: none;
-  padding: 0.7rem 1rem;
-  border: 1.5px solid var(--hje-border);
-  border-radius: 0.5rem;
-  background: transparent;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  color: #6b5f4c;
-}
-.hje-adm-modal-actions .hje-adm-btn {
+.hje-adm-modal-actions button {
+  width: auto;
   flex: 1;
 }
 .hje-adm-guardrail-list {
@@ -494,7 +578,7 @@ table.hje-adm-table {
 }
 .hje-adm-changelog-item {
   background: #fff;
-  border: 1px solid var(--hje-border);
+  border: 1.5px solid var(--hje-border);
   border-radius: 0.5rem;
   padding: 0.85rem 1rem;
 }
@@ -507,8 +591,57 @@ table.hje-adm-table {
   font-size: 0.875rem;
 }
 
+/* ---------- floating support bubble ---------- */
+.hje-adm-support-bubble {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #1f8f54;
+  color: #fff;
+  padding: 0.8rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  box-shadow: var(--hje-shadow-lg);
+}
+.hje-adm-support-bubble svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: none;
+}
+
+@media (min-width: 640px) {
+  .hje-adm-filter-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .hje-adm-filter-row .hje-adm-status-select {
+    width: auto;
+    flex: none;
+  }
+  .hje-adm-filter-row input[type="search"] {
+    flex: 1 1 200px;
+    width: auto;
+  }
+  .hje-adm-filter-row select {
+    width: auto;
+    flex: none;
+  }
+  .hje-adm-action-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 640px) {
   .hje-adm-form-grid {
     grid-template-columns: 1fr;
+  }
+  .hje-adm-header {
+    justify-content: space-between;
   }
 }

@@ -23,6 +23,12 @@
     return;
   }
 
+  function formatPrice(price) {
+    var n = Number(price) || 0;
+    if (n <= 0) return null;
+    return "$" + Math.round(n).toLocaleString("es-CO");
+  }
+
   function findFeaturedGrid() {
     var heading = Array.prototype.find.call(
       document.querySelectorAll("h2"),
@@ -80,6 +86,12 @@
         // enough for display purposes; exact node structure doesn't matter
         // since nothing else reads it structurally
       }
+    }
+
+    var priceSpan = article.querySelector(".flex.items-center.justify-between.gap-3 > span.text-sm.font-semibold");
+    if (priceSpan) {
+      var priceText = formatPrice(product.price) || "Consultar precio";
+      setText(priceSpan, priceText);
     }
 
     var waLink = article.querySelector("a[href^='https://wa.me/']");
