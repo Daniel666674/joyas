@@ -65,6 +65,19 @@ wait >1s past `load`, and re-check the DOM before trusting the change.
   on something that already carries `.fixed`/`.sticky` — it silently
   overrides the positioning utility. `fixed`/`sticky` elements are already
   valid containing blocks for absolutely-positioned children.
+- **Rewriting an existing `<Link>`'s `href` doesn't change where clicking it
+  goes.** Verified empirically (2026-07-08, building `homepage-featured-refresh.js`):
+  Next's `<Link>` click handler navigates using the href it captured in its
+  component props at hydration time, not by reading the live DOM attribute.
+  You can `setAttribute("href", newUrl")` on an existing hydrated link and it
+  will *display* correctly (inspect/hover shows the new URL) while clicking
+  it still silently navigates to the *original* destination. If you need an
+  existing Next-owned link to navigate somewhere new after hydration, rewrite
+  the href for display/SEO purposes as usual, but also add a capture-phase
+  click listener on it that calls `preventDefault()` +
+  `window.location.href = <the live href>` to force a real navigation. See
+  `homepage-featured-refresh.js`'s `.hje-featured-link` handling for the
+  concrete pattern.
 
 ## Test workflow
 
@@ -84,21 +97,120 @@ be `opacity: 0` mid-animation, not a real bug.
 
 ## Product catalog data
 
-The product catalog (66 SKUs as of 2026-07-08) is baked into a webpack chunk
-as a plain JS array — currently `_next/static/chunks/370-38b28494715c6f30.js`
-(filename is content-hashed, so search for a known slug like
-`"cadena-con-dije-virgen-001"` if it's been rebuilt/renamed). Each entry has
-`id, slug, sku, name, category, material, price, currency, availability,
-featured, popularity, images[], description, specifications, seo,
-instagramUrl`.
+**`assets/products.json` is the live source of truth as of 2026-07-08.**
+`admin.html` (see below) reads and writes it directly via the GitHub
+Contents API, and the storefront's category/material pages, `shop.html`,
+and the homepage's featured section all render from it at runtime (see
+"Category/material listing pages are now runtime-rendered" below). Each
+entry has `id, slug, sku, name, category, material, price, currency,
+availability, featured, popularity, images[] (src/thumbnail/alt/width/
+height), description, specifications{acabado,cuidado,origen,garantia},
+seo{title,description}, instagramUrl`. `price`/`currency` are vestigial —
+the UI always shows the literal string "Consultar precio", never a number
+(WhatsApp-inquiry business model, no real pricing/checkout anywhere).
 
-`assets/products.json` is a hand-extracted, human-readable mirror of that
-same data, kept for tooling that needs the catalog without parsing a webpack
-chunk (e.g. `inventario.html`). **It can drift** — there's no build step
-that keeps them in sync. Re-extract after any catalog change by locating the
-chunk, grabbing the array literal, and running it through Node (`eval` the
-snippet, since it uses bare `!0`/`!1` for booleans, not valid JSON) to dump
-fresh JSON.
+The **original 66 SKUs are still also baked into a webpack chunk** as a
+plain JS array — `_next/static/chunks/370-38b28494715c6f30.js` (filename is
+content-hashed; search for a known slug like `"cadena-con-dije-virgen-001"`
+if it's been rebuilt/renamed). This is now legacy/frozen: it was the
+original data source before `products.json` existed, individual *existing*
+Next-hydrated product detail pages' own baked-in content still ultimately
+traces back to it, but nothing added or edited via `admin.html` touches
+this chunk — new products only ever exist in `products.json` plus their own
+generated `producto/<slug>.html` file. Don't bother re-syncing the chunk
+after a catalog change; it's not read by anything `products.json` now
+drives.
+
+## Category/material listing pages are now runtime-rendered
+
+`cadenas.html, pulseras.html, anillos.html, argollas.html, aretes.html,
+collares.html, oro-laminado.html, oro-18k.html, oro-14k.html, oro-10k.html,
+plata-925.html, oro-rosa.html, esmeraldas.html, diamantes.html, dijes.html`,
+and `shop.html` were migrated (2026-07-08) off Next's static+hydrated model
+onto the same zero-hydration-risk pattern as `inventario.html`: each page
+keeps its real header/footer/breadcrumb/intro-copy/SEO `<head>` verbatim
+(all still valid, hand-editable static content), but the product grid
+itself is now an empty `<div id="hje-cat-root" data-hje-filter-type="category|material"
+data-hje-filter-value="...">` (or `#hje-shop-root` on `shop.html`) that
+`assets/category-render.js` fills in at runtime by fetching `products.json`
+and rendering matching `article.group` cards client-side. All Next chunk
+`<script>` tags and RSC flight-payload blocks were stripped from these
+pages — there's nothing left to hydrate.
+
+Why: these pages previously froze each product's card into *both* the
+visible DOM *and* a duplicate serialized copy in an RSC payload script — the
+two had to match exactly for hydration to accept the page (the hydration
+trap, precisely). Adding/editing/removing a product meant a fragile
+dual-edit, once per affected page. Now a catalog change just needs
+`products.json` updated; every migrated page reflects it automatically on
+next load, no per-page edit at all.
+
+If you need to touch one of these pages' surrounding copy (the intro
+paragraph, FAQ, breadcrumb), it's a completely ordinary static HTML edit —
+no hydration concerns apply anymore, since there's no Next.js left on the
+page. Only the product grid itself is owned by `category-render.js`.
+
+**Known residual gap**: `index.html` (the homepage) and the 66 individual
+`producto/<slug>.html` pages are still real Next.js-hydrated pages. A
+"related products" link on one of those, or any other still-hydrated page,
+uses Next's own captured routing state when clicked (see the `<Link>`
+capture-phase note above) — and even a hard-reload of that link's *target*
+won't show new content via a soft client-side navigation, because Next's
+router fetches the target's cached `.txt` RSC payload rather than
+re-reading the actual `.html` file. Concretely: if `admin.html` edits an
+*existing* product, visitors who reach it by clicking a link from another
+still-un-migrated, still-hydrated page may see stale content until they
+hard-navigate (typing the URL, following a search result, or arriving via
+any of the now-migrated category/shop pages, all of which do plain browser
+navigation with no client router involved). This resolves itself as more
+pages get migrated/regenerated over time; not worth chasing with a
+sweeping fix given the current traffic pattern (WhatsApp-first, most
+traffic lands on category/shop pages or direct links, not by hopping
+between two still-hydrated product detail pages).
+
+## Admin panel (`admin.html`)
+
+Write-capable catalog management: add, edit, and delete products, with
+changes committed directly to this GitHub repo via the Contents API — no
+server, no build step. Gated by a passcode (own constant in
+`assets/admin.js`, distinct from `inventario.js`'s, independently
+rotatable) followed by a GitHub Personal Access Token the admin pastes in
+once per browser session (validated against the API before being accepted;
+held only in `sessionStorage`, never sent anywhere but api.github.com
+directly from the browser). The passcode is a casual deterrent only, same
+caveat as `inventario.html` — the real access control is whoever holds a
+repo-scoped PAT.
+
+On publish it: uploads any new/replaced photos (canvas-downscaled to
+~1200px, with a blank-canvas corruption guard — see inline comments in
+`assets/admin.js`), merges this session's changes into a **freshly
+re-fetched** `products.json` (never blindly overwrites — safe for two
+admins publishing around the same time; retries with backoff on a 409 sha
+conflict), regenerates/deletes the affected `producto/<slug>.html` pages
+(hand-authored, bucket 3 from the hydration-trap section above — built from
+verbatim header/footer strings captured from a real product page, so keep
+those in sync with `assets/store.js`'s selector requirements if the header/
+footer ever changes), updates `sitemap.xml` (parsed/mutated via
+`DOMParser`/`XMLSerializer` — note `XMLSerializer` re-emits the source
+document's own `<?xml ?>` prolog rather than dropping it, so the prolog is
+stripped and re-added exactly once rather than blindly prepended), and
+appends one entry to `assets/admin-changelog.json` (shown in the panel's
+"Registro de cambios" tab; every Contents API write is additionally tagged
+`[admin] <message>` in the commit message itself as a second, independent
+audit trail in `git log`).
+
+**Delete removes the product page, sitemap entry, and category-page
+presence outright** (not an archive) — there's no order history or
+external links worth preserving on a WhatsApp-inquiry site, and
+`availability: "Agotado"` already covers a non-destructive "soft hide" if
+that's what's actually wanted. Known accepted gap: other *still-hydrated*
+pages' baked-in related-products blocks that reference a deleted slug
+become dead links until those specific pages are next regenerated.
+
+The card-rendering template (`article.group` markup) is intentionally
+duplicated between `assets/admin.js` (page generation) and
+`assets/category-render.js` (public runtime rendering) rather than shared
+via one script — keep both in sync if the card markup ever changes.
 
 ## PR lifecycle on this branch
 
@@ -111,14 +223,20 @@ branch tip; restart it from `origin/main`
 and expect to need a `--force-with-lease` push (confirm with the user first —
 it's classified as a destructive git operation).
 
-## The real fix, eventually
+## The real fix, eventually (partially done)
 
-None of the above is a substitute for having the actual Next.js source and a
-real build pipeline. At current catalog size (66 SKUs, low change velocity)
-hand-editing is annoying but workable. It stops scaling once new-product
-additions become frequent — each new product page currently has to be
-hand-cloned from an existing one and every reference rewritten by hand,
-which is slow and error-prone. If/when that becomes a bottleneck, recovering
-or rebuilding the source project (product data in one structured file, CI
-that runs `next build` and redeploys on change) is the actual fix, not
-another layer of hand-editing conventions.
+The original version of this note said hand-editing "stops scaling once
+new-product additions become frequent" and that the actual fix was
+recovering the Next.js source + a real build pipeline. `admin.html` (above)
+delivers most of that value without needing the source: products.json as
+one structured data file, a real write path via the GitHub API, and
+automatic propagation to shop/category/homepage pages. What it does *not*
+solve: individual `producto/<slug>.html` pages are still generated
+one-file-per-product rather than templated at request time, and there's
+still no real backend — `admin.html`'s "backend" is a GitHub PAT living in
+the admin's browser session, not a proper auth/authorization system. If
+this ever needs real multi-admin accounts, granular permissions, or a
+UI-driven history/rollback beyond `git log`, recovering the actual Next.js
+source and a CI-driven build is still the eventual answer — but for the
+current scale and WhatsApp-first business model, the gap it would close is
+small now.

@@ -1,0 +1,514 @@
+/* Habibi Eisaa — internal admin panel (add/edit/delete products).
+   Same self-contained approach as inventario.css: no Next.js on this page
+   at all, so palette variables are duplicated here rather than depending
+   on premium.css. See CLAUDE.md for why that matters. */
+
+:root {
+  --hje-burgundy: #7a1c28;
+  --hje-burgundy-deep: #4a1017;
+  --hje-black: #14100c;
+  --hje-cream: #f8f3eb;
+  --hje-gold: #a8782a;
+  --hje-gold-foil: linear-gradient(135deg, #f7e6b0 0%, #dfb968 22%, #a8782a 48%, #7a5320 68%, #e3c077 88%, #f7e6b0 100%);
+  --hje-border: #e4dccd;
+  --hje-shadow-md: 0 8px 24px -8px rgba(40, 30, 12, 0.18), 0 2px 8px -2px rgba(40, 30, 12, 0.08);
+  --hje-shadow-lg: 0 24px 48px -12px rgba(40, 30, 12, 0.28), 0 8px 16px -4px rgba(40, 30, 12, 0.1);
+  --hje-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hje-green: #3d6b32;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--hje-cream);
+  color: var(--hje-black);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hje-adm-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid var(--hje-border);
+}
+.hje-adm-header img {
+  height: 2.5rem;
+  width: 2.5rem;
+  border-radius: 999px;
+  object-fit: cover;
+}
+.hje-adm-header .hje-adm-title {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.4rem;
+  line-height: 1.1;
+}
+.hje-adm-header .hje-adm-subtitle {
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a7a5f;
+  margin-top: 0.15rem;
+}
+.hje-adm-header .hje-adm-logout {
+  margin-left: auto;
+  border: 1.5px solid var(--hje-border);
+  background: transparent;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b5f4c;
+  cursor: pointer;
+  display: none;
+}
+.hje-adm-header .hje-adm-logout.hje-show {
+  display: inline-flex;
+}
+
+/* ---------- gates (passcode, then PAT) ---------- */
+.hje-adm-gate {
+  min-height: calc(100vh - 4.6rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+.hje-adm-gate-card {
+  width: min(92vw, 420px);
+  background: #fff;
+  border: 1px solid var(--hje-border);
+  border-radius: 0.75rem;
+  padding: 2rem 1.75rem;
+  box-shadow: var(--hje-shadow-lg);
+  text-align: center;
+}
+.hje-adm-gate-card h1 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.6rem;
+  margin: 0.75rem 0 0.4rem;
+}
+.hje-adm-gate-card p {
+  font-size: 0.875rem;
+  color: #6b5f4c;
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
+.hje-adm-gate-card input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1.5px solid var(--hje-border);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  font-family: inherit;
+}
+.hje-adm-gate-card input:focus {
+  outline: none;
+  border-color: var(--hje-gold);
+}
+.hje-adm-gate-card label {
+  display: block;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+.hje-adm-gate-help {
+  font-size: 0.72rem;
+  color: #8a7a5f;
+  text-align: left;
+  margin: -0.35rem 0 0.9rem;
+  line-height: 1.4;
+}
+.hje-adm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-image: var(--hje-gold-foil);
+  color: #221604;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.15s var(--hje-ease), box-shadow 0.15s var(--hje-ease);
+}
+.hje-adm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--hje-shadow-md);
+}
+.hje-adm-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+.hje-adm-gate-error {
+  color: var(--hje-burgundy);
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+  display: none;
+  text-align: left;
+}
+.hje-adm-gate-error.hje-show {
+  display: block;
+}
+
+/* ---------- main panel ---------- */
+.hje-adm-main {
+  display: none;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 4rem;
+}
+.hje-adm-main.hje-show {
+  display: block;
+}
+
+.hje-adm-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--hje-border);
+}
+.hje-adm-tab {
+  border: none;
+  background: transparent;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #8a7a5f;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.hje-adm-tab.hje-active {
+  color: var(--hje-burgundy);
+  border-bottom-color: var(--hje-burgundy);
+}
+.hje-adm-panel {
+  display: none;
+}
+.hje-adm-panel.hje-show {
+  display: block;
+}
+
+.hje-adm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+.hje-adm-toolbar input,
+.hje-adm-toolbar select {
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid var(--hje-border);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: #fff;
+  font-family: inherit;
+}
+.hje-adm-toolbar input[type="search"] {
+  flex: 1 1 200px;
+}
+.hje-adm-toolbar .hje-adm-new-btn {
+  width: auto;
+  padding: 0.6rem 1.1rem;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.hje-adm-count {
+  font-size: 0.8rem;
+  color: #8a7a5f;
+  margin-bottom: 0.9rem;
+}
+
+/* ---------- product table ---------- */
+.hje-adm-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--hje-border);
+  border-radius: 0.625rem;
+  background: #fff;
+}
+table.hje-adm-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.hje-adm-table th,
+.hje-adm-table td {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid var(--hje-border);
+  white-space: nowrap;
+}
+.hje-adm-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8a7a5f;
+  background: #faf7f0;
+}
+.hje-adm-table tr:last-child td {
+  border-bottom: none;
+}
+.hje-adm-table img {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.375rem;
+  object-fit: cover;
+  background: #ece5d6;
+}
+.hje-adm-table tr.hje-adm-row-dirty {
+  background: rgba(168, 120, 42, 0.06);
+}
+.hje-adm-table tr.hje-adm-row-deleted td {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+.hje-adm-badge {
+  display: inline-flex;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(122, 28, 40, 0.08);
+  color: var(--hje-burgundy);
+}
+.hje-adm-badge.hje-adm-badge-ok {
+  background: rgba(61, 107, 50, 0.1);
+  color: var(--hje-green);
+}
+.hje-adm-row-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.hje-adm-row-actions button {
+  border: 1.5px solid var(--hje-border);
+  background: transparent;
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #6b5f4c;
+}
+.hje-adm-row-actions button.hje-adm-edit-btn:hover {
+  border-color: var(--hje-gold);
+  color: var(--hje-black);
+}
+.hje-adm-row-actions button.hje-adm-delete-btn:hover {
+  border-color: var(--hje-burgundy);
+  color: var(--hje-burgundy);
+}
+
+/* ---------- publish bar ---------- */
+.hje-adm-publish-bar {
+  position: sticky;
+  bottom: 0;
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid var(--hje-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--hje-shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.hje-adm-publish-bar .hje-adm-publish-status {
+  font-size: 0.82rem;
+  color: #6b5f4c;
+  flex: 1 1 auto;
+}
+.hje-adm-publish-bar .hje-adm-btn {
+  width: auto;
+  padding: 0.65rem 1.4rem;
+}
+.hje-adm-publish-log {
+  margin-top: 0.75rem;
+  font-size: 0.78rem;
+  color: #8a7a5f;
+  white-space: pre-line;
+}
+.hje-adm-publish-log.hje-adm-log-error {
+  color: var(--hje-burgundy);
+}
+
+/* ---------- add/edit form modal ---------- */
+.hje-adm-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 16, 12, 0.55);
+  z-index: 100;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  overflow-y: auto;
+}
+.hje-adm-modal-backdrop.hje-show {
+  display: flex;
+}
+.hje-adm-modal {
+  width: min(92vw, 640px);
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.75rem 1.75rem 1.9rem;
+  box-shadow: var(--hje-shadow-lg);
+}
+.hje-adm-modal h2 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.5rem;
+  margin: 0 0 1.1rem;
+}
+.hje-adm-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+.hje-adm-form-grid .hje-adm-field-full {
+  grid-column: 1 / -1;
+}
+.hje-adm-modal label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+.hje-adm-modal input,
+.hje-adm-modal select,
+.hje-adm-modal textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--hje-border);
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  resize: vertical;
+}
+.hje-adm-modal input:focus,
+.hje-adm-modal select:focus,
+.hje-adm-modal textarea:focus {
+  outline: none;
+  border-color: var(--hje-gold);
+}
+.hje-adm-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.6rem;
+}
+.hje-adm-checkbox-row input {
+  width: auto;
+}
+.hje-adm-specs-legend {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8a7a5f;
+  margin: 0.4rem 0 0.2rem;
+  grid-column: 1 / -1;
+}
+.hje-adm-photo-preview {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+.hje-adm-photo-preview img {
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid var(--hje-border);
+}
+.hje-adm-photo-error {
+  color: var(--hje-burgundy);
+  font-size: 0.78rem;
+  margin-top: 0.4rem;
+  display: none;
+}
+.hje-adm-photo-error.hje-show {
+  display: block;
+}
+.hje-adm-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+.hje-adm-modal-cancel {
+  flex: none;
+  padding: 0.7rem 1rem;
+  border: 1.5px solid var(--hje-border);
+  border-radius: 0.5rem;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #6b5f4c;
+}
+.hje-adm-modal-actions .hje-adm-btn {
+  flex: 1;
+}
+.hje-adm-guardrail-list {
+  background: rgba(122, 28, 40, 0.06);
+  border: 1px solid rgba(122, 28, 40, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  color: var(--hje-burgundy);
+  display: none;
+}
+.hje-adm-guardrail-list.hje-show {
+  display: block;
+}
+.hje-adm-guardrail-list ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+/* ---------- delete confirm ---------- */
+.hje-adm-confirm-modal p {
+  font-size: 0.875rem;
+  color: #6b5f4c;
+  line-height: 1.55;
+}
+
+/* ---------- change log tab ---------- */
+.hje-adm-changelog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.hje-adm-changelog-item {
+  background: #fff;
+  border: 1px solid var(--hje-border);
+  border-radius: 0.5rem;
+  padding: 0.85rem 1rem;
+}
+.hje-adm-changelog-item .hje-adm-cl-meta {
+  font-size: 0.72rem;
+  color: #8a7a5f;
+  margin-bottom: 0.3rem;
+}
+.hje-adm-changelog-item .hje-adm-cl-summary {
+  font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .hje-adm-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
