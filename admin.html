@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es-CO">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel de Administracion | Habibi Eisaa</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" href="/joyas/brand/favicon-32.png" sizes="32x32" />
+<link rel="stylesheet" href="/joyas/assets/fonts.css" />
+<link rel="stylesheet" href="/joyas/assets/admin.css" />
+</head>
+<body>
+
+<header class="hje-adm-header">
+  <img src="/joyas/brand/logo-mark.png" alt="Habibi Eisaa" />
+  <div>
+    <div class="hje-adm-title">Habibi Eisaa</div>
+    <div class="hje-adm-subtitle">Panel de administracion — uso interno</div>
+  </div>
+  <button type="button" class="hje-adm-logout" id="hje-adm-logout">Cerrar sesion</button>
+</header>
+
+<div id="hje-adm-gate-passcode" class="hje-adm-gate">
+  <div class="hje-adm-gate-card">
+    <div class="hje-adm-subtitle" style="color:#a8782a">Acceso restringido</div>
+    <h1>Ingresa la clave</h1>
+    <p>Esta pagina es solo para administracion del catalogo. Pide la clave si no la tienes.</p>
+    <form id="hje-adm-passcode-form">
+      <input type="password" id="hje-adm-passcode" placeholder="Clave de acceso" autocomplete="off" required />
+      <button type="submit" class="hje-adm-btn">Continuar</button>
+      <p class="hje-adm-gate-error" id="hje-adm-passcode-error">Clave incorrecta. Intenta de nuevo.</p>
+    </form>
+  </div>
+</div>
+
+<div id="hje-adm-gate-pat" class="hje-adm-gate" style="display:none">
+  <div class="hje-adm-gate-card">
+    <div class="hje-adm-subtitle" style="color:#a8782a">Conectar con GitHub</div>
+    <h1>Token de acceso</h1>
+    <p>Los cambios se publican directamente al repositorio a traves de la API de GitHub. Pega un token personal (fine-grained, con permiso de escritura sobre este repositorio).</p>
+    <form id="hje-adm-pat-form">
+      <label for="hje-adm-pat">Token de GitHub</label>
+      <input type="password" id="hje-adm-pat" placeholder="ghp_..." autocomplete="off" required />
+      <label for="hje-adm-name">Tu nombre (opcional)</label>
+      <input type="text" id="hje-adm-name" placeholder="Para identificar tus cambios en el registro" autocomplete="off" />
+      <p class="hje-adm-gate-help">El token no se envia a ningun servidor propio: solo se usa desde tu navegador para hablar directamente con la API de GitHub, y se guarda unicamente en esta sesion del navegador.</p>
+      <button type="submit" class="hje-adm-btn" id="hje-adm-pat-submit">Conectar</button>
+      <p class="hje-adm-gate-error" id="hje-adm-pat-error"></p>
+    </form>
+  </div>
+</div>
+
+<div id="hje-adm-main" class="hje-adm-main">
+  <div class="hje-adm-tabs">
+    <button type="button" class="hje-adm-tab hje-active" data-hje-tab="productos">Productos</button>
+    <button type="button" class="hje-adm-tab" data-hje-tab="cambios">Registro de cambios</button>
+  </div>
+
+  <div class="hje-adm-panel hje-show" id="hje-adm-panel-productos">
+    <div class="hje-adm-toolbar">
+      <input type="search" id="hje-adm-search" placeholder="Buscar por nombre o SKU..." />
+      <select id="hje-adm-filter-category"><option value="">Todas las categorias</option></select>
+      <select id="hje-adm-filter-material"><option value="">Todos los materiales</option></select>
+      <select id="hje-adm-filter-availability">
+        <option value="">Toda disponibilidad</option>
+        <option value="Disponible">Disponible</option>
+        <option value="Agotado">Agotado</option>
+      </select>
+      <button type="button" class="hje-adm-btn hje-adm-new-btn" id="hje-adm-new-product-btn">+ Nuevo producto</button>
+    </div>
+    <div class="hje-adm-count" id="hje-adm-count"></div>
+    <div class="hje-adm-table-wrap">
+      <table class="hje-adm-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Nombre</th>
+            <th>SKU</th>
+            <th>Categoria</th>
+            <th>Material</th>
+            <th>Disponibilidad</th>
+            <th>Destacado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="hje-adm-table-body"></tbody>
+      </table>
+    </div>
+
+    <div class="hje-adm-publish-bar">
+      <div class="hje-adm-publish-status" id="hje-adm-publish-status">Sin cambios pendientes.</div>
+      <button type="button" class="hje-adm-btn" id="hje-adm-publish-btn" disabled>Publicar cambios</button>
+    </div>
+    <div class="hje-adm-publish-log" id="hje-adm-publish-log"></div>
+  </div>
+
+  <div class="hje-adm-panel" id="hje-adm-panel-cambios">
+    <div class="hje-adm-changelog-list" id="hje-adm-changelog-list"></div>
+  </div>
+</div>
+
+<!-- add/edit product modal -->
+<div class="hje-adm-modal-backdrop" id="hje-adm-modal-backdrop">
+  <div class="hje-adm-modal">
+    <h2 id="hje-adm-modal-title">Nuevo producto</h2>
+    <div class="hje-adm-guardrail-list" id="hje-adm-guardrails">
+      <strong>Revisa lo siguiente antes de guardar:</strong>
+      <ul id="hje-adm-guardrail-items"></ul>
+    </div>
+    <form id="hje-adm-product-form">
+      <div class="hje-adm-form-grid">
+        <div class="hje-adm-field-full">
+          <label for="hje-adm-f-name">Nombre</label>
+          <input type="text" id="hje-adm-f-name" required />
+        </div>
+        <div>
+          <label for="hje-adm-f-slug">Slug (URL)</label>
+          <input type="text" id="hje-adm-f-slug" required />
+        </div>
+        <div>
+          <label for="hje-adm-f-sku">SKU</label>
+          <input type="text" id="hje-adm-f-sku" required />
+        </div>
+        <div>
+          <label for="hje-adm-f-category">Categoria</label>
+          <select id="hje-adm-f-category" required></select>
+        </div>
+        <div>
+          <label for="hje-adm-f-material">Material</label>
+          <select id="hje-adm-f-material" required></select>
+        </div>
+        <div>
+          <label for="hje-adm-f-availability">Disponibilidad</label>
+          <select id="hje-adm-f-availability">
+            <option value="Disponible">Disponible</option>
+            <option value="Agotado">Agotado</option>
+          </select>
+        </div>
+        <div>
+          <label for="hje-adm-f-popularity">Popularidad (0-99)</label>
+          <input type="number" id="hje-adm-f-popularity" min="0" max="99" value="50" />
+        </div>
+        <div class="hje-adm-field-full hje-adm-checkbox-row" style="margin-top:0">
+          <input type="checkbox" id="hje-adm-f-featured" />
+          <label for="hje-adm-f-featured" style="margin:0">Destacado (aparece en "Favoritas para consultar hoy")</label>
+        </div>
+        <div class="hje-adm-field-full">
+          <label for="hje-adm-f-description">Descripcion</label>
+          <textarea id="hje-adm-f-description" rows="3" required></textarea>
+        </div>
+        <p class="hje-adm-specs-legend">Especificaciones</p>
+        <div>
+          <label for="hje-adm-f-spec-acabado">Acabado</label>
+          <input type="text" id="hje-adm-f-spec-acabado" required />
+        </div>
+        <div>
+          <label for="hje-adm-f-spec-cuidado">Cuidado</label>
+          <input type="text" id="hje-adm-f-spec-cuidado" required />
+        </div>
+        <div>
+          <label for="hje-adm-f-spec-origen">Origen</label>
+          <input type="text" id="hje-adm-f-spec-origen" required />
+        </div>
+        <div>
+          <label for="hje-adm-f-spec-garantia">Garantia</label>
+          <input type="text" id="hje-adm-f-spec-garantia" required />
+        </div>
+        <div class="hje-adm-field-full">
+          <label for="hje-adm-f-instagram">Instagram URL</label>
+          <input type="text" id="hje-adm-f-instagram" value="https://www.instagram.com/" />
+        </div>
+        <div class="hje-adm-field-full">
+          <label for="hje-adm-f-photo">Foto</label>
+          <input type="file" id="hje-adm-f-photo" accept="image/*" />
+          <div class="hje-adm-photo-preview" id="hje-adm-photo-preview"></div>
+          <p class="hje-adm-photo-error" id="hje-adm-photo-error"></p>
+        </div>
+      </div>
+      <div class="hje-adm-modal-actions">
+        <button type="button" class="hje-adm-modal-cancel" id="hje-adm-modal-cancel">Cancelar</button>
+        <button type="submit" class="hje-adm-btn" id="hje-adm-modal-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- delete confirm modal -->
+<div class="hje-adm-modal-backdrop" id="hje-adm-confirm-backdrop">
+  <div class="hje-adm-modal hje-adm-confirm-modal">
+    <h2>Eliminar producto</h2>
+    <p id="hje-adm-confirm-text"></p>
+    <div class="hje-adm-modal-actions">
+      <button type="button" class="hje-adm-modal-cancel" id="hje-adm-confirm-cancel">Cancelar</button>
+      <button type="button" class="hje-adm-btn" id="hje-adm-confirm-delete">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script defer src="/joyas/assets/admin.js"></script>
+</body>
+</html>
