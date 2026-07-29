@@ -29,6 +29,25 @@
     return "$" + Math.round(n).toLocaleString("es-CO");
   }
 
+  // Idempotent per-slot badge stack (Destacado/Tag/Promocion) - this
+  // section only ever holds already-featured products, so Destacado
+  // always shows; Tag/Promocion are added/removed as needed on refresh
+  // without disturbing badges that shouldn't change, same equality-guard
+  // spirit as setText/setAttr above.
+  function ensureBadge(wrap, key, className, text) {
+    var el = wrap.querySelector("." + key);
+    if (!el) {
+      el = document.createElement("span");
+      el.className = key + " " + className;
+      wrap.appendChild(el);
+    }
+    if (el.textContent !== text) el.textContent = text;
+  }
+  function removeBadge(wrap, key) {
+    var el = wrap.querySelector("." + key);
+    if (el) el.remove();
+  }
+
   function findFeaturedGrid() {
     var heading = Array.prototype.find.call(
       document.querySelectorAll("h2"),
@@ -68,6 +87,8 @@
     if (image) {
       setAttr(image, "src", img.src);
       setAttr(image, "alt", img.alt);
+      var fit = product.photoFit === "contain" ? "contain" : "cover";
+      if (image.style.objectFit !== fit) image.style.objectFit = fit;
     }
 
     var nameLink = article.querySelector(".mt-4 a[href*='/producto/']");
@@ -106,12 +127,28 @@
     }
 
     var mediaDiv = article.querySelector(".relative.aspect-\\[4\\/5\\]");
-    var badge = article.querySelector("span.absolute.left-3.top-3");
-    if (!badge && mediaDiv) {
-      var span = document.createElement("span");
-      span.className = "inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium absolute left-3 top-3 bg-white/90 text-gold-700";
-      span.textContent = "Destacado";
-      mediaDiv.appendChild(span);
+    if (mediaDiv) {
+      var legacyBadge = mediaDiv.querySelector(":scope > span.absolute.left-3.top-3");
+      if (legacyBadge) legacyBadge.remove();
+      var badgeWrap = mediaDiv.querySelector(".hje-badge-stack");
+      if (!badgeWrap) {
+        badgeWrap = document.createElement("div");
+        badgeWrap.className = "hje-badge-stack absolute left-3 top-3 flex flex-col gap-2";
+        mediaDiv.appendChild(badgeWrap);
+      }
+      // every product reaching this section is featured by construction
+      // (selectTop8 filters on it), so Destacado always shows here
+      ensureBadge(badgeWrap, "hje-badge-destacado", "inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium bg-white/90 text-gold-700", "Destacado");
+      if (product.tag) {
+        ensureBadge(badgeWrap, "hje-badge-tag", "inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium bg-white/90 text-gold-700", product.tag);
+      } else {
+        removeBadge(badgeWrap, "hje-badge-tag");
+      }
+      if (product.promotion) {
+        ensureBadge(badgeWrap, "hje-badge-promo", "inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground", "Promocion");
+      } else {
+        removeBadge(badgeWrap, "hje-badge-promo");
+      }
     }
   }
 
