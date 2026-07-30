@@ -106,9 +106,10 @@ entry has `id, slug, sku, name, category, material, price, currency,
 availability, units, featured, popularity, images[] (src/thumbnail/alt/
 width/height), description, specifications{acabado,cuidado,origen,
 garantia}, seo{title,description}, instagramUrl, tag, promotion,
-costoInterno, photoFit, variants{sizes[],colors[]}` (the last five added
-2026-07-29, see "Multi-photo gallery, size/color variants, and extra
-fields" below).
+costoInterno, photoFit, variants{sizes[],colors[]}, weight` (the middle
+five added 2026-07-29, see "Multi-photo gallery, size/color variants, and
+extra fields" below; `weight` added 2026-07-30, see "Weight-based live
+pricing for gold/silver" below).
 
 **`price` became real and customer-facing on 2026-07-28** (previously
 vestigial — every page always showed the literal string "Consultar
@@ -462,6 +463,59 @@ producto" button that switches to the Productos tab and pre-fills the
 search box with that product's SKU. `loadSalesLog()` now keeps the merged
 (published + pending) list in `state.salesListCache` so row clicks can
 look the full record back up by index.
+
+## Weight-based live pricing for gold/silver (2026-07-30)
+
+Gold and silver spot prices move daily, so a flat per-product `price` for
+Oro 18K/Plata items would go stale constantly. This adds a second pricing
+mode alongside the existing manual one, **computed at render time** (not
+at admin-save time) so a single price-per-gram update instantly reflects
+across every product that has a weight set — no need to re-save each
+product individually.
+
+**`assets/material-prices.json`** (new file): `{"Oro 18K": <COP/gram>,
+"Plata": <COP/gram>, "updatedAt": <ISO timestamp>}`. Only these two
+materials track a live per-gram price — `MATERIAL_PRICE_KEYS` in
+`admin.js`. Oro Laminado deliberately keeps a plain manual `price` like
+before this feature existed (confirmed with the owner): its value is
+mostly base metal + labor, not gold content, so spot-pricing it doesn't
+make sense. Edited on its own **"Precios de metales"** admin tab
+(`loadMaterialPrices()`/`saveMaterialPrices()`) with its own immediate
+publish action, independent of the main product dirty/publish flow, since
+the owner expects to update this daily and shouldn't need to route it
+through unrelated pending product edits.
+
+**`weight` (grams)** was added to the product schema, editable in the
+admin form. When a product's material is one of `MATERIAL_PRICE_KEYS` and
+`weight > 0`, the "Precio" field becomes computed and disabled
+(`renderWeightPricing()`, wired to both the material `<select>` and the
+weight input) — same UX pattern as `units` becoming computed once
+size/color variants are added. `weight = 0` (the default, backfilled onto
+all existing products) or Oro Laminado material means Precio stays
+exactly as it always has: a normal manually-typed number. **No making-
+charge/margin field was added** (confirmed with the owner) — the
+customer-facing price for a weighed item is exactly `weight *
+pricePerGram`, no markup layered on top.
+
+`computeDisplayPrice(product, materialPrices)` (duplicated in `admin.js`,
+`category-render.js`, and `homepage-featured-refresh.js` — keep all three
+in sync, same convention as `formatPrice()`) is the single formula: falls
+back to the product's stored `price` whenever weight is 0 or the material
+doesn't track a per-gram price. `products.json`'s `price` field is still
+written on every save (computed at that moment) so it stays a sensible
+fallback/JSON-LD value if `material-prices.json` ever fails to load — but
+the *live* customer-facing number always recomputes fresh from
+`weight` + the current per-gram price, both on the runtime-rendered pages
+(category-render.js, homepage-featured-refresh.js, which already fetch
+`products.json` fresh on every load) and on the hand-authored
+`producto/<slug>.html` pages, which are otherwise static snapshots frozen
+at publish time. The latter needed a small inline script
+(`.hje-price-recompute` elements carrying `data-material`/`data-weight`,
+one shared script appended by `generateProductPage()`) that re-fetches
+`material-prices.json` on page load and corrects both the main price and
+every related-product card's price — without this, a detail page
+generated last week would keep showing last week's gold price even
+though the shop/category pages right next to it had already moved on.
 
 ## PR lifecycle on this branch
 

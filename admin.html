@@ -56,6 +56,7 @@
 <div id="hje-adm-main" class="hje-adm-main">
   <div class="hje-adm-tabs">
     <button type="button" class="hje-adm-tab hje-active" data-hje-tab="productos">Productos</button>
+    <button type="button" class="hje-adm-tab" data-hje-tab="precios">Precios de metales</button>
     <button type="button" class="hje-adm-tab" data-hje-tab="ventas">Registro de ventas</button>
     <button type="button" class="hje-adm-tab" data-hje-tab="cambios">Registro de cambios</button>
   </div>
@@ -89,6 +90,28 @@
       <div class="hje-adm-publish-status" id="hje-adm-publish-status">Sin cambios pendientes.</div>
     </div>
     <div class="hje-adm-publish-log" id="hje-adm-publish-log"></div>
+  </div>
+
+  <div class="hje-adm-panel" id="hje-adm-panel-precios">
+    <div class="hje-adm-card hje-adm-prices-card">
+      <p class="hje-adm-section-legend" style="margin-top:0">Precio de metales por gramo (COP)</p>
+      <p class="hje-adm-prices-help">El oro y la plata cambian de precio casi a diario. Actualiza aqui el precio por gramo y se refleja automaticamente en todos los productos de Oro 18K y Plata que tengan su peso registrado - sin necesidad de editar cada producto uno por uno. Oro Laminado no usa este precio, sigue con precio manual por producto.</p>
+      <div class="hje-adm-form-grid">
+        <div>
+          <label for="hje-adm-price-oro18k">Oro 18K (por gramo)</label>
+          <input type="number" id="hje-adm-price-oro18k" min="0" step="1000" />
+        </div>
+        <div>
+          <label for="hje-adm-price-plata">Plata (por gramo)</label>
+          <input type="number" id="hje-adm-price-plata" min="0" step="100" />
+        </div>
+      </div>
+      <p class="hje-adm-prices-meta" id="hje-adm-prices-meta"></p>
+      <div class="hje-adm-modal-actions" style="margin-top:1rem">
+        <button type="button" class="hje-adm-btn-primary" id="hje-adm-prices-save">Guardar precios de metales</button>
+      </div>
+      <p class="hje-adm-prices-status" id="hje-adm-prices-status"></p>
+    </div>
   </div>
 
   <div class="hje-adm-panel" id="hje-adm-panel-ventas">
@@ -134,8 +157,14 @@
         </div>
         <p class="hje-adm-section-legend">Precio e inventario</p>
         <div>
+          <label for="hje-adm-f-weight">Peso (gramos)</label>
+          <input type="number" id="hje-adm-f-weight" min="0" step="0.1" placeholder="0 = precio manual" />
+          <p class="hje-adm-variant-total" id="hje-adm-weight-hint"></p>
+        </div>
+        <div>
           <label for="hje-adm-f-price">Precio (COP)</label>
           <input type="number" id="hje-adm-f-price" min="0" step="1000" placeholder="0 = Consultar precio" />
+          <p class="hje-adm-variant-total" id="hje-adm-price-computed-hint"></p>
         </div>
         <div>
           <label for="hje-adm-f-units">Unidades en stock</label>

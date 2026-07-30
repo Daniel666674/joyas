@@ -29,6 +29,18 @@
     return "$" + Math.round(n).toLocaleString("es-CO");
   }
 
+  // Populated in init() from assets/material-prices.json. Kept in sync
+  // with the identical helper in admin.js/category-render.js - see
+  // CLAUDE.md for why Oro 18K/Plata prices are computed live from weight
+  // instead of trusting the stored `price` field.
+  var materialPrices = {};
+  function computeDisplayPrice(p) {
+    var perGram = materialPrices[p.material];
+    var weight = Number(p.weight) || 0;
+    if (weight > 0 && perGram) return Math.round(weight * perGram);
+    return p.price;
+  }
+
   // Idempotent per-slot badge stack (Destacado/Tag/Promocion) - this
   // section only ever holds already-featured products, so Destacado
   // always shows; Tag/Promocion are added/removed as needed on refresh
@@ -111,7 +123,7 @@
 
     var priceSpan = article.querySelector(".flex.items-center.justify-between.gap-3 > span.text-sm.font-semibold");
     if (priceSpan) {
-      var priceText = formatPrice(product.price) || "Consultar precio";
+      var priceText = formatPrice(computeDisplayPrice(product)) || "Consultar precio";
       setText(priceSpan, priceText);
     }
 
@@ -167,9 +179,13 @@
   }
 
   function init() {
-    fetch("/joyas/assets/products.json?v=" + Date.now())
-      .then(function (r) { return r.json(); })
-      .then(function (products) {
+    Promise.all([
+      fetch("/joyas/assets/products.json?v=" + Date.now()).then(function (r) { return r.json(); }),
+      fetch("/joyas/assets/material-prices.json?v=" + Date.now()).then(function (r) { return r.json(); }).catch(function () { return {}; })
+    ])
+      .then(function (results) {
+        var products = results[0];
+        materialPrices = results[1] || {};
         var grid = findFeaturedGrid();
         if (!grid) return;
         var articles = grid.querySelectorAll("article.group");
