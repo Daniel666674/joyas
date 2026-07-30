@@ -405,6 +405,51 @@ denser treatment at ≥900px (smaller type, name/price stacked instead of
 side-by-side, name clamped to 2 lines) since a 5-wide card is much
 narrower than the original single-column design assumed.
 
+## Inventory value stats + sales register + simulated Wompi/Siigo (2026-07-30)
+
+Built for a sales demo ahead of a possible real Wompi (payments) + Siigo
+(DIAN electronic invoicing) integration — see the two payment/invoicing
+planning conversations for the real architecture that would eventually
+replace the simulation described here. Nothing in this round adds any
+new credential or external API call; it's an extension of the exact same
+patterns already in `admin.js`.
+
+**Inventory value stats**: `renderStats()`'s bar gained two more tiles —
+total inventory value at cost (`sum(costoInterno * units)`) and at retail
+(`sum(price * units)`) — computed live from the same `products.json`
+fields already shown per-card, no new schema. `.hje-adm-stats-bar` went
+from 4 to 3 columns at the ≥640px breakpoint (6 tiles total, 2 clean
+rows) with the two money tiles spanning full width below 480px since COP
+totals can be long strings.
+
+**"Registrar venta" (real feature, not simulated)**: a per-card button
+(hidden when `units <= 0`) opens a modal to log a sale — quantity, unit
+price (prefilled from `product.price`), optional buyer name/phone. On
+confirm this decrements `units` via the *same dirty-tracking mechanism as
+any other edit* (`state.dirty[slug] = updated`, regenerates that
+product's page on next Publish same as always) and stages a record in a
+new `state.sales` array. Publishing writes accumulated sales to a new
+`assets/sales-log.json` (same fetch-fresh/append/`putWithRetry` pattern
+as `admin-changelog.json`) and appends a changelog entry mentioning the
+sale count. A new "Registro de ventas" tab (`loadSalesLog()`, mirrors
+`loadChangelog()`) shows sale history with a small summary bar (count +
+total revenue). `discardChanges()`/`updatePublishBar()` were extended to
+account for `state.sales` alongside the existing dirty/deleted tracking.
+
+**Simulated Wompi + Siigo steps (genuinely fake, by design)**: submitting
+the sale form shows a two-step animated sequence — "Procesando pago con
+Wompi..." then "Generando factura electronica en Siigo..." — each with a
+spinner that resolves to a checkmark after ~1.1s (`runSaleSimulation()`),
+producing fake-but-realistic-looking reference numbers (`fakeRef()`) that
+get stored on the sale record alongside the real stock/sales-log update.
+This is explicitly a preview of what the real integrations would produce,
+not a real payment or invoice — the on-screen note says so, and the code
+makes zero network calls to any payment or invoicing provider. Deliberate
+design choice: this needed **no new credential of any kind**, including
+no GitHub token beyond the admin's own existing one — a real Wompi/Siigo
+build (see the payment/invoicing planning notes) would need its own
+backend and secrets entirely separate from this admin tool.
+
 ## PR lifecycle on this branch
 
 PRs opened from `claude/spanish-translation-photo-fix-qp9s55` have

@@ -42,9 +42,11 @@
     photos: [], // [{ isNew, main, thumb, width, height, previewUrl, path, mime } | { isNew:false, existingSrc, existingThumb, alt, width, height }]
     sizes: [], // [{ label, units }]
     colors: [], // [{ label, units }]
+    sales: [], // pending sale records staged for the next publish()
     pat: null,
     adminName: ""
   };
+  var pendingSaleSlug = null;
 
   // units === 0 -> Agotado, else Bajo stock below the threshold, else
   // Disponible. This 3-tier badge is admin-side only, for quick restock
@@ -432,7 +434,9 @@
           ? '<button type="button" class="hje-adm-card-btn hje-adm-undo-btn" data-hje-slug="' + esc(p.slug) + '">Deshacer</button>'
           : '<button type="button" class="hje-adm-card-btn hje-adm-edit-btn" data-hje-slug="' + esc(p.slug) + '">Editar</button>' +
             '<button type="button" class="hje-adm-card-btn hje-adm-card-btn-danger hje-adm-delete-btn" data-hje-slug="' + esc(p.slug) + '">Eliminar</button>') +
-        "</div></div></div>"
+        "</div>" +
+        (isDeleted || (Number(p.units) || 0) <= 0 ? "" : '<button type="button" class="hje-adm-card-btn hje-adm-card-btn-sale hje-adm-sale-btn" data-hje-slug="' + esc(p.slug) + '">Registrar venta</button>') +
+        "</div></div>"
       );
     }).join("");
 
@@ -449,6 +453,9 @@
         updatePublishBar();
       });
     });
+    $all(".hje-adm-sale-btn", list).forEach(function (btn) {
+      btn.addEventListener("click", function () { openSaleForm(btn.getAttribute("data-hje-slug")); });
+    });
     $all(".hje-adm-card-check", list).forEach(function (box) {
       box.addEventListener("change", function () {
         var slug = box.getAttribute("data-hje-slug");
@@ -462,17 +469,29 @@
     updateSelectionBar();
   }
 
+  function moneyOrZero(n) {
+    return "$" + Math.round(Math.max(0, n) || 0).toLocaleString("es-CO");
+  }
+
   function renderStats() {
     var bar = $("#hje-adm-stats-bar");
     if (!bar) return;
     var all = displayProducts().filter(function (p) { return !state.deleted[p.slug]; });
     var counts = { Disponible: 0, "Bajo stock": 0, Agotado: 0 };
-    all.forEach(function (p) { counts[stockStatus(p.units)]++; });
+    var costValue = 0, retailValue = 0;
+    all.forEach(function (p) {
+      counts[stockStatus(p.units)]++;
+      var units = Number(p.units) || 0;
+      costValue += (Number(p.costoInterno) || 0) * units;
+      retailValue += (Number(p.price) || 0) * units;
+    });
     bar.innerHTML =
       '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + all.length + '</div><div class="hje-adm-stat-label">Productos</div></div>' +
       '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + counts.Disponible + '</div><div class="hje-adm-stat-label">Disponibles</div></div>' +
       '<div class="hje-adm-stat hje-adm-stat-warn"><div class="hje-adm-stat-value">' + counts["Bajo stock"] + '</div><div class="hje-adm-stat-label">Bajo stock</div></div>' +
-      '<div class="hje-adm-stat hje-adm-stat-off"><div class="hje-adm-stat-value">' + counts.Agotado + '</div><div class="hje-adm-stat-label">Agotados</div></div>';
+      '<div class="hje-adm-stat hje-adm-stat-off"><div class="hje-adm-stat-value">' + counts.Agotado + '</div><div class="hje-adm-stat-label">Agotados</div></div>' +
+      '<div class="hje-adm-stat hje-adm-stat-gold hje-adm-stat-money"><div class="hje-adm-stat-value">' + moneyOrZero(retailValue) + '</div><div class="hje-adm-stat-label">Valor inventario (venta)</div></div>' +
+      '<div class="hje-adm-stat hje-adm-stat-money"><div class="hje-adm-stat-value">' + moneyOrZero(costValue) + '</div><div class="hje-adm-stat-label">Valor inventario (costo)</div></div>';
   }
 
   function updateSelectionBar() {
@@ -486,14 +505,15 @@
   function updatePublishBar() {
     var dirtyCount = Object.keys(state.dirty).length;
     var deletedCount = Object.keys(state.deleted).length;
-    var total = dirtyCount + deletedCount;
+    var salesCount = state.sales.length;
+    var total = dirtyCount + deletedCount + salesCount;
     var status = $("#hje-adm-publish-status");
     var btn = $("#hje-adm-publish-btn");
     if (total === 0) {
       status.textContent = "Sin cambios pendientes.";
       btn.disabled = true;
     } else {
-      status.textContent = total + " cambio(s) pendiente(s) de publicar.";
+      status.textContent = total + " cambio(s) pendiente(s) de publicar." + (salesCount ? " (" + salesCount + " venta(s))" : "");
       btn.disabled = false;
     }
   }
@@ -1112,6 +1132,112 @@
   }
 
   // =========================================================================
+  // Register a sale: real stock decrement + sales-log entry (staged via
+  // state.dirty/state.sales exactly like any other edit, only becomes
+  // permanent on the next Publish). The Wompi/Siigo steps shown in between
+  // are a pure client-side simulation - see runSaleSimulation() - since
+  // neither integration exists yet; nothing here calls a real API or needs
+  // any credential beyond the admin's own existing GitHub token.
+  // =========================================================================
+
+  function openSaleForm(slug) {
+    var product = displayProducts().find(function (p) { return p.slug === slug; });
+    if (!product || state.deleted[slug]) return;
+    pendingSaleSlug = slug;
+    $("#hje-adm-sale-form").style.display = "";
+    $("#hje-adm-sale-sim").classList.remove("hje-show");
+    $("#hje-adm-sale-error").classList.remove("hje-show");
+    $("#hje-adm-sale-result").classList.remove("hje-show");
+    $("#hje-adm-sale-done-actions").style.display = "none";
+    $all(".hje-adm-sale-step").forEach(function (el) { el.classList.remove("hje-adm-sale-step-done"); el.style.display = ""; });
+    $("#hje-adm-sale-product-name").textContent = product.name + " - disponibles: " + (Number(product.units) || 0);
+    $("#hje-adm-sale-qty").value = "1";
+    $("#hje-adm-sale-qty").max = String(Number(product.units) || 0);
+    $("#hje-adm-sale-price").value = product.price || 0;
+    $("#hje-adm-sale-buyer").value = "";
+    $("#hje-adm-sale-phone").value = "";
+    $("#hje-adm-sale-backdrop").classList.add("hje-show");
+  }
+
+  function closeSaleForm() {
+    pendingSaleSlug = null;
+    $("#hje-adm-sale-backdrop").classList.remove("hje-show");
+    renderTable();
+  }
+
+  function submitSaleForm(e) {
+    e.preventDefault();
+    var product = displayProducts().find(function (p) { return p.slug === pendingSaleSlug; });
+    var errorEl = $("#hje-adm-sale-error");
+    errorEl.classList.remove("hje-show");
+    if (!product) return;
+
+    var qty = parseInt($("#hje-adm-sale-qty").value, 10) || 0;
+    var unitPrice = parseInt($("#hje-adm-sale-price").value, 10) || 0;
+    var available = Number(product.units) || 0;
+    if (qty < 1) { errorEl.textContent = "La cantidad debe ser al menos 1."; errorEl.classList.add("hje-show"); return; }
+    if (qty > available) { errorEl.textContent = "Solo hay " + available + " unidad(es) disponibles."; errorEl.classList.add("hje-show"); return; }
+
+    $("#hje-adm-sale-form").style.display = "none";
+    $("#hje-adm-sale-sim").classList.add("hje-show");
+    runSaleSimulation(product, qty, unitPrice, $("#hje-adm-sale-buyer").value.trim(), $("#hje-adm-sale-phone").value.trim());
+  }
+
+  function fakeRef(prefix) {
+    return prefix + "-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+  }
+
+  function markStepDone(id) {
+    var el = $(id);
+    el.classList.add("hje-adm-sale-step-done");
+  }
+
+  function runSaleSimulation(product, qty, unitPrice, buyer, phone) {
+    var wompiRef = fakeRef("WOMPI");
+    var siigoInvoice = fakeRef("SIIGO-FE");
+    setTimeout(function () {
+      markStepDone("#hje-adm-sim-wompi");
+      setTimeout(function () {
+        markStepDone("#hje-adm-sim-siigo");
+        stageSale(product, qty, unitPrice, buyer, phone, wompiRef, siigoInvoice);
+        var total = qty * unitPrice;
+        var result = $("#hje-adm-sale-result");
+        result.innerHTML =
+          "<strong>Venta registrada.</strong><br/>" +
+          "Total: " + moneyOrZero(total) + "<br/>" +
+          "Referencia Wompi (simulada): " + esc(wompiRef) + "<br/>" +
+          "Factura Siigo (simulada): " + esc(siigoInvoice) + "<br/>" +
+          "Stock actualizado: queda pendiente de publicar.";
+        result.classList.add("hje-show");
+        $("#hje-adm-sale-done-actions").style.display = "flex";
+      }, 1100);
+    }, 1100);
+  }
+
+  function stageSale(product, qty, unitPrice, buyer, phone, wompiRef, siigoInvoice) {
+    var updated = JSON.parse(JSON.stringify(product));
+    updated.units = Math.max(0, (Number(updated.units) || 0) - qty);
+    if (updated.units === 0) updated.availability = "Agotado";
+    state.dirty[updated.slug] = updated;
+
+    state.sales.push({
+      timestamp: new Date().toISOString(),
+      slug: product.slug,
+      name: product.name,
+      qty: qty,
+      unitPrice: unitPrice,
+      total: qty * unitPrice,
+      buyerName: buyer || null,
+      buyerPhone: phone || null,
+      wompiRef: wompiRef,
+      siigoInvoice: siigoInvoice,
+      adminName: state.adminName || null
+    });
+
+    updatePublishBar();
+  }
+
+  // =========================================================================
   // Bulk edit: applies only the fields the admin actually touched (left at
   // "Sin cambio" otherwise) to every currently-selected product, merged
   // onto each product's own current data - same dirty-tracking mechanism
@@ -1164,6 +1290,7 @@
     state.dirty = {};
     state.deleted = {};
     state.selected = {};
+    state.sales = [];
     logPublish("");
     renderTable();
   }
@@ -1538,9 +1665,18 @@
         return updateSitemap(baseXml || "<?xml version=\"1.0\" encoding=\"UTF-8\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\"></urlset>", dirtyList, deletedList);
       }, "Sitemap actualizado", 4);
     }).then(function () {
-      // 6) change log
+      // 6) sales log (if any sales were registered this session)
+      if (!state.sales.length) return;
+      logPublish("Registrando ventas...");
+      var salesToWrite = state.sales;
+      return putWithRetry("assets/sales-log.json", function (baseLog) {
+        var list = baseLog || [];
+        return JSON.stringify(list.concat(salesToWrite), null, 2);
+      }, salesToWrite.length + " venta(s) registradas", 4);
+    }).then(function () {
+      // 7) change log
       logPublish("Registrando cambios...");
-      var summary = dirtyList.length + " producto(s) editados/agregados, " + deletedList.length + " eliminado(s)";
+      var summary = dirtyList.length + " producto(s) editados/agregados, " + deletedList.length + " eliminado(s)" + (state.sales.length ? ", " + state.sales.length + " venta(s)" : "");
       var entry = { timestamp: new Date().toISOString(), name: state.adminName || null, summary: summary };
       return putWithRetry("assets/admin-changelog.json", function (baseLog) {
         var list = baseLog || [];
@@ -1551,6 +1687,7 @@
       logPublish("Publicado correctamente.");
       state.dirty = {};
       state.deleted = {};
+      state.sales = [];
       loadProducts();
       loadChangelog();
     }).catch(function (err) {
@@ -1589,6 +1726,47 @@
   }
 
   // =========================================================================
+  // Sales log tab (real sales, staged via state.sales same as any other
+  // pending change - published to assets/sales-log.json alongside the rest
+  // of publish()'s steps)
+  // =========================================================================
+
+  function loadSalesLog() {
+    if (!state.pat) return;
+    ghGetFile("assets/sales-log.json").then(function (file) {
+      var list = file ? JSON.parse(b64DecodeUnicode(file.content)) : [];
+      list = list.concat(state.sales);
+      list.sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
+      var summary = $("#hje-adm-sales-summary");
+      var totalRevenue = list.reduce(function (s, e) { return s + (Number(e.total) || 0); }, 0);
+      summary.innerHTML =
+        '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + list.length + '</div><div class="hje-adm-stat-label">Ventas registradas</div></div>' +
+        '<div class="hje-adm-stat hje-adm-stat-gold"><div class="hje-adm-stat-value">' + moneyOrZero(totalRevenue) + '</div><div class="hje-adm-stat-label">Total vendido</div></div>';
+
+      var container = $("#hje-adm-sales-list");
+      if (!list.length) {
+        container.innerHTML = '<p style="color:#8a7a5f;font-size:0.85rem">Sin ventas registradas todavia.</p>';
+        return;
+      }
+      container.innerHTML = list.map(function (entry) {
+        var date = new Date(entry.timestamp).toLocaleString("es-CO");
+        var pending = state.sales.indexOf(entry) !== -1;
+        return (
+          '<div class="hje-adm-changelog-item"><div class="hje-adm-cl-meta">' +
+          esc(date) + " · " + esc(entry.qty) + " x " + esc(entry.name) +
+          (pending ? ' <span class="hje-adm-badge hje-adm-badge-warn">Pendiente de publicar</span>' : "") +
+          '</div><div class="hje-adm-cl-summary">' +
+          moneyOrZero(entry.total) + (entry.buyerName ? " · " + esc(entry.buyerName) : "") +
+          " · Wompi: " + esc(entry.wompiRef) + " · Siigo: " + esc(entry.siigoInvoice) +
+          "</div></div>"
+        );
+      }).join("");
+    }).catch(function () {
+      $("#hje-adm-sales-list").innerHTML = '<p style="color:#8a7a5f;font-size:0.85rem">No se pudo cargar el registro de ventas.</p>';
+    });
+  }
+
+  // =========================================================================
   // Init
   // =========================================================================
 
@@ -1600,6 +1778,7 @@
         tab.classList.add("hje-active");
         $("#hje-adm-panel-" + tab.getAttribute("data-hje-tab")).classList.add("hje-show");
         if (tab.getAttribute("data-hje-tab") === "cambios") loadChangelog();
+        if (tab.getAttribute("data-hje-tab") === "ventas") loadSalesLog();
       });
     });
   }
@@ -1636,8 +1815,13 @@
     $("#hje-adm-bulk-apply").addEventListener("click", applyBulkEdit);
     $("#hje-adm-bulk-backdrop").addEventListener("click", function (e) { if (e.target === this) closeBulkEditForm(); });
 
+    $("#hje-adm-sale-cancel").addEventListener("click", closeSaleForm);
+    $("#hje-adm-sale-form").addEventListener("submit", submitSaleForm);
+    $("#hje-adm-sale-done").addEventListener("click", closeSaleForm);
+    $("#hje-adm-sale-backdrop").addEventListener("click", function (e) { if (e.target === this) closeSaleForm(); });
+
     $("#hje-adm-discard-btn").addEventListener("click", function () {
-      if (Object.keys(state.dirty).length + Object.keys(state.deleted).length === 0) return;
+      if (Object.keys(state.dirty).length + Object.keys(state.deleted).length + state.sales.length === 0) return;
       if (window.confirm("¿Descartar todos los cambios sin publicar?")) discardChanges();
     });
 
@@ -1648,6 +1832,7 @@
         closeForm();
         $("#hje-adm-confirm-backdrop").classList.remove("hje-show");
         closeBulkEditForm();
+        $("#hje-adm-sale-backdrop").classList.remove("hje-show");
       }
     });
   }
