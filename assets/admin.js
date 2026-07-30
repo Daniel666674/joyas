@@ -32,6 +32,11 @@
   // products/edits.
   var MATERIALS = ["Oro 18K", "Plata", "Oro Laminado"];
   var ANILLO_SIZE_PRESETS = ["5", "6", "7", "8", "9", "10", "11", "12"];
+  // Only these two materials track a live price-per-gram - gold/silver
+  // spot value moves daily and is worth centralizing. Oro Laminado's value
+  // is mostly base metal + labor, not gold content, so it keeps a plain
+  // manually-typed price like before this feature existed.
+  var MATERIAL_PRICE_KEYS = ["Oro 18K", "Plata"];
 
   var state = {
     products: [],
@@ -44,6 +49,7 @@
     colors: [], // [{ label, units }]
     sales: [], // pending sale records staged for the next publish()
     salesListCache: [], // last-loaded merged sales list (published + pending), for the detail modal to look up by index
+    materialPrices: {}, // { "Oro 18K": pricePerGram, "Plata": pricePerGram } - loaded from assets/material-prices.json
     pat: null,
     adminName: ""
   };
@@ -64,6 +70,19 @@
     var n = Number(price) || 0;
     if (n <= 0) return null;
     return "$" + Math.round(n).toLocaleString("es-CO");
+  }
+
+  // Weight-based live price for Oro 18K/Plata (see MATERIAL_PRICE_KEYS) -
+  // falls back to the product's own stored `price` whenever weight isn't
+  // set or the material doesn't track a per-gram price (Oro Laminado, or
+  // if assets/material-prices.json failed to load). This same formula is
+  // duplicated in category-render.js, homepage-featured-refresh.js, and
+  // generateProductPage()'s inline script - keep all four in sync.
+  function computeDisplayPrice(p, materialPrices) {
+    var perGram = materialPrices && materialPrices[p.material];
+    var weight = Number(p.weight) || 0;
+    if (weight > 0 && perGram) return Math.round(weight * perGram);
+    return p.price;
   }
 
   // Every class used here (border-border, bg-white/90, text-gold-700,
@@ -204,6 +223,7 @@
     $("#hje-adm-main").classList.add("hje-show");
     $("#hje-adm-logout").classList.add("hje-show");
     loadProducts();
+    loadMaterialPrices();
   }
 
   // =========================================================================
@@ -326,6 +346,58 @@
       });
   }
 
+  // =========================================================================
+  // Material prices (Oro 18K / Plata, per gram) - a small standalone
+  // settings file, published independently of the main product publish
+  // flow so a daily gold-price update is a single fast action.
+  // =========================================================================
+
+  function loadMaterialPrices() {
+    fetch("/joyas/assets/material-prices.json?v=" + Date.now())
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        state.materialPrices = data || {};
+        $("#hje-adm-price-oro18k").value = state.materialPrices["Oro 18K"] || 0;
+        $("#hje-adm-price-plata").value = state.materialPrices["Plata"] || 0;
+        var meta = $("#hje-adm-prices-meta");
+        meta.textContent = state.materialPrices.updatedAt
+          ? "Ultima actualizacion: " + new Date(state.materialPrices.updatedAt).toLocaleString("es-CO")
+          : "Todavia no se ha actualizado manualmente.";
+        renderTable();
+      })
+      .catch(function () {
+        $("#hje-adm-prices-status").textContent = "No se pudieron cargar los precios de metales.";
+        $("#hje-adm-prices-status").classList.add("hje-adm-log-error");
+      });
+  }
+
+  function saveMaterialPrices() {
+    if (!state.pat) return;
+    var btn = $("#hje-adm-prices-save");
+    var status = $("#hje-adm-prices-status");
+    status.classList.remove("hje-adm-log-error");
+    btn.disabled = true;
+    status.textContent = "Guardando...";
+
+    var oro18k = Math.max(0, parseInt($("#hje-adm-price-oro18k").value, 10) || 0);
+    var plata = Math.max(0, parseInt($("#hje-adm-price-plata").value, 10) || 0);
+    var updatedAt = new Date().toISOString();
+
+    putWithRetry("assets/material-prices.json", function () {
+      return JSON.stringify({ "Oro 18K": oro18k, "Plata": plata, updatedAt: updatedAt }, null, 2);
+    }, "Precios de metales actualizados", 4).then(function () {
+      state.materialPrices = { "Oro 18K": oro18k, "Plata": plata, updatedAt: updatedAt };
+      status.textContent = "Precios guardados correctamente.";
+      $("#hje-adm-prices-meta").textContent = "Ultima actualizacion: " + new Date(updatedAt).toLocaleString("es-CO");
+      renderTable();
+    }).catch(function (err) {
+      status.textContent = "Error al guardar: " + err.message;
+      status.classList.add("hje-adm-log-error");
+    }).finally(function () {
+      btn.disabled = false;
+    });
+  }
+
   function displayProducts() {
     // merges base products with this session's dirty/deleted overlay, for display only
     var bySlug = {};
@@ -408,7 +480,7 @@
       var isSelected = !!state.selected[p.slug];
       var img = p.images && p.images[0] ? p.images[0].thumbnail || p.images[0].src : "";
       var status = stockStatus(p.units);
-      var priceLabel = formatPrice(p.price) || "Consultar precio";
+      var priceLabel = formatPrice(computeDisplayPrice(p, state.materialPrices)) || "Consultar precio";
       var cardClass = "hje-adm-card" +
         (isDeleted ? " hje-adm-card-deleted" : "") +
         (isDirty ? " hje-adm-card-dirty" : "");
@@ -484,7 +556,7 @@
       counts[stockStatus(p.units)]++;
       var units = Number(p.units) || 0;
       costValue += (Number(p.costoInterno) || 0) * units;
-      retailValue += (Number(p.price) || 0) * units;
+      retailValue += (Number(computeDisplayPrice(p, state.materialPrices)) || 0) * units;
     });
     bar.innerHTML =
       '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + all.length + '</div><div class="hje-adm-stat-label">Productos</div></div>' +
@@ -549,6 +621,7 @@
     $("#hje-adm-f-sku").value = "JOY-" + id;
     $("#hje-adm-f-availability").value = "Disponible";
     $("#hje-adm-f-popularity").value = "50";
+    $("#hje-adm-f-weight").value = "0";
     $("#hje-adm-f-price").value = "0";
     $("#hje-adm-f-units").value = "5";
     $("#hje-adm-f-costo").value = "0";
@@ -582,6 +655,7 @@
     slugInput.oninput = function () { slugInput.dataset.hjeTouched = "1"; };
     delete slugInput.dataset.hjeTouched;
     wireUnitsAvailabilitySuggestion();
+    renderWeightPricing();
 
     $("#hje-adm-modal-backdrop").classList.add("hje-show");
   }
@@ -616,6 +690,7 @@
     $("#hje-adm-f-material").value = product.material;
     $("#hje-adm-f-availability").value = product.availability;
     $("#hje-adm-f-popularity").value = product.popularity || 50;
+    $("#hje-adm-f-weight").value = Number(product.weight) || 0;
     $("#hje-adm-f-price").value = product.price || 0;
     $("#hje-adm-f-units").value = Number(product.units) || 0;
     $("#hje-adm-f-costo").value = product.costoInterno || 0;
@@ -641,6 +716,7 @@
     renderVariantRows("colors");
     updateVariantTotals();
     renderSizePresets();
+    renderWeightPricing();
     $("#hje-adm-photo-error").classList.remove("hje-show");
     $("#hje-adm-guardrails").classList.remove("hje-show");
 
@@ -933,6 +1009,34 @@
     updateVariantTotals();
   }
 
+  // Live weight x price-per-gram computation for Oro 18K/Plata (see
+  // MATERIAL_PRICE_KEYS). Mirrors the units-from-variants auto-compute
+  // pattern: Precio becomes disabled/computed when applicable, and reverts
+  // to a normal manually-editable field otherwise (weight = 0, material is
+  // Oro Laminado, or no per-gram price configured yet).
+  function renderWeightPricing() {
+    var material = $("#hje-adm-f-material").value;
+    var weight = parseFloat($("#hje-adm-f-weight").value) || 0;
+    var priceInput = $("#hje-adm-f-price");
+    var priceHint = $("#hje-adm-price-computed-hint");
+    var weightHint = $("#hje-adm-weight-hint");
+    var perGram = state.materialPrices[material];
+
+    if (MATERIAL_PRICE_KEYS.indexOf(material) !== -1 && weight > 0 && perGram) {
+      var computed = Math.round(weight * perGram);
+      priceInput.value = computed;
+      priceInput.disabled = true;
+      priceHint.textContent = "Calculado: " + weight + "g x " + (formatPrice(perGram) || "$0") + "/g = " + (formatPrice(computed) || "$0");
+      weightHint.textContent = "";
+    } else {
+      priceInput.disabled = false;
+      priceHint.textContent = "";
+      weightHint.textContent = (MATERIAL_PRICE_KEYS.indexOf(material) !== -1 && weight > 0 && !perGram)
+        ? "Configura el precio de " + material + " por gramo en la pestaña \"Precios de metales\"."
+        : "";
+    }
+  }
+
   // Quick-add chips for standard ring sizes - only relevant for rings
   // (Anillos/Argollas), so hidden for every other category. Clicking a
   // size already present is a no-op rather than a duplicate row.
@@ -1044,6 +1148,7 @@
       name: name,
       category: $("#hje-adm-f-category").value,
       material: material,
+      weight: Math.max(0, parseFloat($("#hje-adm-f-weight").value) || 0),
       price: parseInt($("#hje-adm-f-price").value, 10) || 0,
       currency: (existing && existing.currency) || "COP",
       availability: $("#hje-adm-f-availability").value,
@@ -1154,7 +1259,7 @@
     $("#hje-adm-sale-product-name").textContent = product.name + " - disponibles: " + (Number(product.units) || 0);
     $("#hje-adm-sale-qty").value = "1";
     $("#hje-adm-sale-qty").max = String(Number(product.units) || 0);
-    $("#hje-adm-sale-price").value = product.price || 0;
+    $("#hje-adm-sale-price").value = computeDisplayPrice(product, state.materialPrices) || 0;
     $("#hje-adm-sale-buyer").value = "";
     $("#hje-adm-sale-phone").value = "";
     $("#hje-adm-sale-backdrop").classList.add("hje-show");
@@ -1329,7 +1434,7 @@
       badge +
       '<button class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-soft transition hover:bg-white" aria-label="Guardar ' + esc(p.name) + ' en favoritos"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart h-4 w-4"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg></button></div></a>' +
       '<div class="mt-4 space-y-3"><div><a class="font-medium hover:text-gold-700" href="' + href + '">' + esc(p.name) + '</a><p class="mt-1 text-sm text-muted-foreground">' + esc(p.category) + '<!-- --> · <!-- -->' + esc(p.material) + '</p></div>' +
-      '<div class="flex items-center justify-between gap-3"><span class="text-sm font-semibold">' + esc(formatPrice(p.price) || "Consultar precio") + '</span><div class="flex items-center gap-1">' +
+      '<div class="flex items-center justify-between gap-3"><span class="text-sm font-semibold hje-price-recompute" data-material="' + esc(p.material) + '" data-weight="' + (Number(p.weight) || 0) + '">' + esc(formatPrice(p.price) || "Consultar precio") + '</span><div class="flex items-center gap-1">' +
       '<a href="' + esc(p.instagramUrl || "https://www.instagram.com/") + '" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Ver en Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg></a>' +
       '<a href="' + waHref("Hola, quiero consultar " + p.name) + '" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Consultar por WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-4 w-4"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></a>' +
       "</div></div></div></article>"
@@ -1410,6 +1515,16 @@
 
     var relatedHtml = related.map(renderCard).join("");
 
+    // Oro 18K/Plata prices move daily (see CLAUDE.md), so the baked-in
+    // price text above is only a snapshot from generation time. This
+    // inline script re-fetches the live per-gram prices and corrects
+    // every .hje-price-recompute element (main price + related cards)
+    // that has a weight - a plain page reload always shows today's price
+    // without needing to regenerate the page. Zero hydration risk, same
+    // reasoning as the gallery/variant scripts above.
+    var priceScript =
+      '<script>(function(){var els=document.querySelectorAll(".hje-price-recompute");if(!els.length)return;fetch("/joyas/assets/material-prices.json?v="+Date.now()).then(function(r){return r.json();}).then(function(mp){els.forEach(function(el){var material=el.getAttribute("data-material");var weight=parseFloat(el.getAttribute("data-weight"))||0;var perGram=mp[material];if(weight>0&&perGram){var n=Math.round(weight*perGram);el.textContent=n>0?"$"+n.toLocaleString("es-CO"):"Consultar precio";}});}).catch(function(){});})();</script>';
+
     var galleryMainId = "hje-gallery-main-img";
     var fitStyle = photoFitStyle(product);
     var thumbsHtml = product.images.map(function (im, i) {
@@ -1435,7 +1550,7 @@
       "<div>" +
       '<div class="flex flex-wrap gap-2">' + pillHtml + "</div>" +
       '<h1 class="mt-5 font-serif text-5xl">' + esc(product.name) + "</h1>" +
-      '<p class="mt-3 text-2xl font-semibold">' + esc(formatPrice(product.price) || "Consultar precio") + "</p>" +
+      '<p class="mt-3 text-2xl font-semibold hje-price-recompute" data-material="' + esc(product.material) + '" data-weight="' + (Number(product.weight) || 0) + '">' + esc(formatPrice(product.price) || "Consultar precio") + "</p>" +
       '<p class="mt-5 leading-7 text-muted-foreground">' + esc(product.description) + "</p>" +
       variantPickerHtml +
       '<div class="mt-8 grid gap-3 sm:grid-cols-2">' +
@@ -1450,7 +1565,7 @@
           '<section class="py-12"><div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div class="max-w-2xl"><h2 class="font-serif text-3xl text-foreground sm:text-4xl">Productos relacionados</h2></div></div><div class="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">' + relatedHtml + "</div></section>"
         : "") +
       '<section class="pb-16"><div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div class="max-w-2xl"><h2 class="font-serif text-3xl text-foreground sm:text-4xl">Vistos recientemente</h2></div></div><div class="text-sm text-muted-foreground"><a class="font-medium text-gold-700 underline-offset-4 hover:underline" href="/joyas/shop">Volver al catalogo</a> <!-- -->para seguir explorando piezas similares.</div></section>' +
-      "</div></main>" + galleryScript + variantScript;
+      "</div></main>" + galleryScript + variantScript + priceScript;
 
     var head =
       "<!doctype html><html lang=\"es-CO\"><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>" +
@@ -1828,6 +1943,7 @@
         $("#hje-adm-panel-" + tab.getAttribute("data-hje-tab")).classList.add("hje-show");
         if (tab.getAttribute("data-hje-tab") === "cambios") loadChangelog();
         if (tab.getAttribute("data-hje-tab") === "ventas") loadSalesLog();
+        if (tab.getAttribute("data-hje-tab") === "precios") loadMaterialPrices();
       });
     });
   }
@@ -1858,6 +1974,8 @@
     $("#hje-adm-sizes-add").addEventListener("click", function () { addVariantRow("sizes"); });
     $("#hje-adm-colors-add").addEventListener("click", function () { addVariantRow("colors"); });
     $("#hje-adm-f-category").addEventListener("change", renderSizePresets);
+    $("#hje-adm-f-material").addEventListener("change", renderWeightPricing);
+    $("#hje-adm-f-weight").addEventListener("input", renderWeightPricing);
 
     $("#hje-adm-bulk-btn").addEventListener("click", openBulkEditForm);
     $("#hje-adm-bulk-cancel").addEventListener("click", closeBulkEditForm);
@@ -1904,6 +2022,8 @@
       if (Object.keys(state.dirty).length + Object.keys(state.deleted).length + state.sales.length === 0) return;
       if (window.confirm("¿Descartar todos los cambios sin publicar?")) discardChanges();
     });
+
+    $("#hje-adm-prices-save").addEventListener("click", saveMaterialPrices);
 
     $("#hje-adm-publish-btn").addEventListener("click", publish);
 

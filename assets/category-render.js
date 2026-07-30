@@ -54,6 +54,19 @@
     return "$" + Math.round(n).toLocaleString("es-CO");
   }
 
+  // Populated by init() from assets/material-prices.json before any card
+  // renders. Oro 18K/Plata prices move daily, so their displayed price is
+  // weight(g) x price-per-gram computed here at load time rather than a
+  // stale number baked into products.json - see the identical helper (and
+  // the "why") in assets/admin.js.
+  var materialPrices = {};
+  function computeDisplayPrice(p) {
+    var perGram = materialPrices[p.material];
+    var weight = Number(p.weight) || 0;
+    if (weight > 0 && perGram) return Math.round(weight * perGram);
+    return p.price;
+  }
+
   // Kept in sync with the identical helper in assets/admin.js - every
   // class used here already ships in this static export's compiled CSS
   // (reused from the existing "Destacado" badge and WhatsApp/Instagram
@@ -94,7 +107,7 @@
       '<p class="mt-1 text-sm text-muted-foreground">' + esc(p.category) + '<!-- --> · <!-- -->' + esc(p.material) + "</p>" +
       "</div>" +
       '<div class="flex items-center justify-between gap-3">' +
-      '<span class="text-sm font-semibold">' + esc(formatPrice(p.price) || "Consultar precio") + "</span>" +
+      '<span class="text-sm font-semibold">' + esc(formatPrice(computeDisplayPrice(p)) || "Consultar precio") + "</span>" +
       '<div class="flex items-center gap-1">' +
       '<a href="' + esc(p.instagramUrl || "https://www.instagram.com/") + '" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Ver en Instagram">' +
       '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg>' +
@@ -113,7 +126,7 @@
     } else if (sort === "newest") {
       list.sort(function (a, b) { return (b.id || "").localeCompare(a.id || ""); });
     } else if (sort === "price") {
-      list.sort(function (a, b) { return (a.price || 0) - (b.price || 0); });
+      list.sort(function (a, b) { return (computeDisplayPrice(a) || 0) - (computeDisplayPrice(b) || 0); });
     } else {
       list.sort(function (a, b) { return (b.popularity || 0) - (a.popularity || 0); });
     }
@@ -177,9 +190,13 @@
     var shopRoot = document.getElementById("hje-shop-root");
     if (!root && !shopRoot) return;
 
-    fetch("/joyas/assets/products.json")
-      .then(function (r) { return r.json(); })
-      .then(function (products) {
+    Promise.all([
+      fetch("/joyas/assets/products.json").then(function (r) { return r.json(); }),
+      fetch("/joyas/assets/material-prices.json").then(function (r) { return r.json(); }).catch(function () { return {}; })
+    ])
+      .then(function (results) {
+        var products = results[0];
+        materialPrices = results[1] || {};
         if (root) initCategoryRoot(root, products);
         if (shopRoot) initShopRoot(shopRoot, products);
       })

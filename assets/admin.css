@@ -1026,6 +1026,32 @@ body {
   line-height: 1.5;
 }
 
+/* ---------- material prices tab ---------- */
+.hje-adm-prices-card {
+  padding: 1.25rem 1.4rem 1.4rem;
+}
+.hje-adm-prices-help {
+  font-size: 0.85rem;
+  color: #6b5f4c;
+  line-height: 1.55;
+  margin: 0.3rem 0 1.1rem;
+}
+.hje-adm-prices-meta {
+  font-size: 0.75rem;
+  color: #8a7a5f;
+  margin: 0.6rem 0 0;
+}
+.hje-adm-prices-status {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b5f4c;
+  margin: 0.75rem 0 0;
+  min-height: 1.2em;
+}
+.hje-adm-prices-status.hje-adm-log-error {
+  color: var(--hje-burgundy);
+}
+
 /* ---------- sales tab summary ---------- */
 .hje-adm-sales-summary {
   display: grid;
