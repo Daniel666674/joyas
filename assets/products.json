@@ -8,7 +8,12 @@
     "material": "Oro Laminado",
     "price": 200000,
     "currency": "COP",
-    "availability": "Disponible",
+    "availability": "Agotado",
+    "units": 0,
+    "costoInterno": 0,
+    "tag": "",
+    "promotion": false,
+    "photoFit": "cover",
     "featured": true,
     "popularity": 99,
     "images": [
@@ -20,6 +25,10 @@
         "height": 1280
       }
     ],
+    "variants": {
+      "sizes": [],
+      "colors": []
+    },
     "description": "Pieza en oro laminado con acabado dorado y estilo femenino. Ideal para regalo, uso diario y pedidos guiados por WhatsApp o Instagram.",
     "specifications": {
       "acabado": "Pulido brillante",
@@ -31,16 +40,7 @@
       "title": "Cadena con dije Minnie | Joyeria Colombiana",
       "description": "Compra cadena con dije minnie en oro laminado con asesoria personalizada por WhatsApp e Instagram."
     },
-    "instagramUrl": "https://www.instagram.com/",
-    "units": 5,
-    "tag": "",
-    "promotion": false,
-    "costoInterno": 0,
-    "photoFit": "cover",
-    "variants": {
-      "sizes": [],
-      "colors": []
-    }
+    "instagramUrl": "https://www.instagram.com/"
   },
   {
     "id": "002",
