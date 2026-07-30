@@ -384,6 +384,15 @@ Fotos / Tallas y colores / Descripción y especificaciones, for
 scannability now that the form has grown to ~20 fields across several
 rounds of additions.
 
+**Card list became a responsive grid (2026-07-30)**: `.hje-adm-card-list`
+switched from a single-column stack to a CSS grid (2 columns on mobile →
+3/4/5 at wider breakpoints, capped at 5 to read as a catalog rather than
+a list), with `.hje-adm-main`'s max-width widened at the same breakpoints
+so the grid has room to actually reach 5 columns. Card internals get a
+denser treatment at ≥900px (smaller type, name/price stacked instead of
+side-by-side, name clamped to 2 lines) since a 5-wide card is much
+narrower than the original single-column design assumed.
+
 ## PR lifecycle on this branch
 
 PRs opened from `claude/spanish-translation-photo-fix-qp9s55` have
