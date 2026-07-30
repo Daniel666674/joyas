@@ -50,21 +50,35 @@
     return "$" + Math.round(n).toLocaleString("es-CO");
   }
 
+  // Kept in sync with the identical helper in assets/admin.js - every
+  // class used here already ships in this static export's compiled CSS
+  // (reused from the existing "Destacado" badge and WhatsApp/Instagram
+  // buttons), since a *new* Tailwind class would have no CSS behind it.
+  function badgeStackHtml(p) {
+    var badges = "";
+    if (p.featured) badges += '<span class="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium bg-white/90 text-gold-700">Destacado</span>';
+    if (p.tag) badges += '<span class="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium bg-white/90 text-gold-700">' + esc(p.tag) + "</span>";
+    if (p.promotion) badges += '<span class="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">Promocion</span>';
+    return badges ? '<div class="absolute left-3 top-3 flex flex-col gap-2">' + badges + "</div>" : "";
+  }
+
+  function photoFitStyle(p) {
+    return p.photoFit === "contain" ? ";object-fit:contain" : "";
+  }
+
   // Exact article.group markup used sitewide for a product card (verified
   // against cadenas.html's grid and the related-products block on a real
   // product detail page). Keep this in sync with the equivalent template
   // string in assets/admin.js's page generator - both build the same card.
   function renderProductCard(p) {
     var img = p.images && p.images[0] ? p.images[0] : { src: "", alt: p.name };
-    var badge = p.featured
-      ? '<span class="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium absolute left-3 top-3 bg-white/90 text-gold-700">Destacado</span>'
-      : "";
+    var badge = badgeStackHtml(p);
     var href = "/joyas/producto/" + p.slug;
     return (
       '<article class="group">' +
       '<a class="block overflow-hidden rounded-md bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="' + href + '">' +
       '<div class="relative aspect-[4/5]">' +
-      '<img alt="' + esc(img.alt) + '" loading="lazy" decoding="async" data-nimg="fill" class="object-cover transition-transform duration-500 group-hover:scale-105" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent" src="' + esc(img.src) + '"/>' +
+      '<img alt="' + esc(img.alt) + '" loading="lazy" decoding="async" data-nimg="fill" class="object-cover transition-transform duration-500 group-hover:scale-105" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' + photoFitStyle(p) + '" src="' + esc(img.src) + '"/>' +
       badge +
       '<button class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-soft transition hover:bg-white" aria-label="Guardar ' + esc(p.name) + ' en favoritos">' +
       '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart h-4 w-4"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>' +

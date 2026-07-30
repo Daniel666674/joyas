@@ -105,7 +105,10 @@ and the homepage's featured section all render from it at runtime (see
 entry has `id, slug, sku, name, category, material, price, currency,
 availability, units, featured, popularity, images[] (src/thumbnail/alt/
 width/height), description, specifications{acabado,cuidado,origen,
-garantia}, seo{title,description}, instagramUrl`.
+garantia}, seo{title,description}, instagramUrl, tag, promotion,
+costoInterno, photoFit, variants{sizes[],colors[]}` (the last five added
+2026-07-29, see "Multi-photo gallery, size/color variants, and extra
+fields" below).
 
 **`price` became real and customer-facing on 2026-07-28** (previously
 vestigial — every page always showed the literal string "Consultar
@@ -132,9 +135,10 @@ changes in the form — but `availability` stays a normal, independently
 overridable dropdown (e.g. to hide an in-stock item temporarily without
 zeroing its count). All 66 existing products were backfilled with
 `units: 5` as a placeholder when this shipped — not real counts, the
-admin needs to correct them over time as the tool gets used. No
-size/color variant system exists (explicitly out of scope — would also
-need a variant selector built on the storefront, which doesn't have one).
+admin needs to correct them over time as the tool gets used. A real
+size/color variant system was added 2026-07-29 (see below) — when a
+product has variants, `units` becomes computed from them instead of
+manually set.
 
 The **original 66 SKUs are still also baked into a webpack chunk** as a
 plain JS array — `_next/static/chunks/370-38b28494715c6f30.js` (filename is
@@ -256,6 +260,77 @@ The card-rendering template (`article.group` markup) is intentionally
 duplicated between `assets/admin.js` (page generation) and
 `assets/category-render.js` (public runtime rendering) rather than shared
 via one script — keep both in sync if the card markup ever changes.
+
+## Multi-photo gallery, size/color variants, and extra fields (2026-07-29)
+
+Modeled on a reference admin tool the owner built for a different
+(BMX) store, adapted to Habibi Eisaa's palette and only the parts that
+made sense for jewelry (no "Marca" field — Habibi Eisaa sells its own
+designs, not resold brands).
+
+**Multi-photo gallery**: `admin.js`'s form now supports any number of
+photos per product via `state.photos` (an array, replacing the old
+single `state.photo`). Each thumbnail in the grid has reorder (`‹ ›`),
+rotate (`↻`), and remove (`×`) controls; the first slot is always
+"Portada" (cover) — same convention as `images[0]` already being the
+card/primary image everywhere on the site. Rotating an *existing*
+(already-published) photo fetches it same-origin, rotates it via canvas,
+and re-uploads to its **same path** so the public URL never changes —
+`publish()`'s photo-upload step now fetches each target path's current
+sha first (`ghGetFile` before `ghPutBlob`) rather than always assuming a
+brand-new file, since overwriting-in-place is now a real case. New
+uploads always encode as JPEG; a rotated *existing* photo preserves its
+original format (most legacy photos are `.webp`) via `mimeForPath()` —
+this matters because GitHub Pages infers `Content-Type` purely from the
+file extension, so the bytes must actually match it. Only the generated
+product detail page shows the full gallery (click a thumbnail to swap
+the main image, via a small inline `<script>` — zero hydration risk,
+same reasoning as everywhere else on hand-authored pages); grid cards
+sitewide still only ever show `images[0]`, unchanged.
+
+**Size/color variants**: optional per-product `variants: {sizes: [],
+colors: []}`, each an array of `{label, units}`. Independent axes, not a
+combinatorial size×color matrix (matches the reference tool, and fits
+Habibi Eisaa's real need — `sizes` for anillos/argollas ring sizing,
+`colors` rarely used since gold-tone variation is already covered by
+`material`). Empty arrays (the default for all pre-existing products) =
+fully unchanged legacy behavior — `units` stays a plain manually-edited
+number. As soon as either list is non-empty, the admin form's "Unidades
+en stock" field becomes computed (sum of whichever list is populated)
+and disabled, mirroring `admin.js`'s `updateVariantTotals()`. Unlike the
+previous round's units/stock work (admin-side only), this one **does**
+reach the storefront: `generateProductPage()` renders a picker
+(disabled buttons for any 0-stock option) on the hand-authored product
+detail page, with an inline script that appends the selection to the
+"Consultar por WhatsApp" link's prefilled message (`.hje-wa-consult`'s
+`data-base-text` attribute holds the un-appended text so repeated
+selections don't stack). No selection is required to still message via
+WhatsApp — additive, not a hard gate.
+
+**Tag / Promoción / Costo interno / Ajuste de foto**: `tag` (free text,
+e.g. "Nuevo") and `promotion` (boolean) each render as an extra badge
+pill — stacked with "Destacado" inside a shared `.hje-badge-stack`
+wrapper (`badgeStackHtml()` in `admin.js`/`category-render.js`;
+idempotent `ensureBadge()`/`removeBadge()` DOM-patching in
+`homepage-featured-refresh.js`, since that script mutates an already-
+hydrated homepage in place rather than re-rendering a string template).
+There's deliberately **no** `/promociones` listing page yet — `promotion`
+is just a badge for now; trivial to add later with the same
+`category-render.js` runtime-filter pattern if wanted. `costoInterno`
+(COP) is admin-only margin bookkeeping — new row in the admin card list,
+never rendered anywhere on the public storefront or in generated
+HTML/JSON-LD. `photoFit` (`"cover"` default, or `"contain"`) is applied
+as an inline `style="...;object-fit:contain"` override on top of each
+`<img>`'s existing Tailwind `object-cover` class (inline style wins, so
+no class-string surgery needed) in every card-rendering location.
+
+**Important constraint discovered while building this**: this is a
+static Next.js export, so any Tailwind class you write into *new*
+markup must already exist somewhere in the site's compiled CSS — there's
+no build step left to generate a class you invent. Every class used in
+the new badges/pills/variant-picker buttons above was verified to
+already ship (reused verbatim from the existing "Destacado" badge and
+the WhatsApp/Instagram button styling) rather than guessed at.
 
 ## PR lifecycle on this branch
 

@@ -32,8 +32,9 @@
     dirty: {},
     deleted: {},
     selected: {}, // slug -> true, for bulk edit
-    photo: null, // { main: Blob, thumb: Blob }
-    photoPath: null, // computed path for the pending photo, set when a new upload is processed
+    photos: [], // [{ isNew, main, thumb, width, height, previewUrl, path, mime } | { isNew:false, existingSrc, existingThumb, alt, width, height }]
+    sizes: [], // [{ label, units }]
+    colors: [], // [{ label, units }]
     pat: null,
     adminName: ""
   };
@@ -53,6 +54,25 @@
     var n = Number(price) || 0;
     if (n <= 0) return null;
     return "$" + Math.round(n).toLocaleString("es-CO");
+  }
+
+  // Every class used here (border-border, bg-white/90, text-gold-700,
+  // bg-primary, text-primary-foreground, flex/flex-col/gap-2) is reused
+  // verbatim from markup already shipped elsewhere on the site (the
+  // existing "Destacado" badge and the WhatsApp/Instagram buttons) -
+  // this is a static Next.js export, so any *new* Tailwind class name
+  // would have no CSS behind it (nothing left to generate it at build
+  // time). See CLAUDE.md.
+  function badgeStackHtml(p) {
+    var badges = "";
+    if (p.featured) badges += '<span class="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium bg-white/90 text-gold-700">Destacado</span>';
+    if (p.tag) badges += '<span class="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium bg-white/90 text-gold-700">' + esc(p.tag) + "</span>";
+    if (p.promotion) badges += '<span class="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">Promocion</span>';
+    return badges ? '<div class="absolute left-3 top-3 flex flex-col gap-2">' + badges + "</div>" : "";
+  }
+
+  function photoFitStyle(p) {
+    return p.photoFit === "contain" ? ";object-fit:contain" : "";
   }
 
   function $(sel, ctx) {
@@ -393,8 +413,11 @@
         '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Categoria</span><span class="hje-adm-card-value">' + esc(p.category) + "</span></div>" +
         '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Material</span><span class="hje-adm-card-value">' + esc(p.material) + "</span></div>" +
         '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Precio</span><span class="hje-adm-card-value">' + esc(priceLabel) + "</span></div>" +
+        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Costo interno</span><span class="hje-adm-card-value">' + esc(formatPrice(p.costoInterno) || "-") + "</span></div>" +
         '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Unidades</span><span class="hje-adm-card-value hje-adm-card-value-strong">' + (Number(p.units) || 0) + "</span></div>" +
         '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Estado</span><span class="hje-adm-badge ' + statusBadgeClass(status) + '">' + esc(status) + "</span></div>" +
+        (p.tag ? '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Tag</span><span class="hje-adm-badge hje-adm-badge-tag">' + esc(p.tag) + "</span></div>" : "") +
+        (p.promotion ? '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Promocion</span><span class="hje-adm-badge hje-adm-badge-promo">En promocion</span></div>' : "") +
         '<div class="hje-adm-card-actions">' +
         (isDeleted
           ? '<button type="button" class="hje-adm-card-btn hje-adm-undo-btn" data-hje-slug="' + esc(p.slug) + '">Deshacer</button>'
@@ -476,8 +499,6 @@
 
   function openNewForm() {
     state.editingSlug = null;
-    state.photo = null;
-    state.photoPath = null;
     $("#hje-adm-modal-title").textContent = "Nuevo producto";
     var form = $("#hje-adm-product-form");
     form.reset();
@@ -487,12 +508,22 @@
     $("#hje-adm-f-popularity").value = "50";
     $("#hje-adm-f-price").value = "0";
     $("#hje-adm-f-units").value = "5";
+    $("#hje-adm-f-costo").value = "0";
+    $("#hje-adm-f-tag").value = "";
+    $("#hje-adm-f-promotion").checked = false;
+    $("#hje-adm-f-photofit").value = "cover";
     $("#hje-adm-f-instagram").value = "https://www.instagram.com/";
     $("#hje-adm-f-spec-acabado").value = "Pulido brillante";
     $("#hje-adm-f-spec-cuidado").value = "Evitar perfumes, piscinas y humedad prolongada";
     $("#hje-adm-f-spec-origen").value = "Catalogo curado en Colombia";
     $("#hje-adm-f-spec-garantia").value = "Asesoria y revision por WhatsApp";
-    $("#hje-adm-photo-preview").innerHTML = "";
+    state.photos = [];
+    renderPhotoGrid();
+    state.sizes = [];
+    state.colors = [];
+    renderVariantRows("sizes");
+    renderVariantRows("colors");
+    updateVariantTotals();
     $("#hje-adm-photo-error").classList.remove("hje-show");
     $("#hje-adm-guardrails").classList.remove("hje-show");
     form.dataset.hjeId = id;
@@ -528,8 +559,6 @@
     var product = displayProducts().find(function (p) { return p.slug === slug; });
     if (!product) return;
     state.editingSlug = slug;
-    state.photo = null;
-    state.photoPath = null;
     $("#hje-adm-modal-title").textContent = "Editar producto";
     var form = $("#hje-adm-product-form");
     form.reset();
@@ -545,6 +574,10 @@
     $("#hje-adm-f-popularity").value = product.popularity || 50;
     $("#hje-adm-f-price").value = product.price || 0;
     $("#hje-adm-f-units").value = Number(product.units) || 0;
+    $("#hje-adm-f-costo").value = product.costoInterno || 0;
+    $("#hje-adm-f-tag").value = product.tag || "";
+    $("#hje-adm-f-promotion").checked = !!product.promotion;
+    $("#hje-adm-f-photofit").value = product.photoFit || "cover";
     $("#hje-adm-f-featured").checked = !!product.featured;
     $("#hje-adm-f-description").value = product.description || "";
     $("#hje-adm-f-spec-acabado").value = (product.specifications || {}).acabado || "";
@@ -554,13 +587,15 @@
     $("#hje-adm-f-instagram").value = product.instagramUrl || "https://www.instagram.com/";
     wireUnitsAvailabilitySuggestion();
 
-    var preview = $("#hje-adm-photo-preview");
-    preview.innerHTML = "";
-    if (product.images && product.images[0]) {
-      var img = document.createElement("img");
-      img.src = product.images[0].thumbnail || product.images[0].src;
-      preview.appendChild(img);
-    }
+    state.photos = (product.images || []).map(function (img) {
+      return { isNew: false, existingSrc: img.src, existingThumb: img.thumbnail, alt: img.alt, width: img.width, height: img.height };
+    });
+    renderPhotoGrid();
+    state.sizes = ((product.variants || {}).sizes || []).map(function (r) { return { label: r.label, units: Number(r.units) || 0 }; });
+    state.colors = ((product.variants || {}).colors || []).map(function (r) { return { label: r.label, units: Number(r.units) || 0 }; });
+    renderVariantRows("sizes");
+    renderVariantRows("colors");
+    updateVariantTotals();
     $("#hje-adm-photo-error").classList.remove("hje-show");
     $("#hje-adm-guardrails").classList.remove("hje-show");
 
@@ -573,16 +608,20 @@
 
   // ---------- photo pipeline: canvas downscale + blank-canvas guard ----------
 
-  function downscale(img, maxDim, quality) {
-    var scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
-    var w = Math.max(1, Math.round(img.naturalWidth * scale));
-    var h = Math.max(1, Math.round(img.naturalHeight * scale));
+  function downscaleSource(source, srcW, srcH, maxDim) {
+    var scale = Math.min(1, maxDim / Math.max(srcW, srcH));
+    var w = Math.max(1, Math.round(srcW * scale));
+    var h = Math.max(1, Math.round(srcH * scale));
     var canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
     var ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0, w, h);
+    ctx.drawImage(source, 0, 0, w, h);
     return canvas;
+  }
+
+  function downscale(img, maxDim) {
+    return downscaleSource(img, img.naturalWidth, img.naturalHeight, maxDim);
   }
 
   function isCanvasBlank(canvas) {
@@ -598,10 +637,48 @@
     return true;
   }
 
-  function canvasToBlob(canvas, quality) {
+  function canvasToBlob(canvas, mime, quality) {
     return new Promise(function (resolve) {
-      canvas.toBlob(resolve, "image/jpeg", quality);
+      canvas.toBlob(resolve, mime, quality);
     });
+  }
+
+  function mimeForPath(path) {
+    return /\.webp(\?|$)/i.test(path || "") ? "image/webp" : "image/jpeg";
+  }
+
+  function extForMime(mime) {
+    return mime === "image/webp" ? "webp" : "jpg";
+  }
+
+  function loadImageFromBlob(blob) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("No se pudo cargar la imagen.")); };
+      img.src = url;
+    });
+  }
+
+  function loadImageFromUrl(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error("No se pudo cargar la foto existente.")); };
+      img.src = src + (src.indexOf("?") === -1 ? "?v=" : "&v=") + Date.now();
+    });
+  }
+
+  function rotateCanvas90(source, srcW, srcH) {
+    var canvas = document.createElement("canvas");
+    canvas.width = srcH;
+    canvas.height = srcW;
+    var ctx = canvas.getContext("2d");
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(source, -srcW / 2, -srcH / 2);
+    return canvas;
   }
 
   function processPhotoFile(file) {
@@ -611,13 +688,13 @@
       img.onload = function () {
         URL.revokeObjectURL(url);
         try {
-          var mainCanvas = downscale(img, 1200, 0.82);
-          var thumbCanvas = downscale(img, 400, 0.8);
+          var mainCanvas = downscale(img, 1200);
+          var thumbCanvas = downscale(img, 400);
           if (isCanvasBlank(mainCanvas) || isCanvasBlank(thumbCanvas)) {
             reject(new Error("No se pudo procesar la imagen (parece en blanco). Intenta de nuevo."));
             return;
           }
-          Promise.all([canvasToBlob(mainCanvas, 0.82), canvasToBlob(thumbCanvas, 0.8)]).then(function (blobs) {
+          Promise.all([canvasToBlob(mainCanvas, "image/jpeg", 0.82), canvasToBlob(thumbCanvas, "image/jpeg", 0.8)]).then(function (blobs) {
             resolve({
               main: blobs[0],
               thumb: blobs[1],
@@ -638,30 +715,204 @@
     });
   }
 
+  // ---------- multi-photo gallery: state.photos + reorder/rotate/remove ----------
+
+  function newPhotoPath() {
+    var id = $("#hje-adm-product-form").dataset.hjeId;
+    var slug = $("#hje-adm-f-slug").value || slugify($("#hje-adm-f-name").value) + "-" + id;
+    return "products/producto-" + id + "-" + slug + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function renderPhotoGrid() {
+    var grid = $("#hje-adm-photo-grid");
+    var tiles = state.photos.map(function (photo, i) {
+      var src = photo.previewUrl || photo.existingThumb || photo.existingSrc;
+      return (
+        '<div class="hje-adm-photo-tile" data-index="' + i + '">' +
+        (i === 0 ? '<span class="hje-adm-photo-cover-label">Portada</span>' : "") +
+        '<img src="' + esc(src) + '" alt=""/>' +
+        '<button type="button" class="hje-adm-photo-remove" data-index="' + i + '" aria-label="Eliminar foto">&times;</button>' +
+        '<div class="hje-adm-photo-controls">' +
+        '<button type="button" class="hje-adm-photo-prev" data-index="' + i + '"' + (i === 0 ? " disabled" : "") + ">&lsaquo;</button>" +
+        '<button type="button" class="hje-adm-photo-rotate" data-index="' + i + '">&#8635;</button>' +
+        '<button type="button" class="hje-adm-photo-next" data-index="' + i + '"' + (i === state.photos.length - 1 ? " disabled" : "") + ">&rsaquo;</button>" +
+        "</div></div>"
+      );
+    }).join("");
+    grid.innerHTML = tiles + '<div class="hje-adm-photo-add" id="hje-adm-photo-add-tile">+</div>';
+
+    $("#hje-adm-photo-add-tile").addEventListener("click", function () { $("#hje-adm-f-photo").click(); });
+    $all(".hje-adm-photo-remove", grid).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.photos.splice(parseInt(btn.getAttribute("data-index"), 10), 1);
+        renderPhotoGrid();
+      });
+    });
+    $all(".hje-adm-photo-prev", grid).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var i = parseInt(btn.getAttribute("data-index"), 10);
+        if (i <= 0) return;
+        var tmp = state.photos[i - 1];
+        state.photos[i - 1] = state.photos[i];
+        state.photos[i] = tmp;
+        renderPhotoGrid();
+      });
+    });
+    $all(".hje-adm-photo-next", grid).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var i = parseInt(btn.getAttribute("data-index"), 10);
+        if (i >= state.photos.length - 1) return;
+        var tmp = state.photos[i + 1];
+        state.photos[i + 1] = state.photos[i];
+        state.photos[i] = tmp;
+        renderPhotoGrid();
+      });
+    });
+    $all(".hje-adm-photo-rotate", grid).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        rotatePhotoAt(parseInt(btn.getAttribute("data-index"), 10));
+      });
+    });
+  }
+
+  function rotatePhotoAt(i) {
+    var photo = state.photos[i];
+    var errorEl = $("#hje-adm-photo-error");
+    errorEl.classList.remove("hje-show");
+
+    var mime = photo.isNew ? (photo.mime || "image/jpeg") : mimeForPath(photo.existingSrc);
+    var sourcePromise = photo.main ? loadImageFromBlob(photo.main) : loadImageFromUrl(photo.existingSrc);
+
+    sourcePromise.then(function (img) {
+      var srcW = img.naturalWidth || img.width;
+      var srcH = img.naturalHeight || img.height;
+      var rotated = rotateCanvas90(img, srcW, srcH);
+      var mainCanvas = downscaleSource(rotated, rotated.width, rotated.height, 1200);
+      var thumbCanvas = downscaleSource(rotated, rotated.width, rotated.height, 400);
+      if (isCanvasBlank(mainCanvas) || isCanvasBlank(thumbCanvas)) {
+        throw new Error("No se pudo rotar la imagen (parece en blanco). Intenta de nuevo.");
+      }
+      var quality = mime === "image/webp" ? 0.85 : 0.82;
+      var thumbQuality = mime === "image/webp" ? 0.82 : 0.8;
+      return Promise.all([canvasToBlob(mainCanvas, mime, quality), canvasToBlob(thumbCanvas, mime, thumbQuality)]).then(function (blobs) {
+        if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+        state.photos[i] = {
+          isNew: true,
+          main: blobs[0],
+          thumb: blobs[1],
+          width: mainCanvas.width,
+          height: mainCanvas.height,
+          previewUrl: URL.createObjectURL(blobs[0]),
+          path: photo.isNew ? photo.path : photo.existingSrc.replace(/^\/joyas\//, "").replace(/\.[a-z0-9]+$/i, ""),
+          mime: mime,
+          alt: photo.alt
+        };
+        renderPhotoGrid();
+      });
+    }).catch(function (err) {
+      errorEl.textContent = err.message || "No se pudo rotar la imagen.";
+      errorEl.classList.add("hje-show");
+    });
+  }
+
   function initPhotoInput() {
     $("#hje-adm-f-photo").addEventListener("change", function (e) {
-      var file = e.target.files[0];
-      if (!file) return;
+      var files = Array.prototype.slice.call(e.target.files);
+      if (!files.length) return;
       var errorEl = $("#hje-adm-photo-error");
       errorEl.classList.remove("hje-show");
-      processPhotoFile(file)
-        .then(function (result) {
-          state.photo = result;
-          var id = $("#hje-adm-product-form").dataset.hjeId;
-          var slug = $("#hje-adm-f-slug").value || slugify($("#hje-adm-f-name").value) + "-" + id;
-          state.photoPath = "products/producto-" + id + "-" + slug;
-          var preview = $("#hje-adm-photo-preview");
-          preview.innerHTML = "";
-          var img = document.createElement("img");
-          img.src = result.previewUrl;
-          preview.appendChild(img);
-        })
-        .catch(function (err) {
-          errorEl.textContent = err.message;
-          errorEl.classList.add("hje-show");
-          state.photo = null;
+      Promise.all(files.map(function (file) {
+        return processPhotoFile(file).then(function (result) {
+          state.photos.push({
+            isNew: true,
+            main: result.main,
+            thumb: result.thumb,
+            width: result.width,
+            height: result.height,
+            previewUrl: result.previewUrl,
+            path: newPhotoPath(),
+            mime: "image/jpeg"
+          });
         });
+      })).then(function () {
+        renderPhotoGrid();
+        e.target.value = "";
+      }).catch(function (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.add("hje-show");
+        e.target.value = "";
+      });
     });
+  }
+
+  // ---------- size/color variants: repeatable rows + computed total ----------
+
+  function renderVariantRows(kind) {
+    var container = $("#hje-adm-" + kind + "-rows");
+    var list = state[kind];
+    container.innerHTML = list.map(function (row, i) {
+      return (
+        '<div class="hje-adm-variant-row">' +
+        '<input type="text" class="hje-adm-variant-label" data-kind="' + kind + '" data-index="' + i + '" placeholder="' + (kind === "sizes" ? "Ej: 7" : "Ej: Oro rosa") + '" value="' + esc(row.label) + '"/>' +
+        '<input type="number" class="hje-adm-variant-units" data-kind="' + kind + '" data-index="' + i + '" min="0" value="' + (Number(row.units) || 0) + '"/>' +
+        '<button type="button" class="hje-adm-variant-remove" data-kind="' + kind + '" data-index="' + i + '" aria-label="Eliminar">&times;</button>' +
+        "</div>"
+      );
+    }).join("");
+
+    $all(".hje-adm-variant-label", container).forEach(function (input) {
+      input.addEventListener("input", function () {
+        state[kind][parseInt(input.getAttribute("data-index"), 10)].label = input.value;
+      });
+    });
+    $all(".hje-adm-variant-units", container).forEach(function (input) {
+      input.addEventListener("input", function () {
+        state[kind][parseInt(input.getAttribute("data-index"), 10)].units = parseInt(input.value, 10) || 0;
+        updateVariantTotals();
+      });
+    });
+    $all(".hje-adm-variant-remove", container).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state[kind].splice(parseInt(btn.getAttribute("data-index"), 10), 1);
+        renderVariantRows(kind);
+        updateVariantTotals();
+      });
+    });
+  }
+
+  function addVariantRow(kind) {
+    state[kind].push({ label: "", units: 0 });
+    renderVariantRows(kind);
+    updateVariantTotals();
+  }
+
+  function sumUnits(list) {
+    return list.reduce(function (s, r) { return s + (Number(r.units) || 0); }, 0);
+  }
+
+  function computedUnitsTotal() {
+    if (state.sizes.length) return sumUnits(state.sizes);
+    if (state.colors.length) return sumUnits(state.colors);
+    return null;
+  }
+
+  function updateVariantTotals() {
+    $("#hje-adm-sizes-total").textContent = state.sizes.length
+      ? "Total: " + sumUnits(state.sizes) + " unidad(es) en " + state.sizes.length + " talla(s)."
+      : "";
+
+    var unitsInput = $("#hje-adm-f-units");
+    var hint = $("#hje-adm-units-computed-hint");
+    var computed = computedUnitsTotal();
+    if (computed !== null) {
+      unitsInput.value = computed;
+      unitsInput.disabled = true;
+      hint.textContent = "Calculado automaticamente desde tallas/colores.";
+      $("#hje-adm-f-availability").value = computed === 0 ? "Agotado" : "Disponible";
+    } else {
+      unitsInput.disabled = false;
+      hint.textContent = "";
+    }
   }
 
   // ---------- guardrails + save ----------
@@ -677,8 +928,7 @@
     ["acabado", "cuidado", "origen", "garantia"].forEach(function (k) {
       if (!specs[k]) errors.push("La especificacion '" + k + "' es obligatoria.");
     });
-    var hasExistingPhoto = product.images && product.images.length > 0;
-    if (!hasExistingPhoto && !state.photo) errors.push("Se requiere al menos una foto.");
+    if (!state.photos.length) errors.push("Se requiere al menos una foto.");
 
     var allProducts = displayProducts();
     var slugCollision = allProducts.some(function (p) { return p.slug === product.slug && p.slug !== state.editingSlug; });
@@ -704,20 +954,48 @@
       ? displayProducts().find(function (p) { return p.slug === state.editingSlug; })
       : null;
 
+    var name = $("#hje-adm-f-name").value.trim();
+    var material = $("#hje-adm-f-material").value;
+    var defaultAlt = name + " en " + material + " - joyeria colombiana";
+
     var product = {
       id: (existing && existing.id) || id,
       slug: slug,
       sku: $("#hje-adm-f-sku").value.trim(),
-      name: $("#hje-adm-f-name").value.trim(),
+      name: name,
       category: $("#hje-adm-f-category").value,
-      material: $("#hje-adm-f-material").value,
+      material: material,
       price: parseInt($("#hje-adm-f-price").value, 10) || 0,
       currency: (existing && existing.currency) || "COP",
       availability: $("#hje-adm-f-availability").value,
       units: Math.max(0, parseInt($("#hje-adm-f-units").value, 10) || 0),
+      costoInterno: Math.max(0, parseInt($("#hje-adm-f-costo").value, 10) || 0),
+      tag: $("#hje-adm-f-tag").value.trim(),
+      promotion: $("#hje-adm-f-promotion").checked,
+      photoFit: $("#hje-adm-f-photofit").value === "contain" ? "contain" : "cover",
       featured: $("#hje-adm-f-featured").checked,
       popularity: parseInt($("#hje-adm-f-popularity").value, 10) || 0,
-      images: existing ? existing.images : [],
+      images: state.photos.map(function (photo) {
+        if (photo.isNew) {
+          var ext = extForMime(photo.mime);
+          var entry = {
+            src: "/joyas/" + photo.path + "." + ext,
+            thumbnail: "/joyas/" + photo.path + "-thumb." + ext,
+            alt: photo.alt || defaultAlt,
+            width: photo.width,
+            height: photo.height
+          };
+          entry._pendingPhoto = { main: photo.main, thumb: photo.thumb };
+          entry._pendingPhotoPath = photo.path + "." + ext;
+          entry._pendingPhotoThumbPath = photo.path + "-thumb." + ext;
+          return entry;
+        }
+        return { src: photo.existingSrc, thumbnail: photo.existingThumb, alt: photo.alt || defaultAlt, width: photo.width, height: photo.height };
+      }),
+      variants: {
+        sizes: state.sizes.filter(function (r) { return r.label.trim(); }).map(function (r) { return { label: r.label.trim(), units: Math.max(0, Number(r.units) || 0) }; }),
+        colors: state.colors.filter(function (r) { return r.label.trim(); }).map(function (r) { return { label: r.label.trim(), units: Math.max(0, Number(r.units) || 0) }; })
+      },
       description: $("#hje-adm-f-description").value.trim(),
       specifications: {
         acabado: $("#hje-adm-f-spec-acabado").value.trim(),
@@ -726,24 +1004,11 @@
         garantia: $("#hje-adm-f-spec-garantia").value.trim()
       },
       seo: {
-        title: $("#hje-adm-f-name").value.trim() + " | Joyeria Colombiana",
-        description: "Compra " + $("#hje-adm-f-name").value.trim().toLowerCase() + " en " + $("#hje-adm-f-material").value.toLowerCase() + " con asesoria personalizada por WhatsApp e Instagram."
+        title: name + " | Joyeria Colombiana",
+        description: "Compra " + name.toLowerCase() + " en " + material.toLowerCase() + " con asesoria personalizada por WhatsApp e Instagram."
       },
       instagramUrl: $("#hje-adm-f-instagram").value.trim() || "https://www.instagram.com/"
     };
-
-    if (state.photo) {
-      var alt = product.name + " en " + product.material + " - joyeria colombiana";
-      product.images = [{
-        src: "/joyas/" + state.photoPath + ".jpg",
-        thumbnail: "/joyas/" + state.photoPath + "-thumb.jpg",
-        alt: alt,
-        width: state.photo.width,
-        height: state.photo.height
-      }];
-      product._pendingPhoto = state.photo;
-      product._pendingPhotoPath = state.photoPath;
-    }
 
     var errors = validateForm(product, !state.editingSlug);
     if (errors.length) {
@@ -870,13 +1135,11 @@
   // renderProductCard - keep the two in sync.
   function renderCard(p) {
     var img = p.images && p.images[0] ? p.images[0] : { src: "", alt: p.name };
-    var badge = p.featured
-      ? '<span class="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium absolute left-3 top-3 bg-white/90 text-gold-700">Destacado</span>'
-      : "";
+    var badge = badgeStackHtml(p);
     var href = "/joyas/producto/" + p.slug;
     return (
       '<article class="group"><a class="block overflow-hidden rounded-md bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="' + href + '">' +
-      '<div class="relative aspect-[4/5]"><img alt="' + esc(img.alt) + '" loading="lazy" decoding="async" data-nimg="fill" class="object-cover transition-transform duration-500 group-hover:scale-105" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent" src="' + esc(img.src) + '"/>' +
+      '<div class="relative aspect-[4/5]"><img alt="' + esc(img.alt) + '" loading="lazy" decoding="async" data-nimg="fill" class="object-cover transition-transform duration-500 group-hover:scale-105" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' + photoFitStyle(p) + '" src="' + esc(img.src) + '"/>' +
       badge +
       '<button class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-soft transition hover:bg-white" aria-label="Guardar ' + esc(p.name) + ' en favoritos"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart h-4 w-4"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg></button></div></a>' +
       '<div class="mt-4 space-y-3"><div><a class="font-medium hover:text-gold-700" href="' + href + '">' + esc(p.name) + '</a><p class="mt-1 text-sm text-muted-foreground">' + esc(p.category) + '<!-- --> · <!-- -->' + esc(p.material) + '</p></div>' +
@@ -932,12 +1195,44 @@
       var val = key === "availability" ? product.availability : product[key];
       return '<span class="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground">' + esc(val) + "</span>";
     }).join("");
+    if (product.tag) pillHtml += '<span class="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-gold-700">' + esc(product.tag) + "</span>";
+    if (product.promotion) pillHtml += '<span class="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">Promocion</span>';
+
+    // Independent size/color axes (not a combinatorial matrix - matches
+    // the reference tool this was modeled on). Options at 0 stock render
+    // disabled; picking one rewrites the WhatsApp link's href via the
+    // inline script below - this page has zero hydration risk (see
+    // CLAUDE.md), so a plain inline <script> is the simplest correct fix.
+    function variantOptionsHtml(list, kind) {
+      return list.map(function (opt) {
+        var disabled = Number(opt.units) === 0;
+        return '<button type="button" class="hje-variant-opt inline-flex items-center justify-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-50 disabled:pointer-events-none" data-kind="' + esc(kind) + '" data-label="' + esc(opt.label) + '"' + (disabled ? " disabled" : "") + ">" + esc(opt.label) + (disabled ? " (agotado)" : "") + "</button>";
+      }).join("");
+    }
+    var sizes = (product.variants && product.variants.sizes) || [];
+    var colors = (product.variants && product.variants.colors) || [];
+    var variantPickerHtml =
+      (sizes.length ? '<div class="mt-5"><p class="text-sm font-medium">Talla</p><div class="mt-2 flex flex-wrap gap-2">' + variantOptionsHtml(sizes, "Talla") + "</div></div>" : "") +
+      (colors.length ? '<div class="mt-5"><p class="text-sm font-medium">Color</p><div class="mt-2 flex flex-wrap gap-2">' + variantOptionsHtml(colors, "Color") + "</div></div>" : "");
+    var variantScript = (sizes.length || colors.length)
+      ? '<script>(function(){var opts=document.querySelectorAll(".hje-variant-opt:not(:disabled)");var waLink=document.querySelector(".hje-wa-consult");var selected={};opts.forEach(function(o){o.addEventListener("click",function(){var kind=o.getAttribute("data-kind");selected[kind]=o.getAttribute("data-label");document.querySelectorAll(".hje-variant-opt[data-kind=\'"+kind+"\']").forEach(function(x){x.classList.remove("border-border","bg-background","hover:bg-muted");x.classList.remove("bg-primary","text-primary-foreground");x.classList.add("border-border","bg-background","hover:bg-muted");});o.classList.remove("border-border","bg-background","hover:bg-muted");o.classList.add("bg-primary","text-primary-foreground");if(waLink){var base=waLink.getAttribute("data-base-text")||"";var extra=Object.keys(selected).map(function(k){return " - "+k+": "+selected[k];}).join("");waLink.setAttribute("href","https://wa.me/' + WHATSAPP_NUMBER + '?text="+encodeURIComponent(base+extra));}});});})();</script>'
+      : "";
 
     var specsHtml = ["acabado", "cuidado", "origen", "garantia"].map(function (key) {
       return '<div class="grid grid-cols-[140px_1fr] gap-4 border-b border-border pb-3"><dt class="capitalize text-muted-foreground">' + key + "</dt><dd>" + esc(product.specifications[key]) + "</dd></div>";
     }).join("");
 
     var relatedHtml = related.map(renderCard).join("");
+
+    var galleryMainId = "hje-gallery-main-img";
+    var fitStyle = photoFitStyle(product);
+    var thumbsHtml = product.images.map(function (im, i) {
+      return '<button type="button" class="hje-gallery-thumb relative aspect-square overflow-hidden rounded border ' + (i === 0 ? "border-gold-700" : "border-border") + ' focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" data-full="' + esc(im.src) + '" data-alt="' + esc(im.alt) + '" aria-label="Ver imagen ' + esc(im.alt) + '"><img alt="" loading="lazy" decoding="async" data-nimg="fill" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' + fitStyle + '" src="' + esc(im.thumbnail) + '"/></button>';
+    }).join("");
+    var galleryScript = product.images.length > 1
+      ? '<script>(function(){var thumbs=document.querySelectorAll(".hje-gallery-thumb");var main=document.getElementById("' + galleryMainId + '");thumbs.forEach(function(t){t.addEventListener("click",function(){main.setAttribute("src",t.getAttribute("data-full"));main.setAttribute("alt",t.getAttribute("data-alt"));thumbs.forEach(function(x){x.classList.remove("border-gold-700");x.classList.add("border-border");});t.classList.remove("border-border");t.classList.add("border-gold-700");});});})();</script>'
+      : "";
+    var waBaseText = "Hola, quiero consultar " + product.name + " SKU " + product.sku;
 
     var main =
       '<main><div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">' +
@@ -949,15 +1244,16 @@
       '<li class="flex items-center gap-2"><span aria-hidden="true">/</span><a class="hover:text-foreground" href="/joyas/producto/' + esc(product.slug) + '">' + esc(product.name) + "</a></li>" +
       "</ol></nav>" +
       '<section class="grid gap-10 py-8 lg:grid-cols-[1.05fr_0.95fr]">' +
-      '<div class="grid gap-3"><div class="relative aspect-[4/5] overflow-hidden rounded-md bg-muted"><img alt="' + esc(img.alt) + '" decoding="async" data-nimg="fill" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent" src="' + esc(img.src) + '"/></div>' +
-      '<div class="grid grid-cols-5 gap-2"><button class="relative aspect-square overflow-hidden rounded border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Ver imagen ' + esc(img.alt) + '"><img alt="" loading="lazy" decoding="async" data-nimg="fill" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent" src="' + esc(img.thumbnail) + '"/></button></div></div>' +
+      '<div class="grid gap-3"><div class="relative aspect-[4/5] overflow-hidden rounded-md bg-muted"><img id="' + galleryMainId + '" alt="' + esc(img.alt) + '" decoding="async" data-nimg="fill" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' + fitStyle + '" src="' + esc(img.src) + '"/></div>' +
+      (product.images.length > 1 ? '<div class="grid grid-cols-5 gap-2">' + thumbsHtml + "</div>" : "") + "</div>" +
       "<div>" +
       '<div class="flex flex-wrap gap-2">' + pillHtml + "</div>" +
       '<h1 class="mt-5 font-serif text-5xl">' + esc(product.name) + "</h1>" +
       '<p class="mt-3 text-2xl font-semibold">' + esc(formatPrice(product.price) || "Consultar precio") + "</p>" +
       '<p class="mt-5 leading-7 text-muted-foreground">' + esc(product.description) + "</p>" +
+      variantPickerHtml +
       '<div class="mt-8 grid gap-3 sm:grid-cols-2">' +
-      '<a href="' + waHref("Hola, quiero consultar " + product.name + " SKU " + product.sku) + '" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-4 w-4"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>Consultar por WhatsApp</a>' +
+      '<a href="' + waHref(waBaseText) + '" data-base-text="' + esc(waBaseText) + '" class="hje-wa-consult inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-4 w-4"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>Consultar por WhatsApp</a>' +
       '<a href="' + esc(product.instagramUrl) + '" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-border bg-background hover:bg-muted h-12 px-6"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg>Ver en Instagram</a>' +
       "</div>" +
       '<div class="mt-8 grid gap-3 border-y border-border py-6 text-sm text-muted-foreground"><p class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck h-4 w-4 text-gold-700"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>Envios coordinados en Colombia segun disponibilidad.</p><p class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check h-4 w-4 text-gold-700"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>Revision, cuidado y recomendaciones antes de confirmar.</p></div>' +
@@ -968,7 +1264,7 @@
           '<section class="py-12"><div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div class="max-w-2xl"><h2 class="font-serif text-3xl text-foreground sm:text-4xl">Productos relacionados</h2></div></div><div class="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">' + relatedHtml + "</div></section>"
         : "") +
       '<section class="pb-16"><div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div class="max-w-2xl"><h2 class="font-serif text-3xl text-foreground sm:text-4xl">Vistos recientemente</h2></div></div><div class="text-sm text-muted-foreground"><a class="font-medium text-gold-700 underline-offset-4 hover:underline" href="/joyas/shop">Volver al catalogo</a> <!-- -->para seguir explorando piezas similares.</div></section>' +
-      "</div></main>";
+      "</div></main>" + galleryScript + variantScript;
 
     var head =
       "<!doctype html><html lang=\"es-CO\"><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>" +
@@ -1116,11 +1412,25 @@
         return Promise.reject(new Error("guardrail"));
       }
 
-      // 1) upload pending photos first (they don't need conflict handling - unique new paths)
+      // 1) upload pending photos first. Most are brand-new unique paths (no
+      // conflict to worry about), but a rotated *existing* photo re-uploads
+      // to its same path in place - so fetch each path's current sha first
+      // (null for a path that doesn't exist yet) rather than assuming null.
       logPublish("Subiendo fotos...");
-      var photoUploads = dirtyList.filter(function (p) { return p._pendingPhoto; }).map(function (p) {
-        return ghPutBlob(p._pendingPhotoPath + ".jpg", p._pendingPhoto.main, null, "Foto: " + p.name)
-          .then(function () { return ghPutBlob(p._pendingPhotoPath + "-thumb.jpg", p._pendingPhoto.thumb, null, "Foto (thumb): " + p.name); });
+      var photoUploads = [];
+      dirtyList.forEach(function (p) {
+        (p.images || []).forEach(function (img) {
+          if (!img._pendingPhoto) return;
+          photoUploads.push(
+            ghGetFile(img._pendingPhotoPath).then(function (existing) {
+              return ghPutBlob(img._pendingPhotoPath, img._pendingPhoto.main, existing ? existing.sha : null, "Foto: " + p.name);
+            }).then(function () {
+              return ghGetFile(img._pendingPhotoThumbPath).then(function (existingThumb) {
+                return ghPutBlob(img._pendingPhotoThumbPath, img._pendingPhoto.thumb, existingThumb ? existingThumb.sha : null, "Foto (thumb): " + p.name);
+              });
+            })
+          );
+        });
       });
 
       return Promise.all(photoUploads).then(function () {
@@ -1131,8 +1441,11 @@
           (baseCatalog || []).forEach(function (p) { bySlug[p.slug] = p; });
           dirtyList.forEach(function (p) {
             var clean = JSON.parse(JSON.stringify(p));
-            delete clean._pendingPhoto;
-            delete clean._pendingPhotoPath;
+            (clean.images || []).forEach(function (img) {
+              delete img._pendingPhoto;
+              delete img._pendingPhotoPath;
+              delete img._pendingPhotoThumbPath;
+            });
             bySlug[p.slug] = clean;
           });
           deletedList.forEach(function (slug) { delete bySlug[slug]; });
@@ -1255,6 +1568,9 @@
     $("#hje-adm-confirm-backdrop").addEventListener("click", function (e) {
       if (e.target === this) { pendingDeleteSlug = null; this.classList.remove("hje-show"); }
     });
+
+    $("#hje-adm-sizes-add").addEventListener("click", function () { addVariantRow("sizes"); });
+    $("#hje-adm-colors-add").addEventListener("click", function () { addVariantRow("colors"); });
 
     $("#hje-adm-bulk-btn").addEventListener("click", openBulkEditForm);
     $("#hje-adm-bulk-cancel").addEventListener("click", closeBulkEditForm);
