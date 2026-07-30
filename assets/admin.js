@@ -24,7 +24,14 @@
   var LOW_STOCK_THRESHOLD = 3;
 
   var CATEGORIES = ["Cadenas", "Pulseras", "Anillos", "Argollas", "Aretes", "Collares", "Dijes"];
-  var MATERIALS = ["Oro Laminado", "Oro 18K", "Oro 14K", "Oro 10K", "Plata 925", "Oro Rosa", "Esmeraldas", "Diamantes"];
+  // Simplified 2026-07-30 from an 8-value list (Oro 14K/10K/Rosa,
+  // Esmeraldas, Diamantes dropped) to match how the owner actually stocks
+  // the store - 3 real material tiers. The 5 dropped material pages
+  // (oro-14k.html etc.) still exist and still render fine for any legacy
+  // product that used them, they're just no longer offered here for new
+  // products/edits.
+  var MATERIALS = ["Oro 18K", "Plata", "Oro Laminado"];
+  var ANILLO_SIZE_PRESETS = ["5", "6", "7", "8", "9", "10", "11", "12"];
 
   var state = {
     products: [],
@@ -390,6 +397,7 @@
     var list = $("#hje-adm-card-list");
     var rows = applyFilters();
     $("#hje-adm-count").textContent = rows.length + " de " + displayProducts().length + " productos";
+    renderStats();
 
     list.innerHTML = rows.map(function (p) {
       var isDeleted = !!state.deleted[p.slug];
@@ -401,23 +409,24 @@
       var cardClass = "hje-adm-card" +
         (isDeleted ? " hje-adm-card-deleted" : "") +
         (isDirty ? " hje-adm-card-dirty" : "");
+
+      var pills = "";
+      if (p.featured) pills += '<span class="hje-adm-card-pill">Destacado</span>';
+      if (p.tag) pills += '<span class="hje-adm-card-pill">' + esc(p.tag) + "</span>";
+      if (p.promotion) pills += '<span class="hje-adm-card-pill hje-adm-card-pill-promo">Promocion</span>';
+
       return (
         '<div class="' + cardClass + '" data-hje-slug="' + esc(p.slug) + '">' +
-        '<div class="hje-adm-card-top">' +
-        (isDeleted ? "" : '<input type="checkbox" class="hje-adm-card-check" data-hje-slug="' + esc(p.slug) + '"' + (isSelected ? " checked" : "") + '/>') +
-        '<img class="hje-adm-card-thumb" src="' + esc(img) + '" alt="" loading="lazy"/>' +
+        '<div class="hje-adm-card-media">' +
+        '<img class="hje-adm-card-photo" src="' + esc(img) + '" alt="" loading="lazy"/>' +
+        (isDeleted ? "" : '<label class="hje-adm-card-select"><input type="checkbox" class="hje-adm-card-check" data-hje-slug="' + esc(p.slug) + '"' + (isSelected ? " checked" : "") + '/></label>') +
+        (pills ? '<div class="hje-adm-card-badges">' + pills + "</div>" : "") +
+        '<span class="hje-adm-badge hje-adm-card-status ' + statusBadgeClass(status) + '">' + esc(status) + "</span>" +
         "</div>" +
         '<div class="hje-adm-card-body">' +
-        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Nombre</span><span class="hje-adm-card-value hje-adm-card-value-strong">' + esc(p.name) + "</span></div>" +
-        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">SKU</span><span class="hje-adm-card-value">' + esc(p.sku) + "</span></div>" +
-        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Categoria</span><span class="hje-adm-card-value">' + esc(p.category) + "</span></div>" +
-        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Material</span><span class="hje-adm-card-value">' + esc(p.material) + "</span></div>" +
-        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Precio</span><span class="hje-adm-card-value">' + esc(priceLabel) + "</span></div>" +
-        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Costo interno</span><span class="hje-adm-card-value">' + esc(formatPrice(p.costoInterno) || "-") + "</span></div>" +
-        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Unidades</span><span class="hje-adm-card-value hje-adm-card-value-strong">' + (Number(p.units) || 0) + "</span></div>" +
-        '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Estado</span><span class="hje-adm-badge ' + statusBadgeClass(status) + '">' + esc(status) + "</span></div>" +
-        (p.tag ? '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Tag</span><span class="hje-adm-badge hje-adm-badge-tag">' + esc(p.tag) + "</span></div>" : "") +
-        (p.promotion ? '<div class="hje-adm-card-row"><span class="hje-adm-card-label">Promocion</span><span class="hje-adm-badge hje-adm-badge-promo">En promocion</span></div>' : "") +
+        '<div class="hje-adm-card-title-row"><span class="hje-adm-card-name">' + esc(p.name) + '</span><span class="hje-adm-card-price">' + esc(priceLabel) + "</span></div>" +
+        '<div class="hje-adm-card-meta">' + esc(p.sku) + " · " + esc(p.category) + " · " + esc(p.material) + "</div>" +
+        '<div class="hje-adm-card-stats"><span>Unidades: <strong>' + (Number(p.units) || 0) + '</strong></span><span>Costo: <strong>' + esc(formatPrice(p.costoInterno) || "-") + "</strong></span></div>" +
         '<div class="hje-adm-card-actions">' +
         (isDeleted
           ? '<button type="button" class="hje-adm-card-btn hje-adm-undo-btn" data-hje-slug="' + esc(p.slug) + '">Deshacer</button>'
@@ -451,6 +460,19 @@
 
     updatePublishBar();
     updateSelectionBar();
+  }
+
+  function renderStats() {
+    var bar = $("#hje-adm-stats-bar");
+    if (!bar) return;
+    var all = displayProducts().filter(function (p) { return !state.deleted[p.slug]; });
+    var counts = { Disponible: 0, "Bajo stock": 0, Agotado: 0 };
+    all.forEach(function (p) { counts[stockStatus(p.units)]++; });
+    bar.innerHTML =
+      '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + all.length + '</div><div class="hje-adm-stat-label">Productos</div></div>' +
+      '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + counts.Disponible + '</div><div class="hje-adm-stat-label">Disponibles</div></div>' +
+      '<div class="hje-adm-stat hje-adm-stat-warn"><div class="hje-adm-stat-value">' + counts["Bajo stock"] + '</div><div class="hje-adm-stat-label">Bajo stock</div></div>' +
+      '<div class="hje-adm-stat hje-adm-stat-off"><div class="hje-adm-stat-value">' + counts.Agotado + '</div><div class="hje-adm-stat-label">Agotados</div></div>';
   }
 
   function updateSelectionBar() {
@@ -524,6 +546,7 @@
     renderVariantRows("sizes");
     renderVariantRows("colors");
     updateVariantTotals();
+    renderSizePresets();
     $("#hje-adm-photo-error").classList.remove("hje-show");
     $("#hje-adm-guardrails").classList.remove("hje-show");
     form.dataset.hjeId = id;
@@ -596,6 +619,7 @@
     renderVariantRows("sizes");
     renderVariantRows("colors");
     updateVariantTotals();
+    renderSizePresets();
     $("#hje-adm-photo-error").classList.remove("hje-show");
     $("#hje-adm-guardrails").classList.remove("hje-show");
 
@@ -863,6 +887,7 @@
     $all(".hje-adm-variant-label", container).forEach(function (input) {
       input.addEventListener("input", function () {
         state[kind][parseInt(input.getAttribute("data-index"), 10)].label = input.value;
+        if (kind === "sizes") renderSizePresets();
       });
     });
     $all(".hje-adm-variant-units", container).forEach(function (input) {
@@ -876,6 +901,7 @@
         state[kind].splice(parseInt(btn.getAttribute("data-index"), 10), 1);
         renderVariantRows(kind);
         updateVariantTotals();
+        if (kind === "sizes") renderSizePresets();
       });
     });
   }
@@ -884,6 +910,38 @@
     state[kind].push({ label: "", units: 0 });
     renderVariantRows(kind);
     updateVariantTotals();
+  }
+
+  // Quick-add chips for standard ring sizes - only relevant for rings
+  // (Anillos/Argollas), so hidden for every other category. Clicking a
+  // size already present is a no-op rather than a duplicate row.
+  var RING_CATEGORIES = ["Anillos", "Argollas"];
+
+  function renderSizePresets() {
+    var box = $("#hje-adm-size-presets");
+    var category = $("#hje-adm-f-category").value;
+    if (RING_CATEGORIES.indexOf(category) === -1) {
+      box.classList.remove("hje-show");
+      box.innerHTML = "";
+      return;
+    }
+    var existingLabels = state.sizes.map(function (r) { return r.label.trim(); });
+    box.innerHTML = '<span class="hje-adm-preset-label">Tallas comunes de anillo</span>' +
+      ANILLO_SIZE_PRESETS.map(function (size) {
+        var already = existingLabels.indexOf(size) !== -1;
+        return '<button type="button" class="hje-adm-preset-chip" data-size="' + esc(size) + '"' + (already ? " disabled" : "") + ">" + esc(size) + "</button>";
+      }).join("");
+    box.classList.add("hje-show");
+    $all(".hje-adm-preset-chip", box).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var size = btn.getAttribute("data-size");
+        if (state.sizes.some(function (r) { return r.label.trim() === size; })) return;
+        state.sizes.push({ label: size, units: 0 });
+        renderVariantRows("sizes");
+        renderSizePresets();
+        updateVariantTotals();
+      });
+    });
   }
 
   function sumUnits(list) {
@@ -1571,6 +1629,7 @@
 
     $("#hje-adm-sizes-add").addEventListener("click", function () { addVariantRow("sizes"); });
     $("#hje-adm-colors-add").addEventListener("click", function () { addVariantRow("colors"); });
+    $("#hje-adm-f-category").addEventListener("change", renderSizePresets);
 
     $("#hje-adm-bulk-btn").addEventListener("click", openBulkEditForm);
     $("#hje-adm-bulk-cancel").addEventListener("click", closeBulkEditForm);
