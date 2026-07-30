@@ -116,13 +116,25 @@ precio"). `formatPrice()` (duplicated in `admin.js`,
 `category-render.js`, and `homepage-featured-refresh.js` — keep all
 three in sync) renders `price > 0` as a Colombian-peso-grouped string
 (`"$180.000"`, via `toLocaleString("es-CO")`); `price === 0` still falls
-back to "Consultar precio" everywhere. All 66 original products still
-have `price: 0` today — nothing shows a number until the admin sets a
-real one per product. The 66 legacy Next.js-hydrated product pages were
-deliberately left untouched by this change (nothing to update while
-they're all still 0), since any product edited via `admin.html` gets
-fully regenerated as a hand-authored page anyway, which is where a real
-price would first render.
+back to "Consultar precio" everywhere. The 66 legacy Next.js-hydrated
+product pages were deliberately left untouched when `price` first shipped
+(nothing to update while they were all still 0), since any product edited
+via `admin.html` gets fully regenerated as a hand-authored page anyway,
+which is where a real price would first render.
+
+**All 66 products got fictitious placeholder prices on 2026-07-30**,
+split evenly by material: the catalog's `material` field was rebalanced
+to exactly 33 Oro Laminado / 33 Oro 18K (alternating by array order —
+previously 64 of the 66 were Oro Laminado), each priced within a
+category-aware realistic-looking COP range for that material tier (Oro
+Laminado roughly $35.000–$220.000, Oro 18K roughly $500.000–$4.200.000,
+higher for cadenas/collares than aretes/dijes). These are **placeholder
+numbers for demo/testing purposes, not real prices** — same caveat as
+`units: 5` when that was backfilled. The same "legacy pages stay stale
+until next admin edit" rule applies here too: the 66 original Next.js
+product detail pages still show their old (mostly 0/"Consultar precio")
+price and material until each is individually re-saved through
+`admin.html`.
 
 **`units` was added 2026-07-28** as a real stock-count field, editable
 in `admin.html`. It's admin-side bookkeeping only — the storefront still
