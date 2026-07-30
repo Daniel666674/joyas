@@ -20,12 +20,16 @@
     Collares: "collares",
     Dijes: "dijes"
   };
+  // Admin only offers 3 materials as of 2026-07-30 (Oro 18K / Plata / Oro
+  // Laminado) - the other keys stay mapped here so any pre-existing
+  // product still on a legacy material (Oro 14K/10K/Rosa, Esmeraldas,
+  // Diamantes) keeps filtering/sorting correctly on shop.html.
   var MATERIAL_LABEL_TO_SLUG = {
     "Oro Laminado": "oro-laminado",
     "Oro 18K": "oro-18k",
     "Oro 14K": "oro-14k",
     "Oro 10K": "oro-10k",
-    "Plata 925": "plata-925",
+    "Plata": "plata-925",
     "Oro Rosa": "oro-rosa",
     Esmeraldas: "esmeraldas",
     Diamantes: "diamantes"

@@ -332,6 +332,58 @@ the new badges/pills/variant-picker buttons above was verified to
 already ship (reused verbatim from the existing "Destacado" badge and
 the WhatsApp/Instagram button styling) rather than guessed at.
 
+## Materials simplified to 3, admin visual redesign, ring-size presets (2026-07-30)
+
+**`MATERIALS` in `admin.js` dropped from 8 values to exactly 3**: `Oro
+18K`, `Plata`, `Oro Laminado`. Confirmed with the owner before changing
+(the previous 8-value list — plus Oro 14K/10K/Rosa, Esmeraldas,
+Diamantes — didn't reflect what's actually stocked). The 2 existing
+products that were on a dropped material got auto-remapped:
+`anillo-esmeralda-044` (Esmeraldas → Oro 18K, gemstone pieces are
+mounted in real gold) and `anillo-sello-plata-925-064` (Plata 925 →
+Plata). `category-render.js`'s `MATERIAL_LABEL_TO_SLUG` keeps all 8
+original keys mapped to their pages (just `"Plata 925"` renamed to
+`"Plata"`) so any future/legacy product on a dropped material still
+filters correctly on `shop.html` — the 5 now-materialless pages
+(`oro-14k.html` etc.) are simply unreachable via the admin dropdown
+going forward, not deleted. `plata-925.html`'s `data-hje-filter-value`
+was updated from `"Plata 925"` to `"Plata"` to match (a plain attribute
+edit — this page has no Next.js left on it, see the runtime-rendering
+section above). The two remapped products' own legacy Next-hydrated
+detail pages (both frozen since 2026-07-08, never edited via admin)
+still show their old material text in the pill — same accepted
+stale-until-next-edit precedent as every other schema change in this
+file, left alone rather than risking a hand-patch of their embedded RSC
+flight payload. **Deliberately out of scope**: the public-facing
+nav/footer/homepage material links still list all 8 — only the admin
+dropdown and product data changed. Trimming customer-facing nav down to
+3 materials too would be a much larger sweep (footer markup is repeated
+across ~96 pages) and wasn't part of what was asked for.
+
+**Ring-size quick-add presets**: `admin.js`'s `ANILLO_SIZE_PRESETS`
+(sizes 5–12) render as one-click chips above "+ Añadir talla", shown
+only when Categoria is Anillos or Argollas (`renderSizePresets()`,
+wired to the category `<select>`'s change event and to every mutation
+of `state.sizes`). Clicking an already-added size is a no-op instead of
+creating a duplicate row.
+
+**Admin visual redesign ("maximize visuals")**: the product card list
+changed from a small-thumbnail-plus-text-rows layout to photo-forward
+cards — a large `4:3` product photo as the card header with
+Destacado/Tag/Promoción badges and the stock-status badge overlaid
+directly on the image (mirrors how badges already overlay images on the
+real storefront cards), the bulk-select checkbox as a corner overlay
+instead of a separate row, and name/price/meta/stats below. A new stats
+summary bar (`renderStats()`, called from `renderTable()`) shows total
+products and the same Disponible/Bajo stock/Agotado 3-tier breakdown as
+`stockStatus()` already computes, now visible at a glance instead of
+only per-card. The add/edit modal gained section dividers
+(`.hje-adm-section-legend`) grouping the long flat field list into
+Información básica / Precio e inventario / Extras y visibilidad /
+Fotos / Tallas y colores / Descripción y especificaciones, for
+scannability now that the form has grown to ~20 fields across several
+rounds of additions.
+
 ## PR lifecycle on this branch
 
 PRs opened from `claude/spanish-translation-photo-fix-qp9s55` have

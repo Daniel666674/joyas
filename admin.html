@@ -60,6 +60,7 @@
   </div>
 
   <div class="hje-adm-panel hje-show" id="hje-adm-panel-productos">
+    <div class="hje-adm-stats-bar" id="hje-adm-stats-bar"></div>
     <div class="hje-adm-filter-row">
       <select id="hje-adm-filter-status" class="hje-adm-status-select">
         <option value="">Todos los estados</option>
@@ -104,6 +105,7 @@
     </div>
     <form id="hje-adm-product-form">
       <div class="hje-adm-form-grid">
+        <p class="hje-adm-section-legend">Informacion basica</p>
         <div class="hje-adm-field-full">
           <label for="hje-adm-f-name">Nombre</label>
           <input type="text" id="hje-adm-f-name" required />
@@ -124,6 +126,7 @@
           <label for="hje-adm-f-material">Material</label>
           <select id="hje-adm-f-material" required></select>
         </div>
+        <p class="hje-adm-section-legend">Precio e inventario</p>
         <div>
           <label for="hje-adm-f-price">Precio (COP)</label>
           <input type="number" id="hje-adm-f-price" min="0" step="1000" placeholder="0 = Consultar precio" />
@@ -144,6 +147,7 @@
           <label for="hje-adm-f-popularity">Popularidad (0-99)</label>
           <input type="number" id="hje-adm-f-popularity" min="0" max="99" value="50" />
         </div>
+        <p class="hje-adm-section-legend">Extras y visibilidad</p>
         <div>
           <label for="hje-adm-f-costo">Costo interno (COP)</label>
           <input type="number" id="hje-adm-f-costo" min="0" step="1000" placeholder="Solo visible aqui" />
@@ -169,6 +173,7 @@
         </div>
         <div class="hje-adm-field-full">
           <p class="hje-adm-specs-legend" style="margin-top:0">Tallas y stock por talla</p>
+          <div class="hje-adm-size-presets" id="hje-adm-size-presets"></div>
           <div class="hje-adm-variant-rows" id="hje-adm-sizes-rows"></div>
           <button type="button" class="hje-adm-variant-add" id="hje-adm-sizes-add">+ Añadir talla</button>
           <p class="hje-adm-variant-total" id="hje-adm-sizes-total"></p>
@@ -179,6 +184,7 @@
           <button type="button" class="hje-adm-variant-add" id="hje-adm-colors-add">+ Añadir color</button>
           <p class="hje-adm-variant-hint">Dejalo vacio si el producto no tiene variantes de color.</p>
         </div>
+        <p class="hje-adm-section-legend">Descripcion y especificaciones</p>
         <div class="hje-adm-field-full">
           <label for="hje-adm-f-description">Descripcion</label>
           <textarea id="hje-adm-f-description" rows="3" required></textarea>
@@ -204,8 +210,8 @@
           <label for="hje-adm-f-instagram">Instagram URL</label>
           <input type="text" id="hje-adm-f-instagram" value="https://www.instagram.com/" />
         </div>
+        <p class="hje-adm-section-legend">Fotos</p>
         <div class="hje-adm-field-full">
-          <label>Fotos</label>
           <div class="hje-adm-photo-grid" id="hje-adm-photo-grid"></div>
           <input type="file" id="hje-adm-f-photo" accept="image/*" multiple style="display:none" />
           <p class="hje-adm-photo-hint">Foto en JPG o PNG. Se comprime automaticamente al subirla. Usa ‹ › para ordenarlas (la primera, "Portada", es la que se muestra en la tienda) y ↻ para rotarlas 90° si quedaron torcidas.</p>
