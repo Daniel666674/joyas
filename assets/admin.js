@@ -43,6 +43,7 @@
     sizes: [], // [{ label, units }]
     colors: [], // [{ label, units }]
     sales: [], // pending sale records staged for the next publish()
+    salesListCache: [], // last-loaded merged sales list (published + pending), for the detail modal to look up by index
     pat: null,
     adminName: ""
   };
@@ -1743,16 +1744,17 @@
         '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + list.length + '</div><div class="hje-adm-stat-label">Ventas registradas</div></div>' +
         '<div class="hje-adm-stat hje-adm-stat-gold"><div class="hje-adm-stat-value">' + moneyOrZero(totalRevenue) + '</div><div class="hje-adm-stat-label">Total vendido</div></div>';
 
+      state.salesListCache = list;
       var container = $("#hje-adm-sales-list");
       if (!list.length) {
         container.innerHTML = '<p style="color:#8a7a5f;font-size:0.85rem">Sin ventas registradas todavia.</p>';
         return;
       }
-      container.innerHTML = list.map(function (entry) {
+      container.innerHTML = list.map(function (entry, i) {
         var date = new Date(entry.timestamp).toLocaleString("es-CO");
         var pending = state.sales.indexOf(entry) !== -1;
         return (
-          '<div class="hje-adm-changelog-item"><div class="hje-adm-cl-meta">' +
+          '<div class="hje-adm-changelog-item hje-adm-sale-item" data-hje-sale-index="' + i + '"><div class="hje-adm-cl-meta">' +
           esc(date) + " · " + esc(entry.qty) + " x " + esc(entry.name) +
           (pending ? ' <span class="hje-adm-badge hje-adm-badge-warn">Pendiente de publicar</span>' : "") +
           '</div><div class="hje-adm-cl-summary">' +
@@ -1761,9 +1763,56 @@
           "</div></div>"
         );
       }).join("");
+      $all(".hje-adm-sale-item", container).forEach(function (row) {
+        row.addEventListener("click", function () {
+          openSaleDetail(state.salesListCache[parseInt(row.getAttribute("data-hje-sale-index"), 10)]);
+        });
+      });
     }).catch(function () {
       $("#hje-adm-sales-list").innerHTML = '<p style="color:#8a7a5f;font-size:0.85rem">No se pudo cargar el registro de ventas.</p>';
     });
+  }
+
+  // ---------- sale detail modal ----------
+
+  function openSaleDetail(sale) {
+    if (!sale) return;
+    var product = displayProducts().find(function (p) { return p.slug === sale.slug; });
+    var img = product && product.images && product.images[0] ? (product.images[0].thumbnail || product.images[0].src) : "";
+
+    $("#hje-adm-sv-photo").src = img;
+    $("#hje-adm-sv-name").textContent = sale.name;
+    $("#hje-adm-sv-meta").textContent = product ? (product.category + " · " + product.material) : "Producto no encontrado en el catalogo actual";
+    $("#hje-adm-sv-date").textContent = new Date(sale.timestamp).toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short" });
+    $("#hje-adm-sv-qty").textContent = sale.qty;
+    $("#hje-adm-sv-unitprice").textContent = moneyOrZero(sale.unitPrice);
+    $("#hje-adm-sv-total").textContent = moneyOrZero(sale.total);
+    $("#hje-adm-sv-buyer").textContent = sale.buyerName || "No registrado";
+    $("#hje-adm-sv-phone").textContent = sale.buyerPhone || "No registrado";
+    $("#hje-adm-sv-wompi").textContent = sale.wompiRef;
+    $("#hje-adm-sv-siigo").textContent = sale.siigoInvoice;
+    $("#hje-adm-sv-admin").textContent = sale.adminName || "No registrado";
+    $("#hje-adm-sv-sku").textContent = (product && product.sku) || sale.slug;
+
+    var waLink = $("#hje-adm-sv-wa-link");
+    var digits = (sale.buyerPhone || "").replace(/\D/g, "");
+    if (digits) {
+      var withCountry = digits.length === 10 ? "57" + digits : digits;
+      waLink.href = "https://wa.me/" + withCountry + "?text=" + encodeURIComponent("Hola " + (sale.buyerName || "") + ", te escribo por tu compra de " + sale.name);
+      waLink.style.display = "inline-flex";
+    } else {
+      waLink.style.display = "none";
+    }
+
+    $("#hje-adm-sv-goto-product").style.display = product ? "" : "none";
+    $("#hje-adm-sv-goto-product").dataset.hjeSlug = sale.slug;
+
+    $all(".hje-adm-sv-copy").forEach(function (btn) { btn.classList.remove("hje-adm-sv-copied"); btn.textContent = "Copiar"; });
+    $("#hje-adm-sale-view-backdrop").classList.add("hje-show");
+  }
+
+  function closeSaleDetail() {
+    $("#hje-adm-sale-view-backdrop").classList.remove("hje-show");
   }
 
   // =========================================================================
@@ -1820,6 +1869,37 @@
     $("#hje-adm-sale-done").addEventListener("click", closeSaleForm);
     $("#hje-adm-sale-backdrop").addEventListener("click", function (e) { if (e.target === this) closeSaleForm(); });
 
+    $("#hje-adm-sv-close").addEventListener("click", closeSaleDetail);
+    $("#hje-adm-sale-view-backdrop").addEventListener("click", function (e) { if (e.target === this) closeSaleDetail(); });
+    $all(".hje-adm-sv-copy").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var text = $("#" + btn.getAttribute("data-hje-copy-target")).textContent;
+        var done = function () {
+          btn.textContent = "Copiado";
+          btn.classList.add("hje-adm-sv-copied");
+          setTimeout(function () { btn.textContent = "Copiar"; btn.classList.remove("hje-adm-sv-copied"); }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(done);
+        } else {
+          done();
+        }
+      });
+    });
+    $("#hje-adm-sv-goto-product").addEventListener("click", function () {
+      var slug = this.dataset.hjeSlug;
+      closeSaleDetail();
+      $all(".hje-adm-tab").forEach(function (t) { t.classList.remove("hje-active"); });
+      $all(".hje-adm-panel").forEach(function (p) { p.classList.remove("hje-show"); });
+      $(".hje-adm-tab[data-hje-tab='productos']").classList.add("hje-active");
+      $("#hje-adm-panel-productos").classList.add("hje-show");
+      var product = displayProducts().find(function (p) { return p.slug === slug; });
+      if (product) {
+        $("#hje-adm-search").value = product.sku;
+        renderTable();
+      }
+    });
+
     $("#hje-adm-discard-btn").addEventListener("click", function () {
       if (Object.keys(state.dirty).length + Object.keys(state.deleted).length + state.sales.length === 0) return;
       if (window.confirm("¿Descartar todos los cambios sin publicar?")) discardChanges();
@@ -1833,6 +1913,7 @@
         $("#hje-adm-confirm-backdrop").classList.remove("hje-show");
         closeBulkEditForm();
         $("#hje-adm-sale-backdrop").classList.remove("hje-show");
+        closeSaleDetail();
       }
     });
   }

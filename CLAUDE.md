@@ -450,6 +450,19 @@ no GitHub token beyond the admin's own existing one — a real Wompi/Siigo
 build (see the payment/invoicing planning notes) would need its own
 backend and secrets entirely separate from this admin tool.
 
+**Clickable sale detail (2026-07-30)**: every row in "Registro de ventas"
+opens `#hje-adm-sale-view-backdrop` (`openSaleDetail()`) — a receipt-style
+modal with the product photo (looked up live from `displayProducts()` by
+`sale.slug`, falls back gracefully if that product was since deleted),
+full price breakdown, buyer info with a generated `wa.me` deep link when
+a phone is present (10-digit local numbers get `57` prepended), the
+simulated Wompi/Siigo references with one-click copy buttons
+(`navigator.clipboard`, with a no-op fallback if unavailable), and a "Ver
+producto" button that switches to the Productos tab and pre-fills the
+search box with that product's SKU. `loadSalesLog()` now keeps the merged
+(published + pending) list in `state.salesListCache` so row clicks can
+look the full record back up by index.
+
 ## PR lifecycle on this branch
 
 PRs opened from `claude/spanish-translation-photo-fix-qp9s55` have

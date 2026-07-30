@@ -338,6 +338,57 @@
   </div>
 </div>
 
+<!-- sale detail modal: full breakdown of a single logged sale -->
+<div class="hje-adm-modal-backdrop" id="hje-adm-sale-view-backdrop">
+  <div class="hje-adm-modal hje-adm-sale-view-modal">
+    <div class="hje-adm-sale-view-header">
+      <img id="hje-adm-sv-photo" class="hje-adm-sale-view-photo" alt="" />
+      <div>
+        <h2 id="hje-adm-sv-name"></h2>
+        <p class="hje-adm-modal-sub" id="hje-adm-sv-meta"></p>
+      </div>
+    </div>
+
+    <div class="hje-adm-sv-section">
+      <p class="hje-adm-sv-label">Venta</p>
+      <div class="hje-adm-sv-row"><span>Fecha</span><strong id="hje-adm-sv-date"></strong></div>
+      <div class="hje-adm-sv-row"><span>Cantidad</span><strong id="hje-adm-sv-qty"></strong></div>
+      <div class="hje-adm-sv-row"><span>Precio unitario</span><strong id="hje-adm-sv-unitprice"></strong></div>
+      <div class="hje-adm-sv-row hje-adm-sv-row-total"><span>Total</span><strong id="hje-adm-sv-total"></strong></div>
+    </div>
+
+    <div class="hje-adm-sv-section">
+      <p class="hje-adm-sv-label">Cliente</p>
+      <div class="hje-adm-sv-row"><span>Nombre</span><strong id="hje-adm-sv-buyer"></strong></div>
+      <div class="hje-adm-sv-row"><span>Telefono</span><strong id="hje-adm-sv-phone"></strong></div>
+      <a class="hje-adm-btn-outline hje-adm-sv-wa" id="hje-adm-sv-wa-link" target="_blank" rel="noreferrer" style="display:none">Abrir chat de WhatsApp</a>
+    </div>
+
+    <div class="hje-adm-sv-section">
+      <p class="hje-adm-sv-label">Pago y facturacion <span class="hje-adm-badge hje-adm-badge-warn">Simulado</span></p>
+      <div class="hje-adm-sv-row hje-adm-sv-copyrow">
+        <span>Referencia Wompi</span>
+        <span class="hje-adm-sv-copywrap"><strong id="hje-adm-sv-wompi"></strong><button type="button" class="hje-adm-sv-copy" data-hje-copy-target="hje-adm-sv-wompi">Copiar</button></span>
+      </div>
+      <div class="hje-adm-sv-row hje-adm-sv-copyrow">
+        <span>Factura Siigo</span>
+        <span class="hje-adm-sv-copywrap"><strong id="hje-adm-sv-siigo"></strong><button type="button" class="hje-adm-sv-copy" data-hje-copy-target="hje-adm-sv-siigo">Copiar</button></span>
+      </div>
+    </div>
+
+    <div class="hje-adm-sv-section">
+      <p class="hje-adm-sv-label">Registro interno</p>
+      <div class="hje-adm-sv-row"><span>Registrado por</span><strong id="hje-adm-sv-admin"></strong></div>
+      <div class="hje-adm-sv-row"><span>SKU</span><strong id="hje-adm-sv-sku"></strong></div>
+    </div>
+
+    <div class="hje-adm-modal-actions">
+      <button type="button" class="hje-adm-btn-outline" id="hje-adm-sv-close">Cerrar</button>
+      <button type="button" class="hje-adm-btn-primary" id="hje-adm-sv-goto-product">Ver producto</button>
+    </div>
+  </div>
+</div>
+
 <a class="hje-adm-support-bubble" href="https://wa.me/573136662777?text=Hola%2C%20necesito%20ayuda%20con%20el%20panel%20de%20administracion" target="_blank" rel="noreferrer" aria-label="Soporte por WhatsApp">
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
   <span>Soporte</span>
