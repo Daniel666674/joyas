@@ -284,10 +284,21 @@ body {
 .hje-adm-stat.hje-adm-stat-warn .hje-adm-stat-value { color: var(--hje-amber); }
 .hje-adm-stat.hje-adm-stat-off .hje-adm-stat-value { color: var(--hje-burgundy); }
 .hje-adm-stat.hje-adm-stat-gold .hje-adm-stat-value { color: var(--hje-gold); }
+.hje-adm-stat.hje-adm-stat-money {
+  grid-column: 1 / -1;
+}
+.hje-adm-stat.hje-adm-stat-money .hje-adm-stat-value {
+  font-size: 1.3rem;
+}
 
+@media (min-width: 480px) {
+  .hje-adm-stat.hje-adm-stat-money {
+    grid-column: span 1;
+  }
+}
 @media (min-width: 640px) {
   .hje-adm-stats-bar {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -566,6 +577,22 @@ body {
 }
 .hje-adm-card-btn.hje-adm-card-btn-danger:hover {
   background: var(--hje-burgundy);
+  color: #fff;
+}
+.hje-adm-card-btn-sale {
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 2px solid var(--hje-green, #3d6b32);
+  background: #fff;
+  border-radius: 0.5rem;
+  padding: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--hje-green, #3d6b32);
+}
+.hje-adm-card-btn-sale:hover {
+  background: var(--hje-green, #3d6b32);
   color: #fff;
 }
 
@@ -924,6 +951,87 @@ body {
 .hje-adm-guardrail-list ul {
   margin: 0.4rem 0 0;
   padding-left: 1.1rem;
+}
+
+/* ---------- register-a-sale modal + simulated Wompi/Siigo steps ---------- */
+.hje-adm-sale-error {
+  color: var(--hje-burgundy);
+  font-size: 0.8rem;
+  margin: 0.5rem 0 0;
+  display: none;
+}
+.hje-adm-sale-error.hje-show {
+  display: block;
+}
+.hje-adm-sale-sim {
+  display: none;
+}
+.hje-adm-sale-sim.hje-show {
+  display: block;
+}
+.hje-adm-sale-step {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--hje-border);
+  font-size: 0.9rem;
+}
+.hje-adm-sale-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  border: 2.5px solid var(--hje-border);
+  border-top-color: var(--hje-gold);
+  animation: hje-adm-spin 0.7s linear infinite;
+  flex: none;
+}
+.hje-adm-sale-step.hje-adm-sale-step-done .hje-adm-sale-spinner {
+  animation: none;
+  border: none;
+  background: var(--hje-green, #3d6b32);
+  position: relative;
+}
+.hje-adm-sale-step.hje-adm-sale-step-done .hje-adm-sale-spinner::after {
+  content: "";
+  position: absolute;
+  left: 0.32rem;
+  top: 0.14rem;
+  width: 0.3rem;
+  height: 0.55rem;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+@keyframes hje-adm-spin {
+  to { transform: rotate(360deg); }
+}
+.hje-adm-sale-result {
+  background: rgba(61, 107, 50, 0.08);
+  border: 1.5px solid rgba(61, 107, 50, 0.25);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  display: none;
+}
+.hje-adm-sale-result.hje-show {
+  display: block;
+}
+.hje-adm-sale-sim-note {
+  font-size: 0.72rem;
+  color: #8a7a5f;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+/* ---------- sales tab summary ---------- */
+.hje-adm-sales-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1.1rem;
 }
 
 /* ---------- delete confirm ---------- */

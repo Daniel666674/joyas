@@ -56,6 +56,7 @@
 <div id="hje-adm-main" class="hje-adm-main">
   <div class="hje-adm-tabs">
     <button type="button" class="hje-adm-tab hje-active" data-hje-tab="productos">Productos</button>
+    <button type="button" class="hje-adm-tab" data-hje-tab="ventas">Registro de ventas</button>
     <button type="button" class="hje-adm-tab" data-hje-tab="cambios">Registro de cambios</button>
   </div>
 
@@ -88,6 +89,11 @@
       <div class="hje-adm-publish-status" id="hje-adm-publish-status">Sin cambios pendientes.</div>
     </div>
     <div class="hje-adm-publish-log" id="hje-adm-publish-log"></div>
+  </div>
+
+  <div class="hje-adm-panel" id="hje-adm-panel-ventas">
+    <div class="hje-adm-sales-summary" id="hje-adm-sales-summary"></div>
+    <div class="hje-adm-changelog-list" id="hje-adm-sales-list"></div>
   </div>
 
   <div class="hje-adm-panel" id="hje-adm-panel-cambios">
@@ -276,6 +282,58 @@
     <div class="hje-adm-modal-actions">
       <button type="button" class="hje-adm-btn-outline" id="hje-adm-confirm-cancel">Cancelar</button>
       <button type="button" class="hje-adm-btn-primary" id="hje-adm-confirm-delete">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- register-a-sale modal: real stock/sales-log update, with a simulated
+     Wompi + Siigo step shown before it (see assets/admin.js - those two
+     integrations are not built yet, this previews what they'd look like) -->
+<div class="hje-adm-modal-backdrop" id="hje-adm-sale-backdrop">
+  <div class="hje-adm-modal">
+    <h2>Registrar venta</h2>
+    <p class="hje-adm-modal-sub" id="hje-adm-sale-product-name"></p>
+
+    <form id="hje-adm-sale-form">
+      <div class="hje-adm-form-grid">
+        <div>
+          <label for="hje-adm-sale-qty">Cantidad</label>
+          <input type="number" id="hje-adm-sale-qty" min="1" step="1" value="1" required />
+        </div>
+        <div>
+          <label for="hje-adm-sale-price">Precio unitario (COP)</label>
+          <input type="number" id="hje-adm-sale-price" min="0" step="1000" required />
+        </div>
+        <div class="hje-adm-field-full">
+          <label for="hje-adm-sale-buyer">Nombre del cliente (opcional)</label>
+          <input type="text" id="hje-adm-sale-buyer" placeholder="Ej: Maria Perez" />
+        </div>
+        <div class="hje-adm-field-full">
+          <label for="hje-adm-sale-phone">Telefono (opcional)</label>
+          <input type="text" id="hje-adm-sale-phone" placeholder="Ej: 300 123 4567" />
+        </div>
+      </div>
+      <p class="hje-adm-sale-error" id="hje-adm-sale-error"></p>
+      <div class="hje-adm-modal-actions">
+        <button type="button" class="hje-adm-btn-outline" id="hje-adm-sale-cancel">Cancelar</button>
+        <button type="submit" class="hje-adm-btn-primary">Registrar venta</button>
+      </div>
+    </form>
+
+    <div class="hje-adm-sale-sim" id="hje-adm-sale-sim">
+      <div class="hje-adm-sale-step" id="hje-adm-sim-wompi">
+        <span class="hje-adm-sale-spinner"></span>
+        <span class="hje-adm-sale-step-text">Procesando pago con Wompi...</span>
+      </div>
+      <div class="hje-adm-sale-step" id="hje-adm-sim-siigo">
+        <span class="hje-adm-sale-spinner"></span>
+        <span class="hje-adm-sale-step-text">Generando factura electronica en Siigo...</span>
+      </div>
+      <div class="hje-adm-sale-result" id="hje-adm-sale-result"></div>
+      <p class="hje-adm-sale-sim-note">Simulacion - Wompi y Siigo aun no estan conectados de verdad. La venta y el descuento de stock si son reales.</p>
+      <div class="hje-adm-modal-actions" id="hje-adm-sale-done-actions" style="display:none">
+        <button type="button" class="hje-adm-btn-primary" id="hje-adm-sale-done">Listo</button>
+      </div>
     </div>
   </div>
 </div>
