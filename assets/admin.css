@@ -1033,6 +1033,113 @@ body {
   gap: 0.6rem;
   margin-bottom: 1.1rem;
 }
+.hje-adm-changelog-item.hje-adm-sale-item {
+  cursor: pointer;
+  transition: box-shadow 0.12s var(--hje-ease), border-color 0.12s var(--hje-ease);
+}
+.hje-adm-changelog-item.hje-adm-sale-item:hover {
+  border-color: var(--hje-gold);
+  box-shadow: var(--hje-shadow-md);
+}
+
+/* ---------- sale detail modal ---------- */
+.hje-adm-sale-view-modal {
+  width: min(92vw, 560px);
+}
+.hje-adm-sale-view-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.hje-adm-sale-view-header h2 {
+  margin: 0;
+}
+.hje-adm-sale-view-photo {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 0.625rem;
+  object-fit: cover;
+  border: 1.5px solid var(--hje-border);
+  background: #ece5d6;
+  flex: none;
+}
+.hje-adm-sv-section {
+  border-top: 1.5px solid var(--hje-border);
+  padding-top: 0.9rem;
+  margin-top: 0.9rem;
+}
+.hje-adm-sv-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8a7a5f;
+  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.hje-adm-sv-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  padding: 0.3rem 0;
+}
+.hje-adm-sv-row span:first-child {
+  color: #6b5f4c;
+}
+.hje-adm-sv-row-total {
+  font-size: 1.05rem;
+  border-top: 1px dashed var(--hje-border);
+  margin-top: 0.3rem;
+  padding-top: 0.55rem;
+}
+.hje-adm-sv-row-total strong {
+  color: var(--hje-burgundy);
+}
+.hje-adm-sv-wa {
+  width: auto;
+  display: inline-flex;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.78rem;
+  border-color: #1f8f54;
+  color: #1f8f54;
+}
+.hje-adm-sv-wa:hover {
+  background: #1f8f54;
+  color: #fff;
+}
+.hje-adm-sv-copyrow {
+  align-items: center;
+}
+.hje-adm-sv-copywrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.hje-adm-sv-copy {
+  border: 1.5px solid var(--hje-border);
+  background: #fff;
+  border-radius: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--hje-black);
+  flex: none;
+}
+.hje-adm-sv-copy:hover {
+  border-color: var(--hje-gold);
+  color: var(--hje-gold);
+}
+.hje-adm-sv-copy.hje-adm-sv-copied {
+  border-color: var(--hje-green);
+  color: var(--hje-green);
+}
 
 /* ---------- delete confirm ---------- */
 .hje-adm-confirm-modal p {
