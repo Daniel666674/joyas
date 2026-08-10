@@ -74,9 +74,21 @@
   function badgeStackHtml(p) {
     var badges = "";
     if (p.featured) badges += '<span class="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium bg-white/90 text-gold-700">Destacado</span>';
-    if (p.tag) badges += '<span class="inline-flex items-center rounded-full border border-border px-2.5 py-1 text-xs font-medium bg-white/90 text-gold-700">' + esc(p.tag) + "</span>";
-    if (p.promotion) badges += '<span class="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">Promocion</span>';
     return badges ? '<div class="absolute left-3 top-3 flex flex-col gap-2">' + badges + "</div>" : "";
+  }
+
+  // Corner diagonal ribbon for promotion / tag — shown instead of the old pill
+  // to match the Kevin's-style corner badge seen in reference catalog screenshots.
+  function ribbonHtml(p) {
+    if (!p.promotion && !p.tag) return "";
+    var label = (p.tag && p.tag.length <= 10) ? p.tag : (p.promotion ? "OFERTA" : p.tag.slice(0, 10));
+    return '<div class="hje-corner-ribbon" aria-hidden="true"><span>' + esc(label) + "</span></div>";
+  }
+
+  // Sold-out overlay — semi-transparent scrim with "Agotado" label
+  function agotadoOverlay(p) {
+    if (p.availability !== "Agotado") return "";
+    return '<div class="hje-agotado-overlay" aria-hidden="true"><span class="hje-agotado-label">Agotado</span></div>';
   }
 
   function photoFitStyle(p) {
@@ -90,12 +102,18 @@
   function renderProductCard(p) {
     var img = p.images && p.images[0] ? p.images[0] : { src: "", alt: p.name };
     var badge = badgeStackHtml(p);
+    var ribbon = ribbonHtml(p);
+    var soldOut = agotadoOverlay(p);
     var href = "/joyas/producto/" + p.slug;
+    var priceStr = formatPrice(computeDisplayPrice(p)) || "Consultar precio";
+    var refNum = p.sku || ("JOY-" + (p.id || ""));
     return (
       '<article class="group">' +
       '<a class="block overflow-hidden rounded-md bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="' + href + '">' +
       '<div class="relative aspect-[4/5]">' +
       '<img alt="' + esc(img.alt) + '" loading="lazy" decoding="async" data-nimg="fill" class="object-cover transition-transform duration-500 group-hover:scale-105" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' + photoFitStyle(p) + '" src="' + esc(img.src) + '"/>' +
+      ribbon +
+      soldOut +
       badge +
       '<button class="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-foreground shadow-soft transition hover:bg-white" aria-label="Guardar ' + esc(p.name) + ' en favoritos">' +
       '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart h-4 w-4"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>' +
@@ -104,10 +122,11 @@
       '<div class="mt-4 space-y-3">' +
       "<div>" +
       '<a class="font-medium hover:text-gold-700" href="' + href + '">' + esc(p.name) + "</a>" +
+      '<p class="hje-sku">Ref. ' + esc(refNum) + "</p>" +
       '<p class="mt-1 text-sm text-muted-foreground">' + esc(p.category) + '<!-- --> · <!-- -->' + esc(p.material) + "</p>" +
       "</div>" +
       '<div class="flex items-center justify-between gap-3">' +
-      '<span class="text-sm font-semibold">' + esc(formatPrice(computeDisplayPrice(p)) || "Consultar precio") + "</span>" +
+      '<span class="text-sm font-semibold">' + esc(priceStr) + "</span>" +
       '<div class="flex items-center gap-1">' +
       '<a href="' + esc(p.instagramUrl || "https://www.instagram.com/") + '" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Ver en Instagram">' +
       '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg>' +
@@ -133,6 +152,50 @@
     return list;
   }
 
+  function injectItemListSchema(products) {
+    var existing = document.getElementById("hje-itemlist-ld");
+    if (existing) existing.remove();
+    if (!products.length) return;
+    var items = products.map(function (p, i) {
+      var price = computeDisplayPrice(p);
+      var item = {
+        "@type": "ListItem",
+        position: i + 1,
+        item: {
+          "@type": "Product",
+          name: p.name,
+          url: "https://joyas-colombia.com/producto/" + p.slug,
+          sku: p.sku || p.id,
+          brand: { "@type": "Brand", name: "Habibi Eisaa" },
+          description: p.description || "",
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "COP",
+            availability: p.availability === "Disponible"
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock"
+          }
+        }
+      };
+      if (price > 0) item.item.offers.price = price;
+      if (p.images && p.images[0]) item.item.image = p.images[0].src;
+      return item;
+    });
+    var pageTitle = document.querySelector("h1");
+    var ld = {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      name: pageTitle ? pageTitle.textContent.trim() : "Catalogo",
+      numberOfItems: products.length,
+      itemListElement: items
+    };
+    var script = document.createElement("script");
+    script.id = "hje-itemlist-ld";
+    script.type = "application/ld+json";
+    script.text = JSON.stringify(ld);
+    document.head.appendChild(script);
+  }
+
   function renderGrid(root, products) {
     if (!products.length) {
       root.innerHTML = EMPTY_STATE_HTML;
@@ -143,6 +206,7 @@
     grid.innerHTML = products.map(renderProductCard).join("");
     root.innerHTML = "";
     root.appendChild(grid);
+    injectItemListSchema(products);
   }
 
   // ---------- single category/material page mode ----------

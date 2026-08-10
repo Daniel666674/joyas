@@ -1,4 +1,26 @@
 User-Agent: *
-Allow: /
+Allow: /joyas/
+Disallow: /joyas/admin.html
+Disallow: /joyas/inventario.html
+Disallow: /joyas/assets/admin-changelog.json
+Disallow: /joyas/assets/sales-log.json
+Disallow: /joyas/_next/static/chunks/
+
+# Crawl-delay for well-behaved bots
+Crawl-delay: 2
 
 Sitemap: https://joyas-colombia.com/sitemap.xml
+
+# Google-specific: allow full crawl of product and category pages
+User-Agent: Googlebot
+Allow: /joyas/producto/
+Allow: /joyas/cadenas
+Allow: /joyas/pulseras
+Allow: /joyas/anillos
+Allow: /joyas/aretes
+Allow: /joyas/argollas
+Allow: /joyas/collares
+Allow: /joyas/dijes
+Allow: /joyas/shop
+Disallow: /joyas/admin.html
+Disallow: /joyas/inventario.html

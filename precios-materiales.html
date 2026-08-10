@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Precios de Materiales — Habibi Eisaa</title>
+  <meta name="robots" content="noindex,nofollow"/>
+  <link rel="icon" href="/joyas/brand/favicon-32.png" sizes="32x32"/>
+  <link rel="stylesheet" href="/joyas/assets/fonts.css"/>
+  <style>
+    :root {
+      --gold: #a8782a;
+      --gold-deep: #72501c;
+      --gold-foil: linear-gradient(135deg, #f7e6b0 0%, #dfb968 22%, #a8782a 48%, #7a5320 68%, #e3c077 88%, #f7e6b0 100%);
+      --cream: #f8f3eb;
+      --cream-dark: #ede5d5;
+      --charcoal: #1c130a;
+      --muted: #6b5740;
+      --border: rgba(168,120,42,0.22);
+      --shadow: 0 4px 24px -8px rgba(40,30,12,0.18), 0 1px 4px rgba(40,30,12,0.08);
+      --shadow-gold: 0 8px 20px -6px rgba(168,120,42,0.4);
+      --radius: 12px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--cream);
+      color: var(--charcoal);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---- Header ---- */
+    .pm-header {
+      background: var(--charcoal);
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .pm-header a {
+      font-family: var(--font-serif, Georgia, serif);
+      font-size: 1.25rem;
+      color: #f3ead9;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .pm-header a img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+    .pm-header-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background-image: var(--gold-foil);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ---- Main layout ---- */
+    .pm-wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+    .pm-title {
+      font-family: var(--font-serif, Georgia, serif);
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--charcoal);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+    .pm-subtitle {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ---- Auth card ---- */
+    .pm-auth-card {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.75rem;
+      margin-top: 2rem;
+      box-shadow: var(--shadow);
+    }
+    .pm-auth-card h2 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-deep);
+      margin-bottom: 1rem;
+    }
+    .pm-field { margin-bottom: 1rem; }
+    .pm-field label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.04em;
+    }
+    .pm-field input[type="password"],
+    .pm-field input[type="number"],
+    .pm-field input[type="text"] {
+      width: 100%;
+      padding: 0.65rem 0.875rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: var(--cream);
+      color: var(--charcoal);
+      transition: border-color 0.2s;
+      -moz-appearance: textfield;
+    }
+    .pm-field input::-webkit-outer-spin-button,
+    .pm-field input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .pm-field input:focus { outline: none; border-color: var(--gold); }
+    .pm-hint {
+      margin-top: 0.35rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ---- Buttons ---- */
+    .pm-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.65rem 1.4rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .pm-btn:hover { transform: translateY(-1px); }
+    .pm-btn:active { transform: translateY(0); }
+    .pm-btn-primary {
+      background-image: var(--gold-foil);
+      background-size: 200% 200%;
+      color: #2a1c08;
+      box-shadow: var(--shadow-gold);
+    }
+    .pm-btn-primary:hover { box-shadow: 0 12px 28px -8px rgba(168,120,42,0.55); }
+    .pm-btn-secondary {
+      background: var(--cream-dark);
+      color: var(--charcoal);
+      border: 1.5px solid var(--border);
+    }
+    .pm-btn[disabled] { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+
+    /* ---- Price cards ---- */
+    .pm-prices-section { margin-top: 2.5rem; }
+    .pm-prices-section h2 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-deep);
+      margin-bottom: 1.25rem;
+    }
+    .pm-price-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 500px) { .pm-price-cards { grid-template-columns: 1fr; } }
+    .pm-price-card {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.25rem;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    .pm-price-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-image: var(--gold-foil);
+      background-size: 200% 200%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+    }
+    .pm-price-card h3 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--charcoal);
+      margin-bottom: 0.2rem;
+    }
+    .pm-price-card p {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 0.9rem;
+      line-height: 1.5;
+    }
+    .pm-price-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0 0.75rem;
+      background: var(--cream);
+      transition: border-color 0.2s;
+    }
+    .pm-price-input-wrap:focus-within { border-color: var(--gold); }
+    .pm-price-input-wrap span {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .pm-price-input-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 0.6rem 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--charcoal);
+      font-family: inherit;
+      min-width: 0;
+      -moz-appearance: textfield;
+    }
+    .pm-price-input-wrap input:focus { outline: none; }
+    .pm-price-input-wrap input::-webkit-outer-spin-button,
+    .pm-price-input-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    /* ---- Laminado note ---- */
+    .pm-laminado-card {
+      background: rgba(168,120,42,0.05);
+      border: 1.5px dashed rgba(168,120,42,0.3);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+    .pm-laminado-card h3 {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--gold-deep);
+      margin-bottom: 0.35rem;
+    }
+    .pm-laminado-card p { font-size: 0.8rem; color: var(--muted); line-height: 1.55; }
+
+    /* ---- Computed preview ---- */
+    .pm-preview {
+      margin-top: 1.5rem;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .pm-preview h3 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.9rem;
+    }
+    .pm-preview-rows { display: grid; gap: 0.5rem; }
+    .pm-preview-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--cream);
+      border-radius: 6px;
+    }
+    .pm-preview-row span:last-child {
+      font-weight: 700;
+      font-family: var(--font-serif, Georgia, serif);
+      color: var(--gold-deep);
+    }
+
+    /* ---- Action bar ---- */
+    .pm-action-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.875rem;
+      margin-top: 2rem;
+    }
+    .pm-status {
+      font-size: 0.8rem;
+      font-weight: 600;
+      flex: 1;
+      min-width: 200px;
+    }
+    .pm-status.ok { color: #1f8f54; }
+    .pm-status.err { color: #c0392b; }
+
+    /* ---- Meta bar ---- */
+    .pm-meta {
+      margin-top: 1rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* ---- Reference table ---- */
+    .pm-ref-section { margin-top: 2.5rem; }
+    .pm-ref-section h2 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold-deep);
+      margin-bottom: 0.9rem;
+    }
+    .pm-ref-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .pm-ref-table th {
+      background: var(--cream-dark);
+      color: var(--gold-deep);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-align: left;
+      padding: 0.65rem 0.875rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+    }
+    .pm-ref-table td {
+      padding: 0.6rem 0.875rem;
+      border-top: 1px solid rgba(168,120,42,0.1);
+      color: var(--charcoal);
+    }
+    .pm-ref-table tr:hover td { background: rgba(168,120,42,0.04); }
+    .pm-ref-table td:last-child { font-weight: 600; font-family: var(--font-serif, Georgia, serif); color: var(--gold-deep); }
+
+    /* ---- Utility ---- */
+    .hidden { display: none !important; }
+    .pm-divider { height: 1px; background: var(--border); margin: 2rem 0; }
+  </style>
+</head>
+<body>
+  <header class="pm-header">
+    <a href="/joyas">
+      <img src="/joyas/brand/logo-mark.png" alt="Habibi Eisaa"/>
+      Habibi Eisaa
+    </a>
+    <span class="pm-header-badge">Admin · Precios</span>
+  </header>
+
+  <main class="pm-wrap">
+    <h1 class="pm-title">Precios de Materiales</h1>
+    <p class="pm-subtitle">
+      Actualiza el precio por gramo de Oro 18K y Plata. Cada producto con peso definido
+      calcula su precio de venta automáticamente. Oro Laminado tiene precio manual por producto.
+    </p>
+
+    <!-- Auth section -->
+    <div class="pm-auth-card" id="pm-auth-section">
+      <h2>Acceso GitHub</h2>
+      <div class="pm-field">
+        <label for="pm-pat">Personal Access Token (PAT)</label>
+        <input type="password" id="pm-pat" placeholder="github_pat_..." autocomplete="off"/>
+        <p class="pm-hint">
+          Token con permiso <strong>contents:write</strong> sobre el repo <code>daniel666674/joyas</code>.
+          Se guarda solo en memoria de esta pestaña (sessionStorage).
+        </p>
+      </div>
+      <button class="pm-btn pm-btn-primary" id="pm-auth-btn" onclick="authenticate()">
+        ✓ Validar acceso
+      </button>
+      <p class="pm-status err hidden" id="pm-auth-status"></p>
+    </div>
+
+    <!-- Price editor — shown after auth -->
+    <div id="pm-editor" class="hidden">
+
+      <div class="pm-prices-section">
+        <h2>Precio por gramo (COP)</h2>
+
+        <div class="pm-price-cards">
+          <!-- Oro 18K -->
+          <div class="pm-price-card">
+            <div class="pm-price-card-icon">🥇</div>
+            <h3>Oro 18K</h3>
+            <p>Precio de venta al público por gramo.<br>Aplica automáticamente a todos los productos con peso ≥ 1g y material Oro 18K.</p>
+            <div class="pm-price-input-wrap">
+              <span>COP $</span>
+              <input type="number" id="pm-oro18k" min="0" step="1000" placeholder="350000" oninput="updatePreview()"/>
+              <span>/g</span>
+            </div>
+          </div>
+
+          <!-- Plata -->
+          <div class="pm-price-card">
+            <div class="pm-price-card-icon">🥈</div>
+            <h3>Plata</h3>
+            <p>Precio de venta al público por gramo.<br>Aplica automáticamente a todos los productos con peso ≥ 1g y material Plata.</p>
+            <div class="pm-price-input-wrap">
+              <span>COP $</span>
+              <input type="number" id="pm-plata" min="0" step="100" placeholder="4500" oninput="updatePreview()"/>
+              <span>/g</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Oro Laminado note -->
+        <div class="pm-laminado-card">
+          <h3>Oro Laminado · Precio manual</h3>
+          <p>
+            Los productos Oro Laminado no tienen precio por gramo — su valor depende del diseño,
+            la base metálica y el proceso de laminado, no del precio spot. Edita cada producto
+            directamente desde el <a href="/joyas/admin.html" style="color:var(--gold-deep);font-weight:600;">panel de administración</a>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Live preview -->
+      <div class="pm-preview" id="pm-preview">
+        <h3>Precios de referencia (ejemplos 5g, 10g, 20g)</h3>
+        <div class="pm-preview-rows" id="pm-preview-rows">
+          <!-- filled by updatePreview() -->
+        </div>
+      </div>
+
+      <div class="pm-action-bar">
+        <button class="pm-btn pm-btn-primary" id="pm-save-btn" onclick="save()">
+          💾 Guardar precios
+        </button>
+        <button class="pm-btn pm-btn-secondary" onclick="loadCurrentPrices()">
+          ↺ Recargar
+        </button>
+        <p class="pm-status" id="pm-save-status"></p>
+      </div>
+
+      <p class="pm-meta" id="pm-meta"></p>
+
+      <div class="pm-divider"></div>
+
+      <!-- Reference table of typical weights -->
+      <div class="pm-ref-section">
+        <h2>Referencia de pesos típicos (joyería colombiana)</h2>
+        <table class="pm-ref-table">
+          <thead>
+            <tr>
+              <th>Categoría</th>
+              <th>Material</th>
+              <th>Peso típico</th>
+              <th id="pm-ref-oro-header">Precio estimado</th>
+            </tr>
+          </thead>
+          <tbody id="pm-ref-body">
+            <!-- filled dynamically -->
+          </tbody>
+        </table>
+        <p style="font-size:0.7rem;color:var(--muted);margin-top:0.5rem;">
+          * Solo referencia. El peso exacto varía por modelo, dimensión y proveedor.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    "use strict";
+
+    var REPO = "daniel666674/joyas";
+    var FILE = "assets/material-prices.json";
+    var API  = "https://api.github.com";
+
+    var TYPICAL_WEIGHTS = [
+      { cat: "Cadena fina (40–50cm)", mat: "Oro 18K", g: 3 },
+      { cat: "Cadena mediana (50cm)", mat: "Oro 18K", g: 7 },
+      { cat: "Cadena gruesa (60cm)",  mat: "Oro 18K", g: 15 },
+      { cat: "Anillo solitario",      mat: "Oro 18K", g: 4 },
+      { cat: "Argolla par",           mat: "Oro 18K", g: 5 },
+      { cat: "Pulsera",               mat: "Oro 18K", g: 6 },
+      { cat: "Arete par (pequeños)",  mat: "Oro 18K", g: 2 },
+      { cat: "Collar delicado",       mat: "Plata",   g: 5 },
+      { cat: "Pulsera",               mat: "Plata",   g: 8 },
+      { cat: "Anillo",                mat: "Plata",   g: 4 },
+    ];
+
+    var state = { pat: sessionStorage.getItem("hje_pm_pat") || "", sha: "" };
+
+    function fmt(n) {
+      return "$" + Math.round(n).toLocaleString("es-CO");
+    }
+
+    function el(id) { return document.getElementById(id); }
+
+    function setPat(v) {
+      state.pat = v;
+      sessionStorage.setItem("hje_pm_pat", v);
+    }
+
+    function authenticate() {
+      var pat = el("pm-pat").value.trim();
+      if (!pat) { showAuthErr("Pega tu PAT primero."); return; }
+      var btn = el("pm-auth-btn");
+      btn.disabled = true;
+      btn.textContent = "Verificando...";
+      fetch(API + "/repos/" + REPO, {
+        headers: { Authorization: "token " + pat, Accept: "application/vnd.github+json" }
+      }).then(function (r) {
+        if (!r.ok) throw new Error("Acceso denegado (status " + r.status + ")");
+        return r.json();
+      }).then(function () {
+        setPat(pat);
+        el("pm-auth-section").classList.add("hidden");
+        el("pm-editor").classList.remove("hidden");
+        loadCurrentPrices();
+      }).catch(function (e) {
+        showAuthErr(e.message);
+        btn.disabled = false;
+        btn.textContent = "✓ Validar acceso";
+      });
+    }
+
+    function showAuthErr(msg) {
+      var s = el("pm-auth-status");
+      s.textContent = msg;
+      s.classList.remove("hidden");
+    }
+
+    function loadCurrentPrices() {
+      el("pm-save-status").textContent = "";
+      el("pm-meta").textContent = "Cargando...";
+      fetch("/joyas/" + FILE + "?v=" + Date.now())
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          el("pm-oro18k").value = data["Oro 18K"] || 0;
+          el("pm-plata").value  = data["Plata"]  || 0;
+          el("pm-meta").textContent = data.updatedAt
+            ? "Última actualización: " + new Date(data.updatedAt).toLocaleString("es-CO")
+            : "Sin actualización previa.";
+          updatePreview();
+        })
+        .catch(function () { el("pm-meta").textContent = "No se pudo cargar el archivo actual."; });
+    }
+
+    function updatePreview() {
+      var oro  = parseInt(el("pm-oro18k").value, 10) || 0;
+      var plata = parseInt(el("pm-plata").value, 10) || 0;
+      var rows = el("pm-preview-rows");
+      rows.innerHTML = [
+        { label: "Oro 18K · 5g",  price: oro * 5 },
+        { label: "Oro 18K · 10g", price: oro * 10 },
+        { label: "Oro 18K · 20g", price: oro * 20 },
+        { label: "Plata · 8g",    price: plata * 8 },
+        { label: "Plata · 15g",   price: plata * 15 },
+      ].map(function (r) {
+        return '<div class="pm-preview-row"><span>' + r.label + '</span><span>' +
+          (r.price > 0 ? fmt(r.price) : "—") + '</span></div>';
+      }).join("");
+      renderRefTable(oro, plata);
+    }
+
+    function renderRefTable(oro, plata) {
+      var tbody = el("pm-ref-body");
+      tbody.innerHTML = TYPICAL_WEIGHTS.map(function (r) {
+        var price = r.mat === "Oro 18K" ? oro * r.g : plata * r.g;
+        return "<tr><td>" + r.cat + "</td><td>" + r.mat + "</td><td>" + r.g + "g</td><td>" +
+          (price > 0 ? fmt(price) : "—") + "</td></tr>";
+      }).join("");
+    }
+
+    function getSha(cb) {
+      fetch(API + "/repos/" + REPO + "/contents/" + FILE, {
+        headers: { Authorization: "token " + state.pat, Accept: "application/vnd.github+json" }
+      }).then(function (r) { return r.json(); })
+        .then(function (d) { cb(null, d.sha || ""); })
+        .catch(function (e) { cb(e); });
+    }
+
+    function save() {
+      var btn = el("pm-save-btn");
+      var status = el("pm-save-status");
+      status.className = "pm-status";
+      status.textContent = "Guardando...";
+      btn.disabled = true;
+
+      var oro  = Math.max(0, parseInt(el("pm-oro18k").value, 10) || 0);
+      var plata = Math.max(0, parseInt(el("pm-plata").value, 10) || 0);
+      var updatedAt = new Date().toISOString();
+      var content = JSON.stringify({ "Oro 18K": oro, "Plata": plata, updatedAt: updatedAt }, null, 2);
+      var b64 = btoa(unescape(encodeURIComponent(content)));
+
+      getSha(function (err, sha) {
+        if (err) {
+          showSaveErr("No se pudo obtener el SHA del archivo: " + err.message);
+          btn.disabled = false;
+          return;
+        }
+        var body = { message: "[admin] Precios de metales actualizados", content: b64 };
+        if (sha) body.sha = sha;
+
+        fetch(API + "/repos/" + REPO + "/contents/" + FILE, {
+          method: "PUT",
+          headers: {
+            Authorization: "token " + state.pat,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        }).then(function (r) {
+          if (!r.ok) return r.json().then(function (d) { throw new Error(d.message || r.status); });
+          return r.json();
+        }).then(function () {
+          status.className = "pm-status ok";
+          status.textContent = "✓ Precios guardados correctamente.";
+          el("pm-meta").textContent = "Última actualización: " + new Date(updatedAt).toLocaleString("es-CO");
+        }).catch(function (e) {
+          showSaveErr(e.message);
+        }).finally(function () {
+          btn.disabled = false;
+        });
+      });
+    }
+
+    function showSaveErr(msg) {
+      var s = el("pm-save-status");
+      s.className = "pm-status err";
+      s.textContent = "Error: " + msg;
+    }
+
+    window.authenticate = authenticate;
+    window.save = save;
+    window.loadCurrentPrices = loadCurrentPrices;
+    window.updatePreview = updatePreview;
+
+    // Auto-restore session if PAT was saved
+    if (state.pat) {
+      el("pm-auth-section").classList.add("hidden");
+      el("pm-editor").classList.remove("hidden");
+      loadCurrentPrices();
+    }
+  })();
+  </script>
+</body>
+</html>
