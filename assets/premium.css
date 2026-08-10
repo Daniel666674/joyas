@@ -846,3 +846,210 @@ div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a p {
 div.grid.grid-cols-2.gap-3.md\:grid-cols-4 > a:nth-child(n + 5) {
   display: none;
 }
+
+/* =========================================================================
+   MAXIMIZED VISUAL PASS v2 — client-demo polish. Pushes typographic
+   hierarchy, section rhythm, and card/price/FAQ/testimonial refinement
+   further, reusing the same palette tokens and CSS-only/zero-DOM-edit
+   constraint as every rule above. Selectors are the same broad Tailwind
+   chains used sitewide (categories/materials/FAQ/testimonial markup is
+   identical across index.html and the runtime-rendered shop/category
+   pages), so this reads consistently everywhere without per-page work.
+   ========================================================================= */
+
+/* ---------- section eyebrow: small gold diamond mark ahead of the label,
+   pairs with the existing underline rule for a proper kicker treatment ---------- */
+p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700,
+p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700 {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700::before,
+p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex: none;
+  margin-top: 0.3em;
+  transform: rotate(45deg);
+  background-image: var(--hje-gold-foil);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* ---------- section headings: bigger, tighter-tracked serif at desktop
+   widths for a more editorial, less "default template" feel ---------- */
+h2.font-serif.text-3xl.text-foreground.sm\:text-4xl {
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+@media (min-width: 1024px) {
+  h2.font-serif.text-3xl.text-foreground.sm\:text-4xl {
+    font-size: 2.75rem;
+  }
+}
+
+/* ---------- section rhythm: faint centered hairline at the top of every
+   content section, plus a barely-there dot-grain texture instead of a
+   completely flat fill - both read as "designed" rather than "default" at
+   a glance, neither is visible enough to fight the product photography ---------- */
+section.bg-background.py-16.sm\:py-20,
+section.bg-\[\#f8f3eb\].py-16.sm\:py-20 {
+  position: relative;
+  background-image: radial-gradient(rgba(122, 28, 40, 0.05) 1px, transparent 1.4px);
+  background-size: 26px 26px;
+}
+section.bg-background.py-16.sm\:py-20::before,
+section.bg-\[\#f8f3eb\].py-16.sm\:py-20::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90%, 1180px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168, 120, 42, 0.35) 50%, transparent);
+  pointer-events: none;
+}
+
+/* ---------- price: from a plain small label to a boutique price tag ---------- */
+.flex.items-center.justify-between.gap-3 > span.text-sm.font-semibold {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  color: var(--hje-gold-deep);
+}
+main p.mt-3.text-2xl.font-semibold {
+  font-family: var(--font-serif), Georgia, serif;
+  letter-spacing: 0.01em;
+  color: var(--hje-gold-deep);
+}
+
+/* ---------- "Ver todo" / "Ir al shop" style links: nudge-in arrow ---------- */
+a.text-sm.font-medium.text-gold-700.underline-offset-4.hover\:underline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+a.text-sm.font-medium.text-gold-700.underline-offset-4.hover\:underline::after {
+  content: "\2192";
+  display: inline-block;
+  transition: transform 0.3s var(--hje-ease);
+}
+a.text-sm.font-medium.text-gold-700.underline-offset-4.hover\:underline:hover::after {
+  transform: translateX(3px);
+}
+
+/* ---------- product cards: resting gold-tinted frame, not just on hover ---------- */
+article.group > a.block.overflow-hidden.rounded-md.bg-muted {
+  border: 1px solid rgba(168, 120, 42, 0.14);
+}
+
+/* ---------- homepage category tiles: extra lift + gold-glow on hover,
+   on top of Tailwind's own small hover:-translate-y-0.5 ---------- */
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a {
+  transition: transform 0.4s var(--hje-ease), box-shadow 0.4s var(--hje-ease-soft);
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--hje-shadow-gold);
+}
+
+/* ---------- trust/testimonial cards: oversized serif quote mark + gold
+   left accent + lift, instead of a flat neutral-bordered box ---------- */
+figure.rounded-md.border.border-border.bg-background.p-6 {
+  position: relative;
+  overflow: hidden;
+  border-left: 3px solid var(--hje-gold);
+  transition: transform 0.35s var(--hje-ease), box-shadow 0.35s var(--hje-ease-soft);
+}
+figure.rounded-md.border.border-border.bg-background.p-6:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--hje-shadow-md);
+}
+figure.rounded-md.border.border-border.bg-background.p-6::before {
+  content: "\201C";
+  position: absolute;
+  top: -1.1rem;
+  right: 0.9rem;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 5.5rem;
+  line-height: 1;
+  color: rgba(168, 120, 42, 0.14);
+  pointer-events: none;
+}
+figure.rounded-md.border.border-border.bg-background.p-6 blockquote {
+  position: relative;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  color: #3a2f22;
+}
+figure.rounded-md.border.border-border.bg-background.p-6 figcaption {
+  color: var(--hje-gold-deep);
+  letter-spacing: 0.02em;
+}
+
+/* ---------- FAQ: custom +/- indicator, row hover/open tint, framed list ---------- */
+div.divide-y.divide-border.rounded-md.border.border-border {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: var(--hje-shadow-sm);
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 {
+  transition: background-color 0.25s var(--hje-ease-soft);
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5:hover {
+  background: rgba(168, 120, 42, 0.045);
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5[open] {
+  background: rgba(168, 120, 42, 0.06);
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 > summary {
+  position: relative;
+  padding-right: 1.75rem;
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 > summary::-webkit-details-marker {
+  display: none;
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 > summary::after {
+  content: "+";
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--hje-gold);
+  transition: transform 0.3s var(--hje-ease-soft);
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5[open] > summary::after {
+  content: "\2212";
+}
+
+/* ---------- footer: gold-foil hairline instead of a flat neutral border,
+   gold-deep column headings for a touch more polish on the link labels ---------- */
+footer.border-t.border-border.bg-\[\#f8f3eb\] {
+  position: relative;
+  border-top-color: transparent;
+}
+footer.border-t.border-border.bg-\[\#f8f3eb\]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-image: var(--hje-gold-foil);
+  background-size: 300% 100%;
+  opacity: 0.85;
+}
+footer h2.text-sm.font-semibold.uppercase.tracking-\[0\.18em\] {
+  color: var(--hje-gold-deep);
+  letter-spacing: 0.14em;
+}
+
+/* ---------- hero heading: slightly tighter tracking reads more "designed
+   wordmark", less default browser serif ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+  letter-spacing: -0.015em;
+}
