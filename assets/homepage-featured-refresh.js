@@ -179,21 +179,32 @@
   }
 
   function init() {
+    var pricesFetch = fetch("/joyas/assets/material-prices.json?v=" + Date.now())
+      .then(function (r) { return r.json(); })
+      .catch(function () { return {}; });
+
+    function applyProducts(products, prices) {
+      materialPrices = prices || {};
+      var grid = findFeaturedGrid();
+      if (!grid) return;
+      var articles = grid.querySelectorAll("article.group");
+      var top8 = selectTop8(products);
+      if (articles.length !== 8 || top8.length !== 8) return;
+      for (var i = 0; i < 8; i++) updateSlot(articles[i], top8[i]);
+      interceptStaleNextRouting();
+    }
+
+    if (window.APP_PRODUCTS && Array.isArray(window.APP_PRODUCTS)) {
+      pricesFetch.then(function (prices) { applyProducts(window.APP_PRODUCTS, prices); })
+        .catch(function () {});
+      return;
+    }
+
     Promise.all([
       fetch("/joyas/assets/products.json?v=" + Date.now()).then(function (r) { return r.json(); }),
-      fetch("/joyas/assets/material-prices.json?v=" + Date.now()).then(function (r) { return r.json(); }).catch(function () { return {}; })
+      pricesFetch
     ])
-      .then(function (results) {
-        var products = results[0];
-        materialPrices = results[1] || {};
-        var grid = findFeaturedGrid();
-        if (!grid) return;
-        var articles = grid.querySelectorAll("article.group");
-        var top8 = selectTop8(products);
-        if (articles.length !== 8 || top8.length !== 8) return;
-        for (var i = 0; i < 8; i++) updateSlot(articles[i], top8[i]);
-        interceptStaleNextRouting();
-      })
+      .then(function (results) { applyProducts(results[0], results[1]); })
       .catch(function () {
         // silent: keep whatever is already baked into the page
       });

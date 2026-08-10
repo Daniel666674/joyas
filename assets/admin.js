@@ -560,11 +560,20 @@
     });
     bar.innerHTML =
       '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + all.length + '</div><div class="hje-adm-stat-label">Productos</div></div>' +
-      '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + counts.Disponible + '</div><div class="hje-adm-stat-label">Disponibles</div></div>' +
-      '<div class="hje-adm-stat hje-adm-stat-warn"><div class="hje-adm-stat-value">' + counts["Bajo stock"] + '</div><div class="hje-adm-stat-label">Bajo stock</div></div>' +
-      '<div class="hje-adm-stat hje-adm-stat-off"><div class="hje-adm-stat-value">' + counts.Agotado + '</div><div class="hje-adm-stat-label">Agotados</div></div>' +
+      '<div class="hje-adm-stat" data-hje-filter-status="Disponible" title="Filtrar por Disponible"><div class="hje-adm-stat-value">' + counts.Disponible + '</div><div class="hje-adm-stat-label">Disponibles</div></div>' +
+      '<div class="hje-adm-stat hje-adm-stat-warn" data-hje-filter-status="Bajo stock" title="Filtrar por Bajo stock"><div class="hje-adm-stat-value">' + counts["Bajo stock"] + '</div><div class="hje-adm-stat-label">Bajo stock</div></div>' +
+      '<div class="hje-adm-stat hje-adm-stat-off" data-hje-filter-status="Agotado" title="Filtrar por Agotado"><div class="hje-adm-stat-value">' + counts.Agotado + '</div><div class="hje-adm-stat-label">Agotados</div></div>' +
       '<div class="hje-adm-stat hje-adm-stat-gold hje-adm-stat-money"><div class="hje-adm-stat-value">' + moneyOrZero(retailValue) + '</div><div class="hje-adm-stat-label">Valor inventario (venta)</div></div>' +
       '<div class="hje-adm-stat hje-adm-stat-money"><div class="hje-adm-stat-value">' + moneyOrZero(costValue) + '</div><div class="hje-adm-stat-label">Valor inventario (costo)</div></div>';
+    $all("[data-hje-filter-status]", bar).forEach(function (tile) {
+      tile.style.cursor = "pointer";
+      tile.addEventListener("click", function () {
+        var status = tile.getAttribute("data-hje-filter-status");
+        var sel = $("#hje-adm-filter-status");
+        sel.value = sel.value === status ? "" : status;
+        renderTable();
+      });
+    });
   }
 
   function updateSelectionBar() {
@@ -1404,19 +1413,10 @@
   // =========================================================================
   // Product-detail page generation
   // =========================================================================
-  // Verbatim header/footer/floating-buttons captured from a real Next.js
-  // product page (producto/anillo-liso-023.html). Must stay byte-identical
-  // to the site's actual header/footer for nav-funnel.js and store.js's
-  // selectors to keep working - see CLAUDE.md.
-
-  var PAGE_HEADER =
-    '<header class="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur"><div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"><div class="flex items-center gap-2"><button class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0 lg:hidden" aria-label="Abrir menu" type="button" aria-haspopup="dialog" aria-expanded="false" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu h-5 w-5"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg></button><a class="font-serif text-2xl tracking-wide flex items-center gap-2" href="/joyas"><img src="/joyas/brand/logo-mark.png" alt="Habibi Eisaa" class="h-10 w-10 rounded-full object-cover"/>Habibi Eisaa</a></div><nav class="hidden items-center gap-6 text-sm font-medium lg:flex"><a class="text-muted-foreground transition hover:text-foreground" href="/joyas">Inicio</a><a class="text-muted-foreground transition hover:text-foreground" href="/joyas/shop">Tienda</a><a class="text-muted-foreground transition hover:text-foreground" href="/joyas/collections">Colecciones</a><a class="text-muted-foreground transition hover:text-foreground" href="/joyas/materials">Materiales</a><a class="text-muted-foreground transition hover:text-foreground" href="/joyas/about">Nosotros</a><a class="text-muted-foreground transition hover:text-foreground" href="/joyas/blog">Blog</a><a class="text-muted-foreground transition hover:text-foreground" href="/joyas/contact">Contacto</a></nav><div class="flex items-center gap-1"><button class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Buscar" type="button" aria-haspopup="dialog" aria-expanded="false" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search h-5 w-5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></button><button class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Favoritos"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart h-5 w-5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg></button><button class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-muted h-10 w-10 px-0" aria-label="Carrito"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag h-5 w-5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg></button></div></div></header>';
-
-  var PAGE_FOOTER =
-    '<footer class="border-t border-border bg-[#f8f3eb] pb-20 md:pb-0"><div class="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-4 lg:px-8"><div><a class="font-serif text-3xl flex items-center gap-2" href="/joyas"><img src="/joyas/brand/logo-mark.png" alt="Habibi Eisaa" class="h-10 w-10 rounded-full object-cover"/>Habibi Eisaa</a><p class="mt-3 text-sm leading-6 text-muted-foreground">Catalogo colombiano de joyeria para descubrir en Instagram y comprar con asesoria cercana por WhatsApp.</p><div class="mt-4 flex items-center gap-3 text-muted-foreground"><a class="hover:text-foreground" href="https://www.instagram.com/" target="_blank" rel="noreferrer" aria-label="Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram h-5 w-5"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg></a><a class="hover:text-foreground" href="https://wa.me/573001234567" target="_blank" rel="noreferrer" aria-label="WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-5 w-5"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></a><a class="hover:text-foreground" href="mailto:hola@joyas-colombia.com" aria-label="Email"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail h-5 w-5"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg></a></div></div><div><p class="font-medium">Categorias</p><ul class="mt-3 space-y-2 text-sm text-muted-foreground"><li><a class="hover:text-foreground" href="/joyas/cadenas">Cadenas</a></li><li><a class="hover:text-foreground" href="/joyas/pulseras">Pulseras</a></li><li><a class="hover:text-foreground" href="/joyas/anillos">Anillos</a></li><li><a class="hover:text-foreground" href="/joyas/argollas">Argollas</a></li><li><a class="hover:text-foreground" href="/joyas/aretes">Aretes</a></li><li><a class="hover:text-foreground" href="/joyas/collares">Collares</a></li></ul></div><div><p class="font-medium">Materiales</p><ul class="mt-3 space-y-2 text-sm text-muted-foreground"><li><a class="hover:text-foreground" href="/joyas/oro-laminado">Oro Laminado</a></li><li><a class="hover:text-foreground" href="/joyas/oro-18k">Oro 18K</a></li><li><a class="hover:text-foreground" href="/joyas/oro-14k">Oro 14K</a></li><li><a class="hover:text-foreground" href="/joyas/oro-10k">Oro 10K</a></li><li><a class="hover:text-foreground" href="/joyas/plata-925">Plata 925</a></li><li><a class="hover:text-foreground" href="/joyas/oro-rosa">Oro Rosa</a></li></ul></div><div><p class="font-medium">Compra social</p><p class="mt-3 text-sm leading-6 text-muted-foreground">Guarda tus favoritas, pide disponibilidad y recibe recomendaciones antes de pagar.</p><a class="mt-4 inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4" href="https://wa.me/573001234567">Hablar por WhatsApp</a></div></div></footer>';
-
-  var PAGE_FLOATING =
-    '<div class="fixed bottom-4 right-4 z-40 flex flex-col gap-2 md:bottom-6 md:right-6"><a href="tel:+573001234567" class="hidden h-11 w-11 items-center justify-center rounded-full bg-foreground text-background shadow-soft transition hover:scale-105 sm:flex" aria-label="Llamar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone h-5 w-5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></a><a href="https://wa.me/573001234567" class="flex h-12 w-12 items-center justify-center rounded-full bg-[#1f8f54] text-white shadow-soft transition hover:scale-105" aria-label="Abrir WhatsApp"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-6 w-6"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg></a></div><div class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-border bg-background/95 text-xs font-medium shadow-soft backdrop-blur md:hidden"><a class="flex h-14 flex-col items-center justify-center gap-1" href="/joyas/shop"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag h-4 w-4"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>Catalogo</a><a class="flex h-14 flex-col items-center justify-center gap-1" href="/joyas/shop?q="><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search h-4 w-4"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>Buscar</a><a href="https://wa.me/573001234567" class="flex h-14 flex-col items-center justify-center gap-1 bg-foreground text-background"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-4 w-4"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>WhatsApp</a></div>';
+  // generateProductPage() fills {{TOKEN}} placeholders in
+  // producto/_template.html (fetched once per publish in step 3 of publish()).
+  // Header/footer/floating markup now lives in the template — update it there
+  // rather than here.
 
   function waHref(text) {
     return "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(text);
@@ -1446,7 +1446,7 @@
     return map[category] || slugify(category);
   }
 
-  function generateProductPage(product, allProducts) {
+  function generateProductPage(product, allProducts, tmpl) {
     var related = allProducts
       .filter(function (p) { return p.category === product.category && p.slug !== product.slug; })
       .sort(function (a, b) { return (b.popularity || 0) - (a.popularity || 0); })
@@ -1454,33 +1454,27 @@
 
     var img = product.images[0];
     var canonical = "https://joyas-colombia.com/producto/" + product.slug;
+    var ogImageUrl = "https://joyas-colombia.com/joyas" + img.src.replace(/^\/joyas/, "");
     var offerAvailability = product.availability === "Disponible" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
 
-    var jsonLdStore = '{"@context":"https://schema.org","@type":"JewelryStore","name":"Habibi Eisaa","url":"https://joyas-colombia.com","telephone":"+57 300 123 4567","email":"hola@joyas-colombia.com","address":{"@type":"PostalAddress","addressCountry":"CO"},"sameAs":["https://www.instagram.com/"]}';
-    // guards against a product name/description that happens to contain
-    // "</script" or an HTML comment marker from breaking out of the <script>
-    // tag it's embedded in - low-probability since only the trusted admin
-    // enters this data, but a one-line fix
     function safeJsonLd(text) {
       return text.replace(/<\/script/gi, "<\\/script").replace(/<!--/g, "<\\!--");
     }
     var offers = { "@type": "Offer", priceCurrency: product.currency || "COP", availability: offerAvailability, url: canonical };
     if (product.price > 0) offers.price = product.price;
-    var jsonLdProduct = JSON.stringify({
+    var jsonLdProduct = safeJsonLd(JSON.stringify({
       "@context": "https://schema.org", "@type": "Product", name: product.name, sku: product.sku,
-      image: ["https://joyas-colombia.com/joyas" + img.src.replace(/^\/joyas/, "")],
-      description: product.description,
+      image: [ogImageUrl], description: product.description,
       brand: { "@type": "Brand", name: "Habibi Eisaa" },
-      material: product.material, category: product.category,
-      offers: offers
-    });
-    var jsonLdBreadcrumb = JSON.stringify({
+      material: product.material, category: product.category, offers: offers
+    }));
+    var jsonLdBreadcrumb = safeJsonLd(JSON.stringify({
       "@context": "https://schema.org", "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: product.category, item: "https://joyas-colombia.com/" + categorySlug(product.category) },
         { "@type": "ListItem", position: 2, name: product.name, item: canonical }
       ]
-    });
+    }));
 
     var pillHtml = ['category', 'material', 'availability'].map(function (key) {
       var val = key === "availability" ? product.availability : product[key];
@@ -1489,11 +1483,6 @@
     if (product.tag) pillHtml += '<span class="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium text-gold-700">' + esc(product.tag) + "</span>";
     if (product.promotion) pillHtml += '<span class="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">Promocion</span>';
 
-    // Independent size/color axes (not a combinatorial matrix - matches
-    // the reference tool this was modeled on). Options at 0 stock render
-    // disabled; picking one rewrites the WhatsApp link's href via the
-    // inline script below - this page has zero hydration risk (see
-    // CLAUDE.md), so a plain inline <script> is the simplest correct fix.
     function variantOptionsHtml(list, kind) {
       return list.map(function (opt) {
         var disabled = Number(opt.units) === 0;
@@ -1514,82 +1503,63 @@
     }).join("");
 
     var relatedHtml = related.map(renderCard).join("");
+    var relatedSectionHtml = relatedHtml
+      ? '<section class="grid gap-4 py-10 md:grid-cols-3"><div class="rounded-md border border-border bg-card p-5"><h2 class="font-serif text-2xl">Asesoria personalizada</h2><p class="mt-2 text-sm leading-6 text-muted-foreground">Te acompanamos por WhatsApp para confirmar detalles antes de cerrar tu pedido.</p></div><div class="rounded-md border border-border bg-card p-5"><h2 class="font-serif text-2xl">Cambios y revision</h2><p class="mt-2 text-sm leading-6 text-muted-foreground">Te acompanamos por WhatsApp para confirmar detalles antes de cerrar tu pedido.</p></div><div class="rounded-md border border-border bg-card p-5"><h2 class="font-serif text-2xl">Compra social segura</h2><p class="mt-2 text-sm leading-6 text-muted-foreground">Te acompanamos por WhatsApp para confirmar detalles antes de cerrar tu pedido.</p></div></section>' +
+        '<section class="py-12"><div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div class="max-w-2xl"><h2 class="font-serif text-3xl text-foreground sm:text-4xl">Productos relacionados</h2></div></div><div class="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">' + relatedHtml + "</div></section>"
+      : "";
 
-    // Oro 18K/Plata prices move daily (see CLAUDE.md), so the baked-in
-    // price text above is only a snapshot from generation time. This
-    // inline script re-fetches the live per-gram prices and corrects
-    // every .hje-price-recompute element (main price + related cards)
-    // that has a weight - a plain page reload always shows today's price
-    // without needing to regenerate the page. Zero hydration risk, same
-    // reasoning as the gallery/variant scripts above.
     var priceScript =
       '<script>(function(){var els=document.querySelectorAll(".hje-price-recompute");if(!els.length)return;fetch("/joyas/assets/material-prices.json?v="+Date.now()).then(function(r){return r.json();}).then(function(mp){els.forEach(function(el){var material=el.getAttribute("data-material");var weight=parseFloat(el.getAttribute("data-weight"))||0;var perGram=mp[material];if(weight>0&&perGram){var n=Math.round(weight*perGram);el.textContent=n>0?"$"+n.toLocaleString("es-CO"):"Consultar precio";}});}).catch(function(){});})();</script>';
 
-    var galleryMainId = "hje-gallery-main-img";
     var fitStyle = photoFitStyle(product);
     var thumbsHtml = product.images.map(function (im, i) {
       return '<button type="button" class="hje-gallery-thumb relative aspect-square overflow-hidden rounded border ' + (i === 0 ? "border-gold-700" : "border-border") + ' focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" data-full="' + esc(im.src) + '" data-alt="' + esc(im.alt) + '" aria-label="Ver imagen ' + esc(im.alt) + '"><img alt="" loading="lazy" decoding="async" data-nimg="fill" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' + fitStyle + '" src="' + esc(im.thumbnail) + '"/></button>';
     }).join("");
+    var thumbsSection = product.images.length > 1 ? '<div class="grid grid-cols-5 gap-2">' + thumbsHtml + "</div>" : "";
     var galleryScript = product.images.length > 1
-      ? '<script>(function(){var thumbs=document.querySelectorAll(".hje-gallery-thumb");var main=document.getElementById("' + galleryMainId + '");thumbs.forEach(function(t){t.addEventListener("click",function(){main.setAttribute("src",t.getAttribute("data-full"));main.setAttribute("alt",t.getAttribute("data-alt"));thumbs.forEach(function(x){x.classList.remove("border-gold-700");x.classList.add("border-border");});t.classList.remove("border-border");t.classList.add("border-gold-700");});});})();</script>'
+      ? '<script>(function(){var thumbs=document.querySelectorAll(".hje-gallery-thumb");var main=document.getElementById("hje-gallery-main-img");thumbs.forEach(function(t){t.addEventListener("click",function(){main.setAttribute("src",t.getAttribute("data-full"));main.setAttribute("alt",t.getAttribute("data-alt"));thumbs.forEach(function(x){x.classList.remove("border-gold-700");x.classList.add("border-border");});t.classList.remove("border-border");t.classList.add("border-gold-700");});});})();</script>'
       : "";
     var waBaseText = "Hola, quiero consultar " + product.name + " SKU " + product.sku;
 
-    var main =
-      '<main><div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">' +
-      '<script type="application/ld+json">' + safeJsonLd(jsonLdProduct) + "</script>" +
-      '<script type="application/ld+json">' + safeJsonLd(jsonLdBreadcrumb) + "</script>" +
-      '<nav aria-label="Breadcrumb" class="text-sm text-muted-foreground"><ol class="flex flex-wrap items-center gap-2">' +
-      '<li><a class="hover:text-foreground" href="/joyas">Inicio</a></li>' +
-      '<li class="flex items-center gap-2"><span aria-hidden="true">/</span><a class="hover:text-foreground" href="/joyas/' + categorySlug(product.category) + '">' + esc(product.category) + "</a></li>" +
-      '<li class="flex items-center gap-2"><span aria-hidden="true">/</span><a class="hover:text-foreground" href="/joyas/producto/' + esc(product.slug) + '">' + esc(product.name) + "</a></li>" +
-      "</ol></nav>" +
-      '<section class="grid gap-10 py-8 lg:grid-cols-[1.05fr_0.95fr]">' +
-      '<div class="grid gap-3"><div class="relative aspect-[4/5] overflow-hidden rounded-md bg-muted"><img id="' + galleryMainId + '" alt="' + esc(img.alt) + '" decoding="async" data-nimg="fill" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' + fitStyle + '" src="' + esc(img.src) + '"/></div>' +
-      (product.images.length > 1 ? '<div class="grid grid-cols-5 gap-2">' + thumbsHtml + "</div>" : "") + "</div>" +
-      "<div>" +
-      '<div class="flex flex-wrap gap-2">' + pillHtml + "</div>" +
-      '<h1 class="mt-5 font-serif text-5xl">' + esc(product.name) + "</h1>" +
-      '<p class="mt-3 text-2xl font-semibold hje-price-recompute" data-material="' + esc(product.material) + '" data-weight="' + (Number(product.weight) || 0) + '">' + esc(formatPrice(product.price) || "Consultar precio") + "</p>" +
-      '<p class="mt-5 leading-7 text-muted-foreground">' + esc(product.description) + "</p>" +
-      variantPickerHtml +
-      '<div class="mt-8 grid gap-3 sm:grid-cols-2">' +
-      '<a href="' + waHref(waBaseText) + '" data-base-text="' + esc(waBaseText) + '" class="hje-wa-consult inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-6"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-circle h-4 w-4"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>Consultar por WhatsApp</a>' +
-      '<a href="' + esc(product.instagramUrl) + '" target="_blank" rel="noreferrer" class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-border bg-background hover:bg-muted h-12 px-6"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram h-4 w-4"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line></svg>Ver en Instagram</a>' +
-      "</div>" +
-      '<div class="mt-8 grid gap-3 border-y border-border py-6 text-sm text-muted-foreground"><p class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-truck h-4 w-4 text-gold-700"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"></path><path d="M15 18H9"></path><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"></path><circle cx="17" cy="18" r="2"></circle><circle cx="7" cy="18" r="2"></circle></svg>Envios coordinados en Colombia segun disponibilidad.</p><p class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-check h-4 w-4 text-gold-700"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path><path d="m9 12 2 2 4-4"></path></svg>Revision, cuidado y recomendaciones antes de confirmar.</p></div>' +
-      '<section class="mt-8"><h2 class="font-serif text-3xl">Especificaciones</h2><dl class="mt-4 grid gap-3 text-sm">' + specsHtml + "</dl></section>" +
-      "</div></section>" +
-      (relatedHtml
-        ? '<section class="grid gap-4 py-10 md:grid-cols-3"><div class="rounded-md border border-border bg-card p-5"><h2 class="font-serif text-2xl">Asesoria personalizada</h2><p class="mt-2 text-sm leading-6 text-muted-foreground">Te acompanamos por WhatsApp para confirmar detalles antes de cerrar tu pedido.</p></div><div class="rounded-md border border-border bg-card p-5"><h2 class="font-serif text-2xl">Cambios y revision</h2><p class="mt-2 text-sm leading-6 text-muted-foreground">Te acompanamos por WhatsApp para confirmar detalles antes de cerrar tu pedido.</p></div><div class="rounded-md border border-border bg-card p-5"><h2 class="font-serif text-2xl">Compra social segura</h2><p class="mt-2 text-sm leading-6 text-muted-foreground">Te acompanamos por WhatsApp para confirmar detalles antes de cerrar tu pedido.</p></div></section>' +
-          '<section class="py-12"><div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div class="max-w-2xl"><h2 class="font-serif text-3xl text-foreground sm:text-4xl">Productos relacionados</h2></div></div><div class="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">' + relatedHtml + "</div></section>"
-        : "") +
-      '<section class="pb-16"><div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div class="max-w-2xl"><h2 class="font-serif text-3xl text-foreground sm:text-4xl">Vistos recientemente</h2></div></div><div class="text-sm text-muted-foreground"><a class="font-medium text-gold-700 underline-offset-4 hover:underline" href="/joyas/shop">Volver al catalogo</a> <!-- -->para seguir explorando piezas similares.</div></section>' +
-      "</div></main>" + galleryScript + variantScript + priceScript;
+    var tokens = {
+      SEO_TITLE: esc(product.seo.title),
+      META_DESCRIPTION: esc(product.seo.description),
+      CANONICAL_URL: canonical,
+      OG_TITLE: esc(product.seo.title),
+      OG_DESCRIPTION: esc(product.seo.description),
+      OG_IMAGE_URL: ogImageUrl,
+      OG_IMAGE_WIDTH: String(img.width),
+      OG_IMAGE_HEIGHT: String(img.height),
+      OG_IMAGE_ALT: esc(img.alt),
+      JSON_LD_PRODUCT: jsonLdProduct,
+      JSON_LD_BREADCRUMB: jsonLdBreadcrumb,
+      CAT_HREF: "/joyas/" + categorySlug(product.category),
+      CAT_NAME: esc(product.category),
+      PRODUCT_SLUG: esc(product.slug),
+      PRODUCT_NAME: esc(product.name),
+      GALLERY_MAIN_SRC: esc(img.src),
+      GALLERY_MAIN_ALT: esc(img.alt),
+      GALLERY_FIT_STYLE: fitStyle,
+      THUMBS_SECTION: thumbsSection,
+      PILLS_HTML: pillHtml,
+      DATA_MATERIAL: esc(product.material),
+      DATA_WEIGHT: String(Number(product.weight) || 0),
+      PRICE_TEXT: esc(formatPrice(product.price) || "Consultar precio"),
+      DESCRIPTION: esc(product.description),
+      VARIANT_PICKER_HTML: variantPickerHtml,
+      WA_HREF: waHref(waBaseText),
+      WA_BASE_TEXT_ESC: esc(waBaseText),
+      INSTAGRAM_URL: esc(product.instagramUrl),
+      SPECS_HTML: specsHtml,
+      RELATED_SECTION_HTML: relatedSectionHtml,
+      GALLERY_SCRIPT: galleryScript,
+      VARIANT_SCRIPT: variantScript,
+      PRICE_SCRIPT: priceScript
+    };
 
-    var head =
-      "<!doctype html><html lang=\"es-CO\"><head><meta charset=\"utf-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>" +
-      '<link rel="stylesheet" href="/joyas/assets/fonts.css"/>' +
-      '<link rel="icon" href="/joyas/brand/favicon-32.png" sizes="32x32"/><link rel="icon" href="/joyas/brand/favicon-16.png" sizes="16x16"/><link rel="apple-touch-icon" href="/joyas/brand/favicon-180.png"/>' +
-      '<link rel="stylesheet" href="/joyas/_next/static/css/7c4fa424f19c27d5.css" data-precedence="next"/>' +
-      '<link rel="stylesheet" href="/joyas/assets/premium.css"/>' +
-      '<meta name="theme-color" content="#f8f3eb"/>' +
-      "<title>" + esc(product.seo.title) + "</title>" +
-      '<meta name="description" content="' + esc(product.seo.description) + '"/>' +
-      '<link rel="canonical" href="' + canonical + '"/>' +
-      '<meta property="og:title" content="' + esc(product.seo.title) + '"/><meta property="og:description" content="' + esc(product.seo.description) + '"/><meta property="og:url" content="' + canonical + '"/>' +
-      '<meta property="og:image" content="https://joyas-colombia.com/joyas' + img.src.replace(/^\/joyas/, "") + '"/><meta property="og:image:width" content="' + img.width + '"/><meta property="og:image:height" content="' + img.height + '"/><meta property="og:image:alt" content="' + esc(img.alt) + '"/>' +
-      '<meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="Habibi Eisaa"/><meta name="twitter:description" content="Catalogo de joyeria colombiana en oro laminado, plata 925, esmeraldas, diamantes y piezas listas para comprar por WhatsApp."/>' +
-      '<meta name="twitter:image" content="https://joyas-colombia.com/joyas' + img.src.replace(/^\/joyas/, "") + '"/><meta name="twitter:image:width" content="' + img.width + '"/><meta name="twitter:image:height" content="' + img.height + '"/><meta name="twitter:image:alt" content="' + esc(img.alt) + '"/>' +
-      "</head><body>" +
-      '<script type="application/ld+json">' + jsonLdStore + "</script>" +
-      PAGE_HEADER + main + PAGE_FOOTER + PAGE_FLOATING +
-      '<script defer src="/joyas/assets/premium.js"></script>' +
-      '<script defer src="/joyas/assets/nav-funnel.js"></script>' +
-      '<script defer src="/joyas/assets/store.js"></script>' +
-      "</body></html>";
-
-    return head;
+    return tmpl.replace(/\{\{([A-Z_]+)\}\}/g, function (_, key) {
+      return key in tokens ? tokens[key] : "";
+    });
   }
 
   // =========================================================================
@@ -1734,6 +1704,7 @@
         });
       });
 
+      var finalMergedCatalog = null;
       return Promise.all(photoUploads).then(function () {
         // 2) merge products.json fresh-fetch/merge/PUT with 409 retry
         logPublish("Guardando catalogo...");
@@ -1750,20 +1721,32 @@
             bySlug[p.slug] = clean;
           });
           deletedList.forEach(function (slug) { delete bySlug[slug]; });
-          return JSON.stringify(Object.keys(bySlug).map(function (k) { return bySlug[k]; }), null, 2);
+          finalMergedCatalog = Object.keys(bySlug).map(function (k) { return bySlug[k]; });
+          return JSON.stringify(finalMergedCatalog, null, 2);
         }, dirtyList.length + " producto(s) actualizados, " + deletedList.length + " eliminado(s)", 4);
-      });
-    }).then(function () {
-      // 3) generate/regenerate product pages
-      logPublish("Generando paginas de producto...");
-      var allForRelated = displayProducts().filter(function (p) { return deletedList.indexOf(p.slug) === -1; });
-      var pageWrites = dirtyList.map(function (p) {
-        var html = generateProductPage(p, allForRelated);
-        return ghGetFile("producto/" + p.slug + ".html").then(function (existing) {
-          return ghPutText("producto/" + p.slug + ".html", html, existing ? existing.sha : null, "Pagina: " + p.name);
+      }).then(function () {
+        // 2b) write JS manifest (window.APP_PRODUCTS) for storefront fast-path
+        if (!finalMergedCatalog) return;
+        logPublish("Actualizando manifiesto JS...");
+        var ts = new Date().toISOString();
+        var jsManifest = "/* AUTO-GENERATED — do not edit by hand.\n   Managed by admin.html via the GitHub Contents API.\n   Published: " + ts + " */\nwindow.APP_PRODUCTS = " + JSON.stringify(finalMergedCatalog) + ";";
+        return ghGetFile("assets/js/products-data.js").then(function (existing) {
+          return ghPutText("assets/js/products-data.js", jsManifest, existing ? existing.sha : null, "Manifiesto JS actualizado");
         });
       });
-      return Promise.all(pageWrites);
+    }).then(function () {
+      // 3) generate/regenerate product pages (fetch template once per publish)
+      logPublish("Generando paginas de producto...");
+      var allForRelated = displayProducts().filter(function (p) { return deletedList.indexOf(p.slug) === -1; });
+      return fetch("/joyas/producto/_template.html?v=" + Date.now()).then(function (r) { return r.text(); }).then(function (tmpl) {
+        var pageWrites = dirtyList.map(function (p) {
+          var html = generateProductPage(p, allForRelated, tmpl);
+          return ghGetFile("producto/" + p.slug + ".html").then(function (existing) {
+            return ghPutText("producto/" + p.slug + ".html", html, existing ? existing.sha : null, "Pagina: " + p.name);
+          });
+        });
+        return Promise.all(pageWrites);
+      });
     }).then(function () {
       // 4) delete removed product pages
       logPublish("Eliminando productos removidos...");
@@ -1847,6 +1830,47 @@
   // of publish()'s steps)
   // =========================================================================
 
+  function renderSalesChart(list) {
+    var chartEl = $("#hje-adm-sales-chart");
+    if (!chartEl) return;
+    var now = new Date();
+    var days = [];
+    var byDay = {};
+    for (var d = 29; d >= 0; d--) {
+      var dt = new Date(now);
+      dt.setDate(dt.getDate() - d);
+      var key = dt.toISOString().slice(0, 10);
+      days.push(key);
+      byDay[key] = 0;
+    }
+    list.forEach(function (e) {
+      var key = (e.timestamp || "").slice(0, 10);
+      if (key in byDay) byDay[key] += Number(e.total) || 0;
+    });
+    var maxVal = Math.max(1, Math.max.apply(null, days.map(function (k) { return byDay[k]; })));
+    var W = 300, H = 80, barW = 8, gap = 2, padTop = 4, axisH = 8;
+    var usableH = H - padTop - axisH;
+    var bars = days.map(function (key, i) {
+      var val = byDay[key];
+      var bh = Math.round((val / maxVal) * usableH);
+      var x = i * (barW + gap);
+      var y = padTop + (usableH - bh);
+      var dateLabel = key.slice(5); // MM-DD
+      var fill = val > 0 ? "#a8782a" : "#e8ddc8";
+      return '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + bh + '" fill="' + fill + '" rx="1"><title>' + dateLabel + ': ' + moneyOrZero(val) + '</title></rect>';
+    }).join("");
+    var todayLabel = days[days.length - 1].slice(5);
+    var oldLabel = days[0].slice(5);
+    chartEl.innerHTML =
+      '<p style="font-size:0.72rem;color:#8a7a5f;margin-bottom:4px">Ingresos ultimos 30 dias</p>' +
+      '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" aria-label="Ingresos 30 dias" style="display:block">' +
+      bars +
+      '<line x1="0" y1="' + (H - axisH) + '" x2="' + W + '" y2="' + (H - axisH) + '" stroke="#e8ddc8" stroke-width="1"/>' +
+      '<text x="0" y="' + H + '" font-size="6" fill="#8a7a5f">' + oldLabel + '</text>' +
+      '<text x="' + W + '" y="' + H + '" font-size="6" fill="#8a7a5f" text-anchor="end">' + todayLabel + '</text>' +
+      '</svg>';
+  }
+
   function loadSalesLog() {
     if (!state.pat) return;
     ghGetFile("assets/sales-log.json").then(function (file) {
@@ -1855,9 +1879,14 @@
       list.sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
       var summary = $("#hje-adm-sales-summary");
       var totalRevenue = list.reduce(function (s, e) { return s + (Number(e.total) || 0); }, 0);
+      var cutoff30 = new Date(); cutoff30.setDate(cutoff30.getDate() - 30);
+      var revenue30 = list.filter(function (e) { return new Date(e.timestamp) >= cutoff30; })
+        .reduce(function (s, e) { return s + (Number(e.total) || 0); }, 0);
       summary.innerHTML =
         '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + list.length + '</div><div class="hje-adm-stat-label">Ventas registradas</div></div>' +
-        '<div class="hje-adm-stat hje-adm-stat-gold"><div class="hje-adm-stat-value">' + moneyOrZero(totalRevenue) + '</div><div class="hje-adm-stat-label">Total vendido</div></div>';
+        '<div class="hje-adm-stat hje-adm-stat-gold"><div class="hje-adm-stat-value">' + moneyOrZero(totalRevenue) + '</div><div class="hje-adm-stat-label">Total vendido</div></div>' +
+        '<div class="hje-adm-stat hje-adm-stat-gold"><div class="hje-adm-stat-value">' + moneyOrZero(revenue30) + '</div><div class="hje-adm-stat-label">Ultimos 30 dias</div></div>';
+      renderSalesChart(list);
 
       state.salesListCache = list;
       var container = $("#hje-adm-sales-list");
@@ -1928,6 +1957,85 @@
 
   function closeSaleDetail() {
     $("#hje-adm-sale-view-backdrop").classList.remove("hje-show");
+  }
+
+  // =========================================================================
+  // CSV export / import
+  // =========================================================================
+
+  var CSV_FIELDS = ["slug","name","sku","category","material","price","weight","availability","units","featured","popularity","tag","promotion","costoInterno","photoFit","description","instagramUrl"];
+
+  function csvRow(values) {
+    return values.map(function (v) {
+      var s = String(v == null ? "" : v);
+      if (s.indexOf(";") !== -1 || s.indexOf('"') !== -1 || s.indexOf("\n") !== -1) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }).join(";");
+  }
+
+  function exportCSV() {
+    var products = displayProducts().filter(function (p) { return !state.deleted[p.slug]; });
+    var header = csvRow(CSV_FIELDS);
+    var rows = products.map(function (p) {
+      return csvRow(CSV_FIELDS.map(function (f) { return p[f]; }));
+    });
+    var csv = "﻿" + [header].concat(rows).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "habibi-eisaa-catalogo-" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importCSV(file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var text = e.target.result.replace(/^﻿/, "");
+      var lines = text.split(/\r?\n/).filter(function (l) { return l.trim(); });
+      if (lines.length < 2) { alert("El archivo CSV esta vacio o no tiene datos."); return; }
+      var headers = lines[0].split(";").map(function (h) { return h.trim().replace(/^"|"$/g, ""); });
+      var imported = 0, skipped = 0;
+      for (var i = 1; i < lines.length; i++) {
+        var cols = [];
+        var cur = "";
+        var inQ = false;
+        for (var c = 0; c < lines[i].length; c++) {
+          var ch = lines[i][c];
+          if (ch === '"') {
+            if (inQ && lines[i][c+1] === '"') { cur += '"'; c++; }
+            else inQ = !inQ;
+          } else if (ch === ";" && !inQ) {
+            cols.push(cur); cur = "";
+          } else {
+            cur += ch;
+          }
+        }
+        cols.push(cur);
+        var row = {};
+        headers.forEach(function (h, j) { row[h] = (cols[j] || "").trim(); });
+        if (!row.slug && !row.name) { skipped++; continue; }
+        var existing = displayProducts().find(function (p) { return p.slug === row.slug; });
+        var base = existing ? JSON.parse(JSON.stringify(existing)) : { id: nextId(), slug: row.slug || slugify(row.name), images: [], specifications: { acabado: "", cuidado: "", origen: "", garantia: "" }, seo: { title: row.name || "", description: "" }, currency: "COP", variants: { sizes: [], colors: [] } };
+        CSV_FIELDS.forEach(function (f) {
+          if (!(f in row)) return;
+          var v = row[f];
+          if (f === "price" || f === "weight" || f === "costoInterno" || f === "popularity") base[f] = Number(v) || 0;
+          else if (f === "units") base[f] = Number(v) || 0;
+          else if (f === "featured" || f === "promotion") base[f] = v === "true" || v === "1";
+          else base[f] = v;
+        });
+        state.dirty[base.slug] = base;
+        imported++;
+      }
+      updatePublishBar();
+      renderTable();
+      alert("Importacion completada: " + imported + " producto(s) aplicados, " + skipped + " omitidos.\nRevisa y publica los cambios cuando estes listo.");
+    };
+    reader.readAsText(file, "utf-8");
   }
 
   // =========================================================================
@@ -2024,6 +2132,12 @@
     });
 
     $("#hje-adm-prices-save").addEventListener("click", saveMaterialPrices);
+
+    $("#hje-adm-csv-export-btn").addEventListener("click", exportCSV);
+    $("#hje-adm-csv-import-input").addEventListener("change", function () {
+      var file = this.files[0];
+      if (file) { importCSV(file); this.value = ""; }
+    });
 
     $("#hje-adm-publish-btn").addEventListener("click", publish);
 

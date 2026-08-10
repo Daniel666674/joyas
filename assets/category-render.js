@@ -254,9 +254,22 @@
     var shopRoot = document.getElementById("hje-shop-root");
     if (!root && !shopRoot) return;
 
+    var pricesFetch = fetch("/joyas/assets/material-prices.json")
+      .then(function (r) { return r.json(); })
+      .catch(function () { return {}; });
+
+    if (window.APP_PRODUCTS && Array.isArray(window.APP_PRODUCTS)) {
+      pricesFetch.then(function (prices) {
+        materialPrices = prices || {};
+        if (root) initCategoryRoot(root, window.APP_PRODUCTS);
+        if (shopRoot) initShopRoot(shopRoot, window.APP_PRODUCTS);
+      });
+      return;
+    }
+
     Promise.all([
       fetch("/joyas/assets/products.json").then(function (r) { return r.json(); }),
-      fetch("/joyas/assets/material-prices.json").then(function (r) { return r.json(); }).catch(function () { return {}; })
+      pricesFetch
     ])
       .then(function (results) {
         var products = results[0];
