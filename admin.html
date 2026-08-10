@@ -80,6 +80,8 @@
       <button type="button" class="hje-adm-btn-outline" id="hje-adm-bulk-btn" disabled>Edicion masiva</button>
       <button type="button" class="hje-adm-btn-outline" id="hje-adm-discard-btn">Descartar cambios</button>
       <button type="button" class="hje-adm-btn-primary" id="hje-adm-publish-btn" disabled>Publicar cambios</button>
+      <button type="button" class="hje-adm-btn-outline" id="hje-adm-csv-export-btn">Exportar CSV</button>
+      <label class="hje-adm-btn-outline" style="cursor:pointer" title="Importar productos desde CSV">Importar CSV<input type="file" id="hje-adm-csv-import-input" accept=".csv,.txt" style="display:none"/></label>
     </div>
     <div class="hje-adm-selection-count" id="hje-adm-selection-count"></div>
 
@@ -116,6 +118,7 @@
 
   <div class="hje-adm-panel" id="hje-adm-panel-ventas">
     <div class="hje-adm-sales-summary" id="hje-adm-sales-summary"></div>
+    <div id="hje-adm-sales-chart" style="margin:12px 0;min-height:90px"></div>
     <div class="hje-adm-changelog-list" id="hje-adm-sales-list"></div>
   </div>
 

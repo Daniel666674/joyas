@@ -560,11 +560,20 @@
     });
     bar.innerHTML =
       '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + all.length + '</div><div class="hje-adm-stat-label">Productos</div></div>' +
-      '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + counts.Disponible + '</div><div class="hje-adm-stat-label">Disponibles</div></div>' +
-      '<div class="hje-adm-stat hje-adm-stat-warn"><div class="hje-adm-stat-value">' + counts["Bajo stock"] + '</div><div class="hje-adm-stat-label">Bajo stock</div></div>' +
-      '<div class="hje-adm-stat hje-adm-stat-off"><div class="hje-adm-stat-value">' + counts.Agotado + '</div><div class="hje-adm-stat-label">Agotados</div></div>' +
+      '<div class="hje-adm-stat" data-hje-filter-status="Disponible" title="Filtrar por Disponible"><div class="hje-adm-stat-value">' + counts.Disponible + '</div><div class="hje-adm-stat-label">Disponibles</div></div>' +
+      '<div class="hje-adm-stat hje-adm-stat-warn" data-hje-filter-status="Bajo stock" title="Filtrar por Bajo stock"><div class="hje-adm-stat-value">' + counts["Bajo stock"] + '</div><div class="hje-adm-stat-label">Bajo stock</div></div>' +
+      '<div class="hje-adm-stat hje-adm-stat-off" data-hje-filter-status="Agotado" title="Filtrar por Agotado"><div class="hje-adm-stat-value">' + counts.Agotado + '</div><div class="hje-adm-stat-label">Agotados</div></div>' +
       '<div class="hje-adm-stat hje-adm-stat-gold hje-adm-stat-money"><div class="hje-adm-stat-value">' + moneyOrZero(retailValue) + '</div><div class="hje-adm-stat-label">Valor inventario (venta)</div></div>' +
       '<div class="hje-adm-stat hje-adm-stat-money"><div class="hje-adm-stat-value">' + moneyOrZero(costValue) + '</div><div class="hje-adm-stat-label">Valor inventario (costo)</div></div>';
+    $all("[data-hje-filter-status]", bar).forEach(function (tile) {
+      tile.style.cursor = "pointer";
+      tile.addEventListener("click", function () {
+        var status = tile.getAttribute("data-hje-filter-status");
+        var sel = $("#hje-adm-filter-status");
+        sel.value = sel.value === status ? "" : status;
+        renderTable();
+      });
+    });
   }
 
   function updateSelectionBar() {
@@ -1821,6 +1830,47 @@
   // of publish()'s steps)
   // =========================================================================
 
+  function renderSalesChart(list) {
+    var chartEl = $("#hje-adm-sales-chart");
+    if (!chartEl) return;
+    var now = new Date();
+    var days = [];
+    var byDay = {};
+    for (var d = 29; d >= 0; d--) {
+      var dt = new Date(now);
+      dt.setDate(dt.getDate() - d);
+      var key = dt.toISOString().slice(0, 10);
+      days.push(key);
+      byDay[key] = 0;
+    }
+    list.forEach(function (e) {
+      var key = (e.timestamp || "").slice(0, 10);
+      if (key in byDay) byDay[key] += Number(e.total) || 0;
+    });
+    var maxVal = Math.max(1, Math.max.apply(null, days.map(function (k) { return byDay[k]; })));
+    var W = 300, H = 80, barW = 8, gap = 2, padTop = 4, axisH = 8;
+    var usableH = H - padTop - axisH;
+    var bars = days.map(function (key, i) {
+      var val = byDay[key];
+      var bh = Math.round((val / maxVal) * usableH);
+      var x = i * (barW + gap);
+      var y = padTop + (usableH - bh);
+      var dateLabel = key.slice(5); // MM-DD
+      var fill = val > 0 ? "#a8782a" : "#e8ddc8";
+      return '<rect x="' + x + '" y="' + y + '" width="' + barW + '" height="' + bh + '" fill="' + fill + '" rx="1"><title>' + dateLabel + ': ' + moneyOrZero(val) + '</title></rect>';
+    }).join("");
+    var todayLabel = days[days.length - 1].slice(5);
+    var oldLabel = days[0].slice(5);
+    chartEl.innerHTML =
+      '<p style="font-size:0.72rem;color:#8a7a5f;margin-bottom:4px">Ingresos ultimos 30 dias</p>' +
+      '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" aria-label="Ingresos 30 dias" style="display:block">' +
+      bars +
+      '<line x1="0" y1="' + (H - axisH) + '" x2="' + W + '" y2="' + (H - axisH) + '" stroke="#e8ddc8" stroke-width="1"/>' +
+      '<text x="0" y="' + H + '" font-size="6" fill="#8a7a5f">' + oldLabel + '</text>' +
+      '<text x="' + W + '" y="' + H + '" font-size="6" fill="#8a7a5f" text-anchor="end">' + todayLabel + '</text>' +
+      '</svg>';
+  }
+
   function loadSalesLog() {
     if (!state.pat) return;
     ghGetFile("assets/sales-log.json").then(function (file) {
@@ -1829,9 +1879,14 @@
       list.sort(function (a, b) { return new Date(b.timestamp) - new Date(a.timestamp); });
       var summary = $("#hje-adm-sales-summary");
       var totalRevenue = list.reduce(function (s, e) { return s + (Number(e.total) || 0); }, 0);
+      var cutoff30 = new Date(); cutoff30.setDate(cutoff30.getDate() - 30);
+      var revenue30 = list.filter(function (e) { return new Date(e.timestamp) >= cutoff30; })
+        .reduce(function (s, e) { return s + (Number(e.total) || 0); }, 0);
       summary.innerHTML =
         '<div class="hje-adm-stat"><div class="hje-adm-stat-value">' + list.length + '</div><div class="hje-adm-stat-label">Ventas registradas</div></div>' +
-        '<div class="hje-adm-stat hje-adm-stat-gold"><div class="hje-adm-stat-value">' + moneyOrZero(totalRevenue) + '</div><div class="hje-adm-stat-label">Total vendido</div></div>';
+        '<div class="hje-adm-stat hje-adm-stat-gold"><div class="hje-adm-stat-value">' + moneyOrZero(totalRevenue) + '</div><div class="hje-adm-stat-label">Total vendido</div></div>' +
+        '<div class="hje-adm-stat hje-adm-stat-gold"><div class="hje-adm-stat-value">' + moneyOrZero(revenue30) + '</div><div class="hje-adm-stat-label">Ultimos 30 dias</div></div>';
+      renderSalesChart(list);
 
       state.salesListCache = list;
       var container = $("#hje-adm-sales-list");
@@ -1902,6 +1957,85 @@
 
   function closeSaleDetail() {
     $("#hje-adm-sale-view-backdrop").classList.remove("hje-show");
+  }
+
+  // =========================================================================
+  // CSV export / import
+  // =========================================================================
+
+  var CSV_FIELDS = ["slug","name","sku","category","material","price","weight","availability","units","featured","popularity","tag","promotion","costoInterno","photoFit","description","instagramUrl"];
+
+  function csvRow(values) {
+    return values.map(function (v) {
+      var s = String(v == null ? "" : v);
+      if (s.indexOf(";") !== -1 || s.indexOf('"') !== -1 || s.indexOf("\n") !== -1) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }).join(";");
+  }
+
+  function exportCSV() {
+    var products = displayProducts().filter(function (p) { return !state.deleted[p.slug]; });
+    var header = csvRow(CSV_FIELDS);
+    var rows = products.map(function (p) {
+      return csvRow(CSV_FIELDS.map(function (f) { return p[f]; }));
+    });
+    var csv = "﻿" + [header].concat(rows).join("\r\n");
+    var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "habibi-eisaa-catalogo-" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importCSV(file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var text = e.target.result.replace(/^﻿/, "");
+      var lines = text.split(/\r?\n/).filter(function (l) { return l.trim(); });
+      if (lines.length < 2) { alert("El archivo CSV esta vacio o no tiene datos."); return; }
+      var headers = lines[0].split(";").map(function (h) { return h.trim().replace(/^"|"$/g, ""); });
+      var imported = 0, skipped = 0;
+      for (var i = 1; i < lines.length; i++) {
+        var cols = [];
+        var cur = "";
+        var inQ = false;
+        for (var c = 0; c < lines[i].length; c++) {
+          var ch = lines[i][c];
+          if (ch === '"') {
+            if (inQ && lines[i][c+1] === '"') { cur += '"'; c++; }
+            else inQ = !inQ;
+          } else if (ch === ";" && !inQ) {
+            cols.push(cur); cur = "";
+          } else {
+            cur += ch;
+          }
+        }
+        cols.push(cur);
+        var row = {};
+        headers.forEach(function (h, j) { row[h] = (cols[j] || "").trim(); });
+        if (!row.slug && !row.name) { skipped++; continue; }
+        var existing = displayProducts().find(function (p) { return p.slug === row.slug; });
+        var base = existing ? JSON.parse(JSON.stringify(existing)) : { id: nextId(), slug: row.slug || slugify(row.name), images: [], specifications: { acabado: "", cuidado: "", origen: "", garantia: "" }, seo: { title: row.name || "", description: "" }, currency: "COP", variants: { sizes: [], colors: [] } };
+        CSV_FIELDS.forEach(function (f) {
+          if (!(f in row)) return;
+          var v = row[f];
+          if (f === "price" || f === "weight" || f === "costoInterno" || f === "popularity") base[f] = Number(v) || 0;
+          else if (f === "units") base[f] = Number(v) || 0;
+          else if (f === "featured" || f === "promotion") base[f] = v === "true" || v === "1";
+          else base[f] = v;
+        });
+        state.dirty[base.slug] = base;
+        imported++;
+      }
+      updatePublishBar();
+      renderTable();
+      alert("Importacion completada: " + imported + " producto(s) aplicados, " + skipped + " omitidos.\nRevisa y publica los cambios cuando estes listo.");
+    };
+    reader.readAsText(file, "utf-8");
   }
 
   // =========================================================================
@@ -1998,6 +2132,12 @@
     });
 
     $("#hje-adm-prices-save").addEventListener("click", saveMaterialPrices);
+
+    $("#hje-adm-csv-export-btn").addEventListener("click", exportCSV);
+    $("#hje-adm-csv-import-input").addEventListener("change", function () {
+      var file = this.files[0];
+      if (file) { importCSV(file); this.value = ""; }
+    });
 
     $("#hje-adm-publish-btn").addEventListener("click", publish);
 
