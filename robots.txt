@@ -6,6 +6,7 @@ Disallow: /joyas/assets/admin-changelog.json
 Disallow: /joyas/assets/sales-log.json
 Disallow: /joyas/_next/static/chunks/
 Disallow: /joyas/producto/_template.html
+Disallow: /joyas/sw-admin.js
 
 # Crawl-delay for well-behaved bots
 Crawl-delay: 2
