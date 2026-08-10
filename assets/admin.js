@@ -50,6 +50,14 @@
     sales: [], // pending sale records staged for the next publish()
     salesListCache: [], // last-loaded merged sales list (published + pending), for the detail modal to look up by index
     materialPrices: {}, // { "Oro 18K": pricePerGram, "Plata": pricePerGram } - loaded from assets/material-prices.json
+    // Homepage Manager state (loaded from assets/js/hero-manifest.js + site-text.js)
+    heroSlides: [],           // [{ photo, video, videoRotation, zoom, position }]
+    sectionVideos: {},        // { cadenas: { video, rotation }, ... }
+    siteText: {},             // { heroHeadline, heroSubheadline, heroCta, sec_* }
+    heroPendingPhotos: {},    // index -> File (not yet uploaded)
+    heroPendingVideos: {},    // index -> File (not yet uploaded)
+    sectionVideoPending: {},  // sectionKey -> File (not yet uploaded)
+    inicioLoaded: false,
     pat: null,
     adminName: ""
   };
@@ -2039,6 +2047,481 @@
   }
 
   // =========================================================================
+  // Homepage Manager — hero slides, section videos, site text
+  // =========================================================================
+
+  var SECTION_VIDEO_KEYS = ["cadenas", "pulseras", "anillos", "argollas", "aretes", "collares", "dijes"];
+  var POSITION_GRID = ["tl", "tc", "tr", "cl", "cc", "cr", "bl", "bc", "br"];
+
+  function loadHomepageManager() {
+    if (state.inicioLoaded) return;
+    var heroStatus = $("#hje-adm-inicio-status");
+    heroStatus.textContent = "Cargando...";
+    heroStatus.style.color = "#8a7a5f";
+
+    Promise.all([
+      ghGetFile("assets/js/hero-manifest.js"),
+      ghGetFile("assets/js/site-text.js")
+    ]).then(function (results) {
+      var heroFile = results[0];
+      var textFile = results[1];
+
+      // Parse hero-manifest.js — extract JSON from window.HJE_HERO_SLIDES = [...];
+      if (heroFile) {
+        try {
+          var heroText = b64DecodeUnicode(heroFile.content);
+          var slidesMatch = heroText.match(/window\.HJE_HERO_SLIDES\s*=\s*(\[[\s\S]*?\]);/);
+          var secMatch = heroText.match(/window\.HJE_SECTION_VIDEOS\s*=\s*(\{[\s\S]*?\});/);
+          if (slidesMatch) state.heroSlides = JSON.parse(slidesMatch[1]);
+          if (secMatch) state.sectionVideos = JSON.parse(secMatch[1]);
+        } catch (_) {}
+      }
+
+      // Parse site-text.js — extract JSON from window.HJE_SITE_TEXT = {...};
+      if (textFile) {
+        try {
+          var textContent = b64DecodeUnicode(textFile.content);
+          var stMatch = textContent.match(/window\.HJE_SITE_TEXT\s*=\s*(\{[\s\S]*?\});/);
+          if (stMatch) state.siteText = JSON.parse(stMatch[1]);
+        } catch (_) {}
+      }
+
+      state.inicioLoaded = true;
+      heroStatus.textContent = "";
+      renderHeroSlides();
+      renderSectionVideos();
+      populateSiteTextFields();
+    }).catch(function () {
+      heroStatus.textContent = "No se pudo cargar la configuracion del inicio.";
+      heroStatus.style.color = "#c0392b";
+    });
+  }
+
+  function renderHeroSlides() {
+    var container = $("#hje-adm-hero-slides-container");
+    if (!container) return;
+
+    if (state.heroSlides.length === 0) {
+      container.innerHTML = '<p style="font-size:0.83rem;color:#a09070;margin:0.5rem 0">Ninguna diapositiva todavia. Agrega una para reemplazar los videos por defecto del hero.</p>';
+      $("#hje-adm-hero-add-slide").disabled = false;
+      return;
+    }
+
+    container.innerHTML = state.heroSlides.map(function (slide, i) {
+      var thumbSrc = slide.photo || "";
+      var hasVideo = !!slide.video;
+      var zoom = Number(slide.zoom) || 1;
+      var pos = slide.position || "cc";
+
+      var thumbHtml = thumbSrc
+        ? '<img src="' + esc(thumbSrc) + '" alt="Diapositiva ' + (i + 1) + '" />'
+        : '<span>Sin foto</span>';
+
+      var posBtns = POSITION_GRID.map(function (p) {
+        return '<button type="button" class="hje-adm-pos-btn' + (pos === p ? " hje-active" : "") +
+          '" data-hje-slide="' + i + '" data-hje-pos="' + p + '" title="' + p + '"></button>';
+      }).join("");
+
+      return (
+        '<div class="hje-adm-hero-slide-card" data-hje-slide-card="' + i + '">' +
+        '<div class="hje-adm-hero-slide-thumb">' +
+        thumbHtml +
+        (hasVideo ? '<span class="hje-adm-video-badge">&#9654; video</span>' : "") +
+        '</div>' +
+        '<div class="hje-adm-hero-slide-controls">' +
+        '<div class="hje-adm-hero-slide-header">' +
+        '<span class="hje-adm-slide-index">' + (i + 1) + '</span>' +
+        '<div class="hje-adm-hero-slide-buttons">' +
+        '<button type="button" class="hje-adm-slide-btn hje-adm-slide-up" data-hje-slide="' + i + '"' + (i === 0 ? " disabled" : "") + '>&#8593;</button>' +
+        '<button type="button" class="hje-adm-slide-btn hje-adm-slide-down" data-hje-slide="' + i + '"' + (i === state.heroSlides.length - 1 ? " disabled" : "") + '>&#8595;</button>' +
+        '<label class="hje-adm-slide-file-label" title="Subir o reemplazar foto">&#8635; Foto<input type="file" accept="image/*" class="hje-adm-hero-photo-input" data-hje-slide="' + i + '" style="display:none"/></label>' +
+        (thumbSrc ? '<button type="button" class="hje-adm-slide-btn hje-adm-slide-rotate-photo" data-hje-slide="' + i + '">&#8635; Rotar</button>' : "") +
+        '<label class="hje-adm-slide-file-label" title="Subir o reemplazar video">&#9654; Video<input type="file" accept="video/*" class="hje-adm-hero-video-input" data-hje-slide="' + i + '" style="display:none"/></label>' +
+        (hasVideo ? '<button type="button" class="hje-adm-slide-btn hje-adm-slide-remove-video" data-hje-slide="' + i + '">&#10005; Video</button>' : "") +
+        '<button type="button" class="hje-adm-slide-btn hje-adm-slide-btn-danger hje-adm-slide-remove" data-hje-slide="' + i + '">Quitar</button>' +
+        '</div></div>' +
+        '<div class="hje-adm-slide-zoom-row">' +
+        '<span>Zoom</span>' +
+        '<input type="range" min="1" max="2" step="0.05" value="' + zoom.toFixed(2) + '" class="hje-adm-slide-zoom" data-hje-slide="' + i + '" />' +
+        '<span class="hje-adm-slide-zoom-val">' + zoom.toFixed(1) + 'x</span>' +
+        '</div>' +
+        '<div class="hje-adm-position-grid-wrap">' +
+        '<span>Punto focal</span>' +
+        '<div class="hje-adm-position-grid">' + posBtns + '</div>' +
+        '</div>' +
+        '</div></div>'
+      );
+    }).join("");
+
+    $("#hje-adm-hero-add-slide").disabled = state.heroSlides.length >= 5;
+
+    // Bind events on the newly rendered cards
+    $all(".hje-adm-slide-up").forEach(function (btn) {
+      btn.addEventListener("click", function () { moveHeroSlide(parseInt(btn.getAttribute("data-hje-slide"), 10), -1); });
+    });
+    $all(".hje-adm-slide-down").forEach(function (btn) {
+      btn.addEventListener("click", function () { moveHeroSlide(parseInt(btn.getAttribute("data-hje-slide"), 10), 1); });
+    });
+    $all(".hje-adm-slide-remove").forEach(function (btn) {
+      btn.addEventListener("click", function () { removeHeroSlide(parseInt(btn.getAttribute("data-hje-slide"), 10)); });
+    });
+    $all(".hje-adm-slide-rotate-photo").forEach(function (btn) {
+      btn.addEventListener("click", function () { rotateHeroPhoto(parseInt(btn.getAttribute("data-hje-slide"), 10)); });
+    });
+    $all(".hje-adm-slide-remove-video").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var i = parseInt(btn.getAttribute("data-hje-slide"), 10);
+        state.heroSlides[i].video = null;
+        state.heroSlides[i].videoRotation = 0;
+        delete state.heroPendingVideos[i];
+        renderHeroSlides();
+      });
+    });
+    $all(".hje-adm-hero-photo-input").forEach(function (input) {
+      input.addEventListener("change", function () {
+        var i = parseInt(input.getAttribute("data-hje-slide"), 10);
+        if (input.files[0]) {
+          state.heroPendingPhotos[i] = input.files[0];
+          var url = URL.createObjectURL(input.files[0]);
+          var thumb = input.closest(".hje-adm-hero-slide-card").querySelector(".hje-adm-hero-slide-thumb");
+          thumb.innerHTML = '<img src="' + esc(url) + '" alt="" />';
+        }
+        input.value = "";
+      });
+    });
+    $all(".hje-adm-hero-video-input").forEach(function (input) {
+      input.addEventListener("change", function () {
+        var i = parseInt(input.getAttribute("data-hje-slide"), 10);
+        if (input.files[0]) {
+          if (input.files[0].size > 60 * 1024 * 1024) {
+            alert("El video no puede superar los 60 MB.");
+            input.value = "";
+            return;
+          }
+          state.heroPendingVideos[i] = input.files[0];
+          var thumb = input.closest(".hje-adm-hero-slide-card").querySelector(".hje-adm-hero-slide-thumb");
+          var badge = thumb.querySelector(".hje-adm-video-badge");
+          if (!badge) {
+            badge = document.createElement("span");
+            badge.className = "hje-adm-video-badge";
+            thumb.appendChild(badge);
+          }
+          badge.textContent = "► video";
+        }
+        input.value = "";
+      });
+    });
+    $all(".hje-adm-slide-zoom").forEach(function (range) {
+      range.addEventListener("input", function () {
+        var i = parseInt(range.getAttribute("data-hje-slide"), 10);
+        var val = parseFloat(range.value);
+        state.heroSlides[i].zoom = val;
+        var valEl = range.nextElementSibling;
+        if (valEl) valEl.textContent = val.toFixed(1) + "x";
+      });
+    });
+    $all(".hje-adm-pos-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var i = parseInt(btn.getAttribute("data-hje-slide"), 10);
+        var pos = btn.getAttribute("data-hje-pos");
+        state.heroSlides[i].position = pos;
+        var card = $('[data-hje-slide-card="' + i + '"]');
+        if (card) {
+          $all(".hje-adm-pos-btn", card).forEach(function (b) { b.classList.remove("hje-active"); });
+        }
+        btn.classList.add("hje-active");
+      });
+    });
+  }
+
+  function addHeroSlide() {
+    if (state.heroSlides.length >= 5) return;
+    state.heroSlides.push({ photo: null, video: null, videoRotation: 0, zoom: 1.0, position: "cc" });
+    renderHeroSlides();
+  }
+
+  function removeHeroSlide(i) {
+    state.heroSlides.splice(i, 1);
+    // Re-index pending uploads
+    var newPhotos = {};
+    var newVideos = {};
+    Object.keys(state.heroPendingPhotos).forEach(function (k) {
+      var idx = parseInt(k, 10);
+      if (idx < i) newPhotos[idx] = state.heroPendingPhotos[k];
+      else if (idx > i) newPhotos[idx - 1] = state.heroPendingPhotos[k];
+    });
+    Object.keys(state.heroPendingVideos).forEach(function (k) {
+      var idx = parseInt(k, 10);
+      if (idx < i) newVideos[idx] = state.heroPendingVideos[k];
+      else if (idx > i) newVideos[idx - 1] = state.heroPendingVideos[k];
+    });
+    state.heroPendingPhotos = newPhotos;
+    state.heroPendingVideos = newVideos;
+    renderHeroSlides();
+  }
+
+  function moveHeroSlide(i, dir) {
+    var j = i + dir;
+    if (j < 0 || j >= state.heroSlides.length) return;
+    var tmp = state.heroSlides[i];
+    state.heroSlides[i] = state.heroSlides[j];
+    state.heroSlides[j] = tmp;
+    // swap pending uploads too
+    var tmpP = state.heroPendingPhotos[i];
+    state.heroPendingPhotos[i] = state.heroPendingPhotos[j];
+    if (state.heroPendingPhotos[i] === undefined) delete state.heroPendingPhotos[i];
+    state.heroPendingVideos[j] = tmpP;
+    if (state.heroPendingVideos[j] === undefined) delete state.heroPendingVideos[j];
+    renderHeroSlides();
+  }
+
+  function rotateHeroPhoto(i) {
+    var slide = state.heroSlides[i];
+    if (!slide || !slide.photo) return;
+    var btn = $('[data-hje-slide-card="' + i + '"] .hje-adm-slide-rotate-photo');
+    if (btn) { btn.disabled = true; btn.textContent = "Rotando..."; }
+
+    // Fetch the photo, rotate via canvas, mark as pending for upload
+    fetch(slide.photo + "?v=" + Date.now())
+      .then(function (r) { return r.blob(); })
+      .then(function (blob) {
+        return new Promise(function (resolve, reject) {
+          var url = URL.createObjectURL(blob);
+          var img = new Image();
+          img.onload = function () {
+            URL.revokeObjectURL(url);
+            try {
+              var rotated = rotateCanvas90(img, img.naturalWidth, img.naturalHeight);
+              rotated.toBlob(function (rotBlob) {
+                resolve(rotBlob);
+              }, "image/jpeg", 0.88);
+            } catch (e) { reject(e); }
+          };
+          img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("No se pudo cargar")); };
+          img.src = url;
+        });
+      })
+      .then(function (rotBlob) {
+        // Store as a pending photo File (using same path)
+        var file = new File([rotBlob], "rotated.jpg", { type: "image/jpeg" });
+        state.heroPendingPhotos[i] = file;
+        // Update thumbnail preview
+        var previewUrl = URL.createObjectURL(rotBlob);
+        var thumb = $('[data-hje-slide-card="' + i + '"] .hje-adm-hero-slide-thumb');
+        if (thumb) thumb.innerHTML = '<img src="' + esc(previewUrl) + '" alt="" />';
+        if (btn) { btn.disabled = false; btn.textContent = "↻ Rotar"; }
+      })
+      .catch(function () {
+        if (btn) { btn.disabled = false; btn.textContent = "↻ Rotar"; }
+        alert("No se pudo rotar la foto. Asegurate de que este publicada en el repositorio.");
+      });
+  }
+
+  function renderSectionVideos() {
+    var container = $("#hje-adm-section-videos-container");
+    if (!container) return;
+    container.innerHTML = SECTION_VIDEO_KEYS.map(function (cat) {
+      var sv = state.sectionVideos[cat];
+      var hasVideo = sv && sv.video;
+      return (
+        '<div class="hje-adm-sv-row-item" data-hje-sv-cat="' + cat + '">' +
+        '<span class="hje-adm-sv-row-label">' + cat.charAt(0).toUpperCase() + cat.slice(1) + '</span>' +
+        '<span class="hje-adm-sv-indicator' + (hasVideo ? "" : " hje-adm-sv-none") + '">' +
+        (hasVideo ? "&#9654; Video activo" : "Sin video") + '</span>' +
+        '<label class="hje-adm-slide-file-label">Subir video<input type="file" accept="video/*" class="hje-adm-sv-input" data-hje-sv-cat="' + cat + '" style="display:none"/></label>' +
+        (hasVideo ? '<button type="button" class="hje-adm-slide-btn hje-adm-slide-btn-danger hje-adm-sv-remove" data-hje-sv-cat="' + cat + '">Quitar</button>' : "") +
+        '</div>'
+      );
+    }).join("");
+
+    $all(".hje-adm-sv-input").forEach(function (input) {
+      input.addEventListener("change", function () {
+        var cat = input.getAttribute("data-hje-sv-cat");
+        if (input.files[0]) {
+          if (input.files[0].size > 60 * 1024 * 1024) {
+            alert("El video no puede superar los 60 MB.");
+            input.value = "";
+            return;
+          }
+          state.sectionVideoPending[cat] = input.files[0];
+          var row = $('[data-hje-sv-cat="' + cat + '"]');
+          if (row) {
+            var ind = row.querySelector(".hje-adm-sv-indicator");
+            if (ind) { ind.className = "hje-adm-sv-indicator"; ind.textContent = "► Pendiente de guardar"; }
+          }
+        }
+        input.value = "";
+      });
+    });
+    $all(".hje-adm-sv-remove").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var cat = btn.getAttribute("data-hje-sv-cat");
+        if (state.sectionVideos[cat]) {
+          state.sectionVideos[cat] = null;
+          delete state.sectionVideoPending[cat];
+        }
+        renderSectionVideos();
+      });
+    });
+  }
+
+  function populateSiteTextFields() {
+    var t = state.siteText || {};
+    var fields = {
+      "hje-adm-st-headline": t.heroHeadline || "",
+      "hje-adm-st-subheadline": t.heroSubheadline || "",
+      "hje-adm-st-cta": t.heroCta || "",
+      "hje-adm-st-sec-categories": t.sec_categories || "",
+      "hje-adm-st-sec-featured": t.sec_featured || "",
+      "hje-adm-st-sec-why": t.sec_why || "",
+      "hje-adm-st-sec-testimonials": t.sec_testimonials || "",
+      "hje-adm-st-sec-faq": t.sec_faq || ""
+    };
+    Object.keys(fields).forEach(function (id) {
+      var el = $("#" + id);
+      if (el) el.value = fields[id];
+    });
+  }
+
+  function collectSiteTextFields() {
+    return {
+      heroHeadline: ($("#hje-adm-st-headline").value || "").trim(),
+      heroSubheadline: ($("#hje-adm-st-subheadline").value || "").trim(),
+      heroCta: ($("#hje-adm-st-cta").value || "").trim(),
+      sec_categories: ($("#hje-adm-st-sec-categories").value || "").trim(),
+      sec_featured: ($("#hje-adm-st-sec-featured").value || "").trim(),
+      sec_why: ($("#hje-adm-st-sec-why").value || "").trim(),
+      sec_testimonials: ($("#hje-adm-st-sec-testimonials").value || "").trim(),
+      sec_faq: ($("#hje-adm-st-sec-faq").value || "").trim()
+    };
+  }
+
+  function saveHomepageManifests() {
+    var btn = $("#hje-adm-inicio-save");
+    var status = $("#hje-adm-inicio-status");
+    btn.disabled = true;
+    status.style.color = "#8a7a5f";
+    status.textContent = "Subiendo archivos...";
+
+    var ts = new Date().toISOString();
+
+    // Collect all pending photo/video uploads as promises
+    var photoUploads = Object.keys(state.heroPendingPhotos).map(function (k) {
+      var i = parseInt(k, 10);
+      var file = state.heroPendingPhotos[i];
+      return processPhotoFile(file).then(function (result) {
+        var ext = "jpg";
+        var path = "assets/hero/hero-photo-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) + "." + ext;
+        // Check if existing slide already has a photo (to overwrite, keeping URL stable)
+        var existingPath = state.heroSlides[i] && state.heroSlides[i].photo;
+        var uploadPath = existingPath && existingPath.replace(/^\/joyas\//, "") || path;
+        return ghGetFile(uploadPath).then(function (existing) {
+          return ghPutBlob(uploadPath, result.main, existing ? existing.sha : null,
+            "Hero foto diapositiva " + (i + 1));
+        }).then(function () {
+          state.heroSlides[i] = state.heroSlides[i] || {};
+          state.heroSlides[i].photo = "/joyas/" + uploadPath;
+          state.heroSlides[i].zoom = state.heroSlides[i].zoom || 1;
+          state.heroSlides[i].position = state.heroSlides[i].position || "cc";
+          delete state.heroPendingPhotos[i];
+        });
+      });
+    });
+
+    var videoUploads = Object.keys(state.heroPendingVideos).map(function (k) {
+      var i = parseInt(k, 10);
+      var file = state.heroPendingVideos[i];
+      var existingPath = state.heroSlides[i] && state.heroSlides[i].video;
+      var uploadPath = existingPath && existingPath.replace(/^\/joyas\//, "") ||
+        "assets/hero/hero-video-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) + ".mp4";
+      return ghGetFile(uploadPath).then(function (existing) {
+        return ghPutBlob(uploadPath, file, existing ? existing.sha : null,
+          "Hero video diapositiva " + (i + 1));
+      }).then(function () {
+        state.heroSlides[i] = state.heroSlides[i] || {};
+        state.heroSlides[i].video = "/joyas/" + uploadPath;
+        delete state.heroPendingVideos[i];
+      });
+    });
+
+    var sectionVideoUploads = Object.keys(state.sectionVideoPending).map(function (cat) {
+      var file = state.sectionVideoPending[cat];
+      var existingPath = state.sectionVideos[cat] && state.sectionVideos[cat].video;
+      var uploadPath = existingPath && existingPath.replace(/^\/joyas\//, "") ||
+        "assets/hero/section-" + cat + ".mp4";
+      return ghGetFile(uploadPath).then(function (existing) {
+        return ghPutBlob(uploadPath, file, existing ? existing.sha : null,
+          "Video seccion " + cat);
+      }).then(function () {
+        state.sectionVideos[cat] = state.sectionVideos[cat] || {};
+        state.sectionVideos[cat].video = "/joyas/" + uploadPath;
+        delete state.sectionVideoPending[cat];
+      });
+    });
+
+    Promise.all(photoUploads.concat(videoUploads).concat(sectionVideoUploads))
+      .then(function () {
+        status.textContent = "Guardando manifiestos...";
+        state.siteText = collectSiteTextFields();
+
+        // Filter out null section videos
+        var cleanSectionVideos = {};
+        Object.keys(state.sectionVideos).forEach(function (k) {
+          if (state.sectionVideos[k] && state.sectionVideos[k].video) {
+            cleanSectionVideos[k] = state.sectionVideos[k];
+          }
+        });
+
+        var heroJs = "/* AUTO-GENERATED — do not edit by hand.\n" +
+          "   Managed by admin.html via the GitHub Contents API.\n" +
+          "   Published: " + ts + " */\n" +
+          "window.HJE_HERO_SLIDES = " + JSON.stringify(state.heroSlides, null, 2) + ";\n" +
+          "window.HJE_SECTION_VIDEOS = " + JSON.stringify(cleanSectionVideos, null, 2) + ";\n";
+
+        var siteTextJs = "/* AUTO-GENERATED — do not edit by hand.\n" +
+          "   Managed by admin.html via the GitHub Contents API.\n" +
+          "   Published: " + ts + " */\n" +
+          "window.HJE_SITE_TEXT = " + JSON.stringify(state.siteText, null, 2) + ";\n";
+
+        return Promise.all([
+          ghGetFile("assets/js/hero-manifest.js").then(function (f) {
+            return ghPutText("assets/js/hero-manifest.js", heroJs, f ? f.sha : null, "Hero manifest actualizado");
+          }),
+          ghGetFile("assets/js/site-text.js").then(function (f) {
+            return ghPutText("assets/js/site-text.js", siteTextJs, f ? f.sha : null, "Texto del sitio actualizado");
+          })
+        ]);
+      })
+      .then(function () {
+        // Append to changelog
+        var entry = {
+          timestamp: ts,
+          adminName: state.adminName || "Admin",
+          action: "edit",
+          message: "Inicio actualizado: " + state.heroSlides.length + " diapositivas, texto del sitio guardado"
+        };
+        return ghGetFile("assets/admin-changelog.json").then(function (f) {
+          var list = [];
+          if (f) { try { list = JSON.parse(b64DecodeUnicode(f.content)); } catch (_) {} }
+          list.unshift(entry);
+          return ghPutText("assets/admin-changelog.json", JSON.stringify(list, null, 2), f ? f.sha : null, "Changelog: inicio actualizado");
+        });
+      })
+      .then(function () {
+        status.style.color = "#3d6b32";
+        status.textContent = "Guardado correctamente. Los cambios se reflejan en el inicio en unos segundos.";
+        btn.disabled = false;
+        renderHeroSlides();
+        renderSectionVideos();
+      })
+      .catch(function (err) {
+        status.style.color = "#c0392b";
+        status.textContent = "Error al guardar: " + (err.message || "Intenta de nuevo.");
+        btn.disabled = false;
+      });
+  }
+
+  // =========================================================================
   // Init
   // =========================================================================
 
@@ -2052,6 +2535,7 @@
         if (tab.getAttribute("data-hje-tab") === "cambios") loadChangelog();
         if (tab.getAttribute("data-hje-tab") === "ventas") loadSalesLog();
         if (tab.getAttribute("data-hje-tab") === "precios") loadMaterialPrices();
+        if (tab.getAttribute("data-hje-tab") === "inicio") loadHomepageManager();
       });
     });
   }
@@ -2132,6 +2616,9 @@
     });
 
     $("#hje-adm-prices-save").addEventListener("click", saveMaterialPrices);
+
+    $("#hje-adm-hero-add-slide").addEventListener("click", addHeroSlide);
+    $("#hje-adm-inicio-save").addEventListener("click", saveHomepageManifests);
 
     $("#hje-adm-csv-export-btn").addEventListener("click", exportCSV);
     $("#hje-adm-csv-import-input").addEventListener("change", function () {

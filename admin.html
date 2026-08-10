@@ -58,6 +58,7 @@
     <button type="button" class="hje-adm-tab hje-active" data-hje-tab="productos">Productos</button>
     <button type="button" class="hje-adm-tab" data-hje-tab="precios">Precios de metales</button>
     <button type="button" class="hje-adm-tab" data-hje-tab="ventas">Registro de ventas</button>
+    <button type="button" class="hje-adm-tab" data-hje-tab="inicio">Inicio</button>
     <button type="button" class="hje-adm-tab" data-hje-tab="cambios">Registro de cambios</button>
   </div>
 
@@ -120,6 +121,70 @@
     <div class="hje-adm-sales-summary" id="hje-adm-sales-summary"></div>
     <div id="hje-adm-sales-chart" style="margin:12px 0;min-height:90px"></div>
     <div class="hje-adm-changelog-list" id="hje-adm-sales-list"></div>
+  </div>
+
+  <div class="hje-adm-panel" id="hje-adm-panel-inicio">
+    <!-- Hero slides -->
+    <div class="hje-adm-card">
+      <p class="hje-adm-section-legend" style="margin-top:0">Hero — Diapositivas (max. 5)</p>
+      <p class="hje-adm-prices-help">Sube fotos y/o videos para el banner principal. La primera diapositiva aparece al cargar la pagina; usa las flechas para reordenarlas. Rota la foto con &#8635; si quedo torcida, ajusta el zoom con el slider y el punto focal con la cuadricula.</p>
+      <div id="hje-adm-hero-slides-container"></div>
+      <div style="margin-top:0.75rem">
+        <button type="button" class="hje-adm-btn-outline" id="hje-adm-hero-add-slide" style="width:auto;padding:0.55rem 1.2rem">+ Agregar diapositiva</button>
+      </div>
+    </div>
+
+    <!-- Section videos -->
+    <div class="hje-adm-card" style="margin-top:1rem">
+      <p class="hje-adm-section-legend" style="margin-top:0">Videos de categorias (inicio)</p>
+      <p class="hje-adm-prices-help">Videos cortos en loop para cada tarjeta de categoria en la pagina principal. Deja en blanco las que no necesiten video.</p>
+      <div id="hje-adm-section-videos-container"></div>
+    </div>
+
+    <!-- Site text -->
+    <div class="hje-adm-card" style="margin-top:1rem">
+      <p class="hje-adm-section-legend" style="margin-top:0">Texto del sitio</p>
+      <p class="hje-adm-prices-help">Personaliza los titulos y textos de la pagina principal sin tocar el codigo. Deja el campo en blanco para conservar el texto por defecto.</p>
+      <div class="hje-adm-form-grid">
+        <div class="hje-adm-field-full">
+          <label for="hje-adm-st-headline">Titular del hero</label>
+          <input type="text" id="hje-adm-st-headline" placeholder="Joyas listas para enamorar y comprar por WhatsApp." />
+        </div>
+        <div class="hje-adm-field-full">
+          <label for="hje-adm-st-subheadline">Subtitular del hero</label>
+          <textarea id="hje-adm-st-subheadline" rows="2" placeholder="Catalogo colombiano de joyeria..." style="width:100%;padding:0.65rem;border:1.5px solid var(--hje-border);border-radius:0.5rem;font-family:inherit;font-size:0.9rem;resize:vertical"></textarea>
+        </div>
+        <div>
+          <label for="hje-adm-st-cta">Texto del boton principal (CTA)</label>
+          <input type="text" id="hje-adm-st-cta" placeholder="Ver catalogo" />
+        </div>
+        <div>
+          <label for="hje-adm-st-sec-categories">Titulo: seccion Categorias</label>
+          <input type="text" id="hje-adm-st-sec-categories" placeholder="Compra por tipo de pieza" />
+        </div>
+        <div>
+          <label for="hje-adm-st-sec-featured">Titulo: seccion Favoritas</label>
+          <input type="text" id="hje-adm-st-sec-featured" placeholder="Favoritas para consultar hoy" />
+        </div>
+        <div>
+          <label for="hje-adm-st-sec-why">Titulo: seccion Confianza</label>
+          <input type="text" id="hje-adm-st-sec-why" placeholder="Compras acompanadas de principio a fin" />
+        </div>
+        <div>
+          <label for="hje-adm-st-sec-testimonials">Titulo: seccion Testimonios</label>
+          <input type="text" id="hje-adm-st-sec-testimonials" placeholder="La vitrina vive en redes" />
+        </div>
+        <div>
+          <label for="hje-adm-st-sec-faq">Titulo: seccion FAQ</label>
+          <input type="text" id="hje-adm-st-sec-faq" placeholder="Antes de comprar" />
+        </div>
+      </div>
+    </div>
+
+    <div class="hje-adm-modal-actions" style="margin-top:1rem">
+      <button type="button" class="hje-adm-btn-primary" id="hje-adm-inicio-save">Guardar inicio</button>
+    </div>
+    <p class="hje-adm-prices-status" id="hje-adm-inicio-status"></p>
   </div>
 
   <div class="hje-adm-panel" id="hje-adm-panel-cambios">
