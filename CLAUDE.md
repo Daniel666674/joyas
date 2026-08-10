@@ -517,6 +517,47 @@ every related-product card's price — without this, a detail page
 generated last week would keep showing last week's gold price even
 though the shop/category pages right next to it had already moved on.
 
+## Maximized visual pass v2 (2026-08-10)
+
+Requested ahead of a client sign-up demo: "fully maximize the website
+visuals... way more premium and elaborated design." Pure CSS additions to
+`assets/premium.css` (a new section appended at the end, `MAXIMIZED VISUAL
+PASS v2`) — same zero-DOM-edit, zero-hydration-risk constraint as every
+other rule in that file, verified via Playwright screenshots on
+`index.html`, `shop.html`, `cadenas.html`, and a legacy product detail
+page before shipping. Covers, sitewide (broad Tailwind-chain selectors, so
+it applies consistently across the homepage, the runtime-rendered
+shop/category pages, and both legacy and admin-generated product detail
+pages without any per-page work):
+
+- **Section eyebrows** ("Categorias", "Confianza", etc. and the hero's own
+  eyebrow line): a small rotated gold-foil diamond mark before the text,
+  pairing with the pre-existing underline rule for a proper kicker.
+- **Section headings** (`h2.font-serif...`): tighter letter-spacing and a
+  larger size at `lg:` for a more editorial feel.
+- **Section rhythm**: every `bg-background`/`bg-[#f8f3eb]` content section
+  gets a barely-there radial dot-grain texture plus a centered gold
+  hairline at its top edge — reads as "designed," stays invisible enough
+  to not compete with product photography.
+- **Price display**: both the card price (`span.text-sm.font-semibold`
+  inside the card's price row) and the product-detail price
+  (`p.mt-3.text-2xl.font-semibold`) switch from plain sans to serif,
+  gold-deep colored — a boutique price-tag treatment instead of a plain
+  label. Purely cosmetic; doesn't touch `computeDisplayPrice`/
+  `formatPrice` or any pricing logic.
+- **Testimonial cards**: oversized serif quotation mark watermark, solid
+  gold left-edge accent, hover lift.
+- **FAQ accordion**: custom +/− indicator (native marker was already
+  hidden by Tailwind's `list-none`), per-row hover/open tint, and a
+  shadow+radius on the whole list container.
+- **Category tiles / footer / hero**: stronger hover lift+glow on the
+  homepage category tiles, a gold-foil hairline replacing the footer's
+  flat top border plus gold-deep footer column headings, and slightly
+  tighter hero heading tracking.
+
+No HTML, JS, or `products.json` changes in this pass — everything lives in
+the one CSS file, so there is nothing to regenerate on any product page.
+
 ## PR lifecycle on this branch
 
 PRs opened from `claude/spanish-translation-photo-fix-qp9s55` have
