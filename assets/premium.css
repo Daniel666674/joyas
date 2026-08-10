@@ -1053,3 +1053,100 @@ footer h2.text-sm.font-semibold.uppercase.tracking-\[0\.18em\] {
 section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
   letter-spacing: -0.015em;
 }
+
+/* =========================================================================
+   CATALOG UPGRADE — industry-standard product card elements added by
+   category-render.js v2: corner ribbon badge, sold-out overlay, SKU ref.
+   All .hje-* classes, so no conflict with existing Tailwind utilities.
+   ========================================================================= */
+
+/* Corner diagonal ribbon (Kevin's-style 35% / OFERTA badge).
+   overflow:hidden on the parent <a> clips the triangle corners cleanly. */
+.hje-corner-ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 72px 72px 0 0;
+  border-color: var(--hje-gold) transparent transparent transparent;
+  z-index: 4;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+.hje-corner-ribbon span {
+  position: absolute;
+  top: -64px;
+  left: 3px;
+  width: 58px;
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(-45deg);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Sold-out semi-transparent overlay */
+.hje-agotado-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(248, 243, 235, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 14px;
+  z-index: 3;
+  pointer-events: none;
+  backdrop-filter: blur(0.5px);
+}
+.hje-agotado-label {
+  background: rgba(20, 16, 12, 0.82);
+  color: #f3ead9;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 5px 16px;
+  border-radius: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+/* SKU / Ref reference number */
+.hje-sku {
+  font-size: 0.68rem;
+  color: rgba(80, 60, 30, 0.5);
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+   GEO / LOCAL CATALOG FILTER BAR — visual upgrade for the horizontal
+   filter form on category pages to look more refined/boutique.
+   ========================================================================= */
+form[action="/shop"] {
+  background: transparent;
+  border-color: rgba(168, 120, 42, 0.18);
+  box-shadow: var(--hje-shadow-sm);
+}
+form[action="/shop"] label {
+  color: var(--hje-gold-deep);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+form[action="/shop"] input,
+form[action="/shop"] select {
+  border-color: rgba(168, 120, 42, 0.2);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+form[action="/shop"] input:focus,
+form[action="/shop"] select:focus {
+  border-color: var(--hje-gold);
+}
