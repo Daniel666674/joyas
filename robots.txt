@@ -11,7 +11,7 @@ Disallow: /joyas/sw-admin.js
 # Crawl-delay for well-behaved bots
 Crawl-delay: 2
 
-Sitemap: https://joyas-colombia.com/sitemap.xml
+Sitemap: https://daniel666674.github.io/joyas/sitemap.xml
 
 # Google-specific: allow full crawl of product and category pages
 User-Agent: Googlebot
