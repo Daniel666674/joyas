@@ -15,6 +15,16 @@
   var GITHUB_REPO = "joyas";
   var GITHUB_API = "https://api.github.com";
   var GITHUB_BRANCH = "main";
+
+  // Public origin of the live site, including the /joyas basePath. Every
+  // absolute URL emitted for SEO (canonical, og:image, JSON-LD, sitemap)
+  // derives from this one constant - it MUST match where the site actually
+  // serves from, or canonical tags point Google away from the real pages.
+  // No CNAME file exists, so GitHub Pages serves this project site at the
+  // owner subdomain + repo path below. When a custom domain is set up
+  // (add a CNAME file + DNS), change this single line to that origin and
+  // re-publish; every generated page and the sitemap follow automatically.
+  var SITE_ORIGIN = "https://daniel666674.github.io/joyas";
   var WHATSAPP_NUMBER = "573001234567";
   var SUPPORT_WHATSAPP_NUMBER = "573136662777";
   var PASSCODE = "hjeadmin2026";
@@ -1461,8 +1471,8 @@
       .slice(0, 4);
 
     var img = product.images[0];
-    var canonical = "https://joyas-colombia.com/producto/" + product.slug;
-    var ogImageUrl = "https://joyas-colombia.com/joyas" + img.src.replace(/^\/joyas/, "");
+    var canonical = SITE_ORIGIN + "/producto/" + product.slug;
+    var ogImageUrl = SITE_ORIGIN + img.src.replace(/^\/joyas/, "");
     var offerAvailability = product.availability === "Disponible" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
 
     function safeJsonLd(text) {
@@ -1479,7 +1489,7 @@
     var jsonLdBreadcrumb = safeJsonLd(JSON.stringify({
       "@context": "https://schema.org", "@type": "BreadcrumbList",
       itemListElement: [
-        { "@type": "ListItem", position: 1, name: product.category, item: "https://joyas-colombia.com/" + categorySlug(product.category) },
+        { "@type": "ListItem", position: 1, name: product.category, item: SITE_ORIGIN + "/" + categorySlug(product.category) },
         { "@type": "ListItem", position: 2, name: product.name, item: canonical }
       ]
     }));
@@ -1589,13 +1599,13 @@
     }
 
     deletedSlugs.forEach(function (slug) {
-      var loc = "https://joyas-colombia.com/producto/" + slug;
+      var loc = SITE_ORIGIN + "/producto/" + slug;
       var node = findUrlNode(loc);
       if (node) urlset.removeChild(node);
     });
 
     dirtyProducts.forEach(function (product) {
-      var loc = "https://joyas-colombia.com/producto/" + product.slug;
+      var loc = SITE_ORIGIN + "/producto/" + product.slug;
       var node = findUrlNode(loc);
       if (node) {
         var lastmod = node.getElementsByTagName("lastmod")[0];

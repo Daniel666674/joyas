@@ -1,6 +1,13 @@
 (function () {
   "use strict";
 
+  // Public origin of the live site, including the /joyas basePath - used for
+  // the absolute product URLs in the ItemList JSON-LD injected below. Must
+  // stay in sync with SITE_ORIGIN in assets/admin.js (same reasoning: a URL
+  // pointing anywhere other than where the site actually serves from tells
+  // Google to index a page that doesn't exist there).
+  var SITE_ORIGIN = "https://daniel666674.github.io/joyas";
+
   // Runtime catalog renderer for the category/material listing pages and
   // shop.html. These pages used to be Next.js-hydrated with the product
   // grid frozen into static HTML (duplicated in the DOM and a separate RSC
@@ -164,7 +171,7 @@
         item: {
           "@type": "Product",
           name: p.name,
-          url: "https://joyas-colombia.com/producto/" + p.slug,
+          url: SITE_ORIGIN + "/producto/" + p.slug,
           sku: p.sku || p.id,
           brand: { "@type": "Brand", name: "Habibi Eisaa" },
           description: p.description || "",
