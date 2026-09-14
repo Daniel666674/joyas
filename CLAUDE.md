@@ -652,6 +652,86 @@ load `premium.css`, so neither is affected.
   set sitewide — inject `html{scroll-behavior:auto}` before scripted
   scrolling or captures land mid-animation at the wrong offset.
 
+## Admin console redesign (2026-09-14)
+
+The 2026-07-28 restyle copied a reference tool's "2px black border on every
+surface" language. It reads as unfinished rather than considered, and it
+flattens hierarchy: a six-up wall of identical outline rectangles gave
+"Publicar cambios" exactly the same weight as "Exportar CSV", and six
+billboard stat tiles shouted louder than the catalog they describe.
+
+This pass re-cuts `admin.html` as a real internal console. **CSS only** —
+appended to `assets/admin.css`, no `admin.html` and no `admin.js` changes;
+every hook it needs already existed.
+
+- **Left navigation rail.** `.hje-adm-main` already holds `.hje-adm-tabs`
+  plus the sibling `.hje-adm-panel` blocks, so a two-column CSS grid at
+  >=1024px turns the tab strip into a sticky rail with no markup change at
+  all (hidden panels are `display:none` and claim no cell). Below that
+  breakpoint it stays a horizontal strip.
+- **Surface language**: 1px hairlines + soft elevation on white cards over a
+  warm off-white app ground, a 6/9/14px radius scale, tabular figures
+  everywhere, and one accent — gold, reserved for the publish action, the
+  pending-change marker, and focus rings.
+- **Action hierarchy**: one filled primary per context. `+ Agregar producto`
+  leads the toolbar, `Publicar cambios` is pinned right and turns gold only
+  when something is actually pending, `Descartar cambios` is a quiet
+  tertiary that only reddens on hover, CSV actions are plain ghosts. Done
+  with `order` on the existing flex children.
+- **Stat strip**: one bordered card with hairline-divided cells instead of
+  six framed boxes; values bottom-align so a two-line label
+  ("Valor inventario (venta)") doesn't knock its figure out of line.
+- **Product cards**: `aspect-ratio` corrected from 4:3 to 4:5 to match the
+  source photography — the old crop cut the actual piece out of frame on
+  most products, the one thing an admin card has to show. Status became a
+  dot-plus-label chip, `Editar` leads and `Eliminar` recedes until hovered,
+  and a dirty card now carries a gold "Sin publicar" flag rather than
+  signalling pending state by border colour alone.
+- **Modals**: sticky title and sticky footer actions, so the ~20-field
+  product form never hides its own Guardar behind a scroll. The form (or,
+  on the wrapper-less modals, the grid) is the scroll container and
+  `.hje-adm-modal-actions` is `position: sticky; bottom: 0` inside it, which
+  works across all five modal shapes without touching their markup.
+
+**Bugs this surfaced, worth remembering:**
+
+- Every field rule in the original sheet is scoped to `.hje-adm-modal`
+  (`.hje-adm-modal label { display:block }`, `.hje-adm-modal input
+  { width:100% }`). The Inicio tab reuses `.hje-adm-form-grid` *outside* a
+  modal, so its labels sat inline against browser-default-width inputs —
+  "Titular del hero [tiny box]". Field styling now belongs to the grid, not
+  to the modal that happened to be its first user.
+- `.hje-adm-card` carries no padding of its own (product cards get it from
+  `.hje-adm-card-body`). The Inicio tab uses `.hje-adm-card` as a plain
+  section container, so its content ran flush against the border.
+- `.hje-adm-modal-actions button { flex: 1 }` stretched Cancelar and Guardar
+  to half the modal each, reading as two equal choices.
+- `renderSalesChart()` emits `<svg width="100%" viewBox="0 0 300 80">`. At
+  the rail layout's content width that scales to a ~290px-tall near-empty
+  band; it is now capped and wrapped in a card.
+- The app bar's fixed height plus `flex-wrap: nowrap` let the wordmark wrap
+  to three lines and overflow at 390px.
+
+**Previewing the admin locally**: both gates can be opened without a real
+token by intercepting `https://api.github.com/**` in Playwright — return
+`{permissions:{push:true}}` for the repo validation call, and for
+`/contents/<path>` return `{content: <base64 of the local file>}` so the
+sales-log and changelog tabs render real data. The passcode is the
+`PASSCODE` constant at the top of `assets/admin.js`.
+
+
+## Stylesheet cache-busting
+
+`premium.css` / `admin.css` / `inventario.css` / `fonts.css` are linked with
+a `?v=<YYYYMMDD>` query across all 100 HTML files (added 2026-09-14, after a
+design pass appeared not to land for a returning visitor). GitHub Pages
+serves CSS with a `max-age` long enough that a repeat visitor can keep the
+previous file, so **bump the version on every visual change** or the work
+ships invisibly. `generateProductPage()` builds new product pages from a
+real existing page fetched as a template, so generated pages inherit
+whatever version the template carries — no separate update needed in
+`admin.js`.
+
 ## PR lifecycle on this branch
 
 PRs opened from `claude/spanish-translation-photo-fix-qp9s55` have
