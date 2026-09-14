@@ -1451,3 +1451,1285 @@ body {
 .hje-adm-sv-indicator.hje-adm-sv-none {
   color: #a09070;
 }
+
+
+/* =========================================================================
+   ADMIN CONSOLE REDESIGN (2026-09-14)
+
+   The 2026-07-28 restyle copied a reference tool's "2px black border on
+   every surface" language. It reads as unfinished rather than considered,
+   and it flattens hierarchy: a 6-up wall of identical outline rectangles
+   gives "Publicar cambios" exactly the same weight as "Exportar CSV", and
+   six billboard-sized stat tiles shout louder than the catalog they
+   describe.
+
+   This pass re-cuts the panel as a real internal console:
+     - a left navigation rail instead of a tab strip (pure CSS grid on the
+       existing .hje-adm-main > .hje-adm-tabs + .hje-adm-panel markup)
+     - 1px hairlines + soft elevation instead of 2px black outlines
+     - one primary action per context; everything else quiet
+     - compact, scannable stat strip; tabular figures throughout
+     - sticky modal header/footer so the ~20-field product form is usable
+       without scrolling to find Guardar
+
+   Appended rather than edited in place so the earlier intent stays
+   readable; equal-specificity rules here win on source order. No HTML and
+   no admin.js changes — every hook this needs already exists.
+   ========================================================================= */
+
+:root {
+  --hje-app-bg: #f4f1ea;
+  --hje-surface: #ffffff;
+  --hje-line: #e7dfd1;
+  --hje-line-soft: #efe9dd;
+  --hje-ink: #171209;
+  --hje-ink-2: #5f5545;
+  --hje-ink-3: #8c8069;
+  --hje-focus: rgba(168, 120, 42, 0.18);
+
+  --hje-r-sm: 6px;
+  --hje-r-md: 9px;
+  --hje-r-lg: 14px;
+
+  --hje-el-1: 0 1px 2px rgba(26, 20, 10, 0.05);
+  --hje-el-2: 0 1px 2px rgba(26, 20, 10, 0.05), 0 6px 16px -8px rgba(26, 20, 10, 0.14);
+  --hje-el-3: 0 1px 3px rgba(26, 20, 10, 0.07), 0 18px 40px -18px rgba(26, 20, 10, 0.3);
+}
+
+body {
+  background: var(--hje-app-bg);
+  color: var(--hje-ink);
+  font-size: 14px;
+  line-height: 1.5;
+  padding-bottom: 0;
+}
+
+/* every figure in a console is a figure: align the columns */
+.hje-adm-stat-value,
+.hje-adm-card-price,
+.hje-adm-card-stats,
+.hje-adm-count,
+.hje-adm-sales-summary,
+.hje-adm-modal input[type="number"] {
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* -------------------------------------------------------------------------
+   1. BUTTON SYSTEM — three weights, not one.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-btn-outline,
+.hje-adm-btn-primary {
+  width: auto;
+  padding: 0 0.95rem;
+  height: 2.3rem;
+  border-radius: var(--hje-r-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.hje-adm-btn-outline {
+  background: var(--hje-surface);
+  border: 1px solid var(--hje-line);
+  color: var(--hje-ink-2);
+  box-shadow: var(--hje-el-1);
+}
+.hje-adm-btn-outline:hover {
+  background: var(--hje-surface);
+  border-color: #d5c9b2;
+  color: var(--hje-ink);
+  box-shadow: var(--hje-el-2);
+}
+.hje-adm-btn-primary {
+  background: var(--hje-ink);
+  border: 1px solid var(--hje-ink);
+  color: #fff;
+  box-shadow: var(--hje-el-1);
+}
+.hje-adm-btn-primary:hover {
+  background: #2a2215;
+  border-color: #2a2215;
+  transform: none;
+  box-shadow: var(--hje-el-2);
+}
+.hje-adm-btn-outline:disabled,
+.hje-adm-btn-primary:disabled {
+  opacity: 1;
+  background: var(--hje-app-bg);
+  border-color: var(--hje-line-soft);
+  color: #b3a893;
+  box-shadow: none;
+}
+.hje-adm-btn-primary:disabled {
+  background: var(--hje-app-bg);
+  border-color: var(--hje-line-soft);
+  color: #b3a893;
+}
+.hje-adm-btn-outline:focus-visible,
+.hje-adm-btn-primary:focus-visible {
+  outline: 2px solid var(--hje-gold);
+  outline-offset: 2px;
+}
+
+
+/* -------------------------------------------------------------------------
+   2. HEADER — a sticky app bar.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  padding: 0 1.25rem;
+  height: 3.75rem;
+  gap: 0.7rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: saturate(150%) blur(12px);
+  -webkit-backdrop-filter: saturate(150%) blur(12px);
+  border-bottom: 1px solid var(--hje-line);
+  flex-wrap: nowrap;
+}
+.hje-adm-header img {
+  height: 2rem;
+  width: 2rem;
+  box-shadow: 0 0 0 1px var(--hje-line);
+}
+.hje-adm-header .hje-adm-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.hje-adm-header .hje-adm-subtitle {
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  color: var(--hje-ink-3);
+  margin-top: 0;
+}
+.hje-adm-header-actions {
+  flex-wrap: nowrap;
+}
+.hje-adm-header-actions .hje-adm-btn-outline {
+  height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  border-width: 1px;
+}
+/* gold hairline under the bar, the one brand cue in the chrome */
+.hje-adm-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background-image: var(--hje-gold-foil);
+  background-size: 300% 100%;
+  opacity: 0.55;
+}
+
+
+/* -------------------------------------------------------------------------
+   3. LAYOUT — left navigation rail.
+   .hje-adm-main already holds .hje-adm-tabs plus the sibling .hje-adm-panel
+   blocks, so a two-column grid turns the tab strip into a rail with no
+   markup change at all. Hidden panels are display:none and claim no cell.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-main {
+  padding: 1.5rem 1.25rem 4rem;
+}
+.hje-adm-main.hje-show {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .hje-adm-main.hje-show {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 2.25rem;
+    align-items: start;
+    padding: 1.75rem 1.75rem 5rem;
+  }
+  .hje-adm-tabs {
+    grid-column: 1;
+    grid-row: 1;
+    position: sticky;
+    top: 5.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin: 0;
+    padding: 0.5rem;
+    border: 1px solid var(--hje-line);
+    border-radius: var(--hje-r-lg);
+    background: var(--hje-surface);
+    box-shadow: var(--hje-el-1);
+  }
+  .hje-adm-tab {
+    text-align: left;
+    border-radius: var(--hje-r-sm);
+    border-bottom: none;
+    margin-bottom: 0;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--hje-ink-2);
+  }
+  .hje-adm-tab:hover {
+    background: var(--hje-app-bg);
+    color: var(--hje-ink);
+  }
+  .hje-adm-tab.hje-active {
+    background: var(--hje-ink);
+    color: #fff;
+    border-bottom-color: transparent;
+  }
+  .hje-adm-panel.hje-show {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+/* below the rail breakpoint the tabs stay a strip, just a calmer one */
+.hje-adm-tabs {
+  border-bottom: 1px solid var(--hje-line);
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.hje-adm-tabs::-webkit-scrollbar { display: none; }
+.hje-adm-tab {
+  padding: 0.7rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--hje-ink-3);
+  white-space: nowrap;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.hje-adm-tab.hje-active {
+  color: var(--hje-ink);
+  border-bottom-color: var(--hje-ink);
+}
+
+
+/* -------------------------------------------------------------------------
+   4. STAT STRIP — one card, six cells, hairline dividers. Informational,
+   not a billboard.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-stats-bar {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  margin-bottom: 1.25rem;
+  background: var(--hje-surface);
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-lg);
+  overflow: hidden;
+  box-shadow: var(--hje-el-1);
+}
+.hje-adm-stat {
+  border: none;
+  border-radius: 0;
+  border-right: 1px solid var(--hje-line-soft);
+  border-bottom: 1px solid var(--hje-line-soft);
+  padding: 0.85rem 1rem;
+  background: transparent;
+  transition: background-color 0.15s ease;
+}
+.hje-adm-stat[data-hje-filter-status]:hover {
+  background: var(--hje-app-bg);
+}
+.hje-adm-stat .hje-adm-stat-label {
+  order: -1;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  color: var(--hje-ink-3);
+  margin: 0 0 0.3rem;
+}
+.hje-adm-stat {
+  display: flex;
+  flex-direction: column;
+}
+.hje-adm-stat .hje-adm-stat-value {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.hje-adm-stat.hje-adm-stat-money .hje-adm-stat-value {
+  font-size: 1.15rem;
+}
+.hje-adm-stat.hje-adm-stat-gold .hje-adm-stat-value { color: var(--hje-gold); }
+
+@media (min-width: 640px) {
+  .hje-adm-stats-bar { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1100px) {
+  .hje-adm-stats-bar { grid-template-columns: repeat(6, 1fr); }
+  .hje-adm-stat { border-bottom: none; }
+  .hje-adm-stat.hje-adm-stat-money { grid-column: span 1; }
+}
+.hje-adm-stats-bar .hje-adm-stat:last-child { border-right: none; }
+
+
+/* -------------------------------------------------------------------------
+   5. TOOLBAR — filters and actions on two calm rows with a real hierarchy:
+   one primary create action on the left, the publish action pinned right,
+   everything else quiet in between.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-filter-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.hje-adm-filter-row input,
+.hje-adm-filter-row select {
+  height: 2.3rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-sm);
+  font-size: 0.8125rem;
+  color: var(--hje-ink);
+  box-shadow: var(--hje-el-1);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.hje-adm-filter-row input[type="search"] {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.hje-adm-filter-row select {
+  width: auto;
+  flex: none;
+  font-weight: 500;
+  padding-right: 1.6rem;
+}
+.hje-adm-status-select { font-weight: 600; }
+.hje-adm-filter-row input:focus,
+.hje-adm-filter-row select:focus {
+  outline: none;
+  border-color: var(--hje-gold);
+  box-shadow: 0 0 0 3px var(--hje-focus);
+}
+
+.hje-adm-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.hje-adm-action-grid > * { order: 5; }
+
+/* primary create action */
+#hje-adm-new-product-btn {
+  order: 1;
+  background: var(--hje-ink);
+  border-color: var(--hje-ink);
+  color: #fff;
+}
+#hje-adm-new-product-btn:hover {
+  background: #2a2215;
+  border-color: #2a2215;
+  color: #fff;
+}
+#hje-adm-bulk-btn { order: 2; }
+.hje-adm-action-grid > label { order: 3; }
+#hje-adm-csv-export-btn { order: 4; }
+
+/* destructive-adjacent: quiet until needed */
+#hje-adm-discard-btn {
+  order: 8;
+  margin-left: auto;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--hje-ink-3);
+}
+#hje-adm-discard-btn:hover {
+  background: rgba(122, 28, 40, 0.07);
+  border-color: transparent;
+  color: var(--hje-burgundy);
+  box-shadow: none;
+}
+
+/* the money action: gold only once there is actually something to publish */
+#hje-adm-publish-btn { order: 9; }
+#hje-adm-publish-btn:not(:disabled) {
+  background-image: var(--hje-gold-foil);
+  background-size: 220% 220%;
+  background-position: 35% 35%;
+  background-color: transparent;
+  border-color: rgba(122, 83, 32, 0.5);
+  color: #2a1c08;
+  box-shadow: var(--hje-el-2);
+}
+#hje-adm-publish-btn:not(:disabled):hover {
+  background-position: 65% 65%;
+  box-shadow: 0 8px 22px -6px rgba(168, 120, 42, 0.55);
+}
+
+.hje-adm-selection-count {
+  order: 7;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hje-burgundy);
+  margin: 0;
+}
+.hje-adm-count {
+  font-size: 0.75rem;
+  color: var(--hje-ink-3);
+  margin-bottom: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--hje-line-soft);
+}
+
+
+/* -------------------------------------------------------------------------
+   6. PRODUCT CARDS — hairline + elevation, quieter status, and an action
+   row where Editar leads and Eliminar recedes until hovered.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-card-list { gap: 0.9rem; }
+@media (min-width: 1200px) {
+  .hje-adm-card-list { gap: 1rem; }
+}
+
+.hje-adm-card {
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-lg);
+  box-shadow: var(--hje-el-1);
+  transition: box-shadow 0.18s var(--hje-ease), border-color 0.18s ease;
+}
+.hje-adm-card:hover {
+  border-color: #d8ccb4;
+  box-shadow: var(--hje-el-2);
+}
+.hje-adm-card.hje-adm-card-dirty {
+  border-color: var(--hje-gold);
+  box-shadow: 0 0 0 1px var(--hje-gold), var(--hje-el-2);
+}
+.hje-adm-card.hje-adm-card-dirty .hje-adm-card-media {
+  box-shadow: none;
+}
+/* a pending-change marker that doesn't rely on border colour alone */
+.hje-adm-card.hje-adm-card-dirty .hje-adm-card-media::after {
+  content: "Sin publicar";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #2a1c08;
+  background-image: var(--hje-gold-foil);
+  background-size: 220% 220%;
+  background-position: 35% 35%;
+  border-top-right-radius: var(--hje-r-sm);
+}
+
+.hje-adm-card-media {
+  background: var(--hje-app-bg);
+}
+.hje-adm-card-select {
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.25rem;
+  border-radius: var(--hje-r-sm);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--hje-el-1);
+}
+.hje-adm-card-select input { accent-color: var(--hje-gold); }
+.hje-adm-card-badges {
+  top: 0.5rem;
+  left: auto;
+  right: 0.5rem;
+  justify-content: flex-end;
+}
+.hje-adm-card-pill {
+  background: rgba(23, 18, 9, 0.82);
+  color: #f4e9cf;
+  border-radius: var(--hje-r-sm);
+  padding: 0.18rem 0.45rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  box-shadow: none;
+  backdrop-filter: blur(4px);
+}
+.hje-adm-card-pill.hje-adm-card-pill-promo {
+  background: var(--hje-burgundy);
+  color: #fff;
+}
+
+/* status: a dot and a label on a neutral chip, instead of a saturated pill */
+.hje-adm-card-status {
+  bottom: 0.5rem;
+  right: 0.5rem;
+  box-shadow: var(--hje-el-1);
+}
+.hje-adm-badge {
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem 0.2rem 0.45rem;
+  border-radius: var(--hje-r-sm);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--hje-ink-2);
+  border: 1px solid var(--hje-line);
+}
+.hje-adm-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  flex: none;
+  background: currentColor;
+}
+.hje-adm-badge-ok { color: #3d6b32; }
+.hje-adm-badge-warn { color: var(--hje-amber); }
+.hje-adm-badge-off { color: var(--hje-burgundy); }
+.hje-adm-badge-tag,
+.hje-adm-badge-promo { color: var(--hje-gold); }
+
+.hje-adm-card-body { gap: 0.3rem; }
+.hje-adm-card-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+.hje-adm-card-price {
+  color: var(--hje-ink);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+.hje-adm-card-meta {
+  font-size: 0.7rem;
+  color: var(--hje-ink-3);
+  letter-spacing: 0.01em;
+}
+.hje-adm-card-stats {
+  color: var(--hje-ink-3);
+  font-size: 0.72rem;
+  padding-top: 0.45rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid var(--hje-line-soft);
+}
+.hje-adm-card-stats strong {
+  color: var(--hje-ink);
+  font-weight: 650;
+}
+
+.hje-adm-card-actions {
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+.hje-adm-card-btn {
+  height: 2.05rem;
+  padding: 0 0.6rem;
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hje-ink-2);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.hje-adm-card-btn:hover {
+  background: var(--hje-app-bg);
+  border-color: #d5c9b2;
+  color: var(--hje-ink);
+}
+.hje-adm-card-btn.hje-adm-card-btn-danger {
+  flex: 0 0 auto;
+  border-color: transparent;
+  background: transparent;
+  color: var(--hje-ink-3);
+}
+.hje-adm-card-btn.hje-adm-card-btn-danger:hover {
+  background: rgba(122, 28, 40, 0.08);
+  border-color: transparent;
+  color: var(--hje-burgundy);
+}
+.hje-adm-card-btn-sale {
+  height: 2.05rem;
+  margin-top: 0.4rem;
+  border: 1px solid rgba(61, 107, 50, 0.32);
+  border-radius: var(--hje-r-sm);
+  padding: 0 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #35602b;
+  background: rgba(61, 107, 50, 0.05);
+}
+.hje-adm-card-btn-sale:hover {
+  background: #35602b;
+  border-color: #35602b;
+  color: #fff;
+}
+
+
+/* -------------------------------------------------------------------------
+   7. PUBLISH BAR — a status strip, not a framed box.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-publish-bar {
+  margin-top: 1.5rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-md);
+  background: var(--hje-surface);
+  text-align: left;
+  box-shadow: var(--hje-el-1);
+}
+.hje-adm-publish-bar .hje-adm-publish-status {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--hje-ink-2);
+}
+
+
+/* -------------------------------------------------------------------------
+   8. MODALS — sticky title and sticky actions, so a ~20-field form never
+   hides its own Guardar button behind a scroll.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-modal-backdrop {
+  background: rgba(20, 16, 12, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  align-items: center;
+  padding: 2rem 1rem;
+}
+.hje-adm-modal {
+  width: min(94vw, 660px);
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-lg);
+  box-shadow: var(--hje-el-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 4rem);
+  overflow: hidden;
+}
+.hje-adm-modal > h2 {
+  flex: none;
+  margin: 0;
+  padding: 1.15rem 1.5rem;
+  font-size: 1.35rem;
+  border-bottom: 1px solid var(--hje-line);
+}
+.hje-adm-modal > .hje-adm-modal-sub {
+  flex: none;
+  margin: 0;
+  padding: 0.9rem 1.5rem 0;
+  font-size: 0.8125rem;
+  color: var(--hje-ink-3);
+}
+.hje-adm-modal > .hje-adm-guardrail-list {
+  flex: none;
+  margin: 0;
+}
+/* the form (or, on wrapper-less modals, the grid) is the scroll container */
+.hje-adm-modal > form {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 0;
+}
+.hje-adm-modal > .hje-adm-form-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem 0;
+}
+.hje-adm-modal > form > .hje-adm-modal-actions,
+.hje-adm-modal > .hje-adm-modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 1.25rem -1.5rem 0;
+  padding: 0.9rem 1.5rem;
+  background: var(--hje-surface);
+  border-top: 1px solid var(--hje-line);
+}
+.hje-adm-modal > .hje-adm-modal-actions {
+  position: static;
+  margin: 0;
+  flex: none;
+}
+/* short modals (delete confirm) need no internal scroll chrome */
+.hje-adm-modal.hje-adm-confirm-modal > p {
+  padding: 1.25rem 1.5rem 0;
+  margin: 0;
+  color: var(--hje-ink-2);
+}
+
+.hje-adm-modal label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hje-ink-3);
+  margin-bottom: 0.3rem;
+}
+.hje-adm-modal input,
+.hje-adm-modal select,
+.hje-adm-modal textarea {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-sm);
+  font-size: 0.85rem;
+  color: var(--hje-ink);
+  background: var(--hje-surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.hje-adm-modal input:focus,
+.hje-adm-modal select:focus,
+.hje-adm-modal textarea:focus {
+  border-color: var(--hje-gold);
+  box-shadow: 0 0 0 3px var(--hje-focus);
+}
+.hje-adm-modal input:disabled,
+.hje-adm-modal select:disabled {
+  background: var(--hje-app-bg);
+  color: var(--hje-ink-3);
+}
+.hje-adm-section-legend {
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hje-ink-3);
+  margin: 1.6rem 0 0.35rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--hje-line-soft);
+}
+.hje-adm-checkbox-row {
+  margin-top: 1.35rem;
+  font-size: 0.8125rem;
+}
+.hje-adm-checkbox-row input { accent-color: var(--hje-gold); }
+
+
+/* -------------------------------------------------------------------------
+   9. GATES — the passcode / token screens are the first thing anyone sees.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-gate-card {
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-lg);
+  box-shadow: var(--hje-el-3);
+}
+.hje-adm-gate-card h1 {
+  letter-spacing: -0.015em;
+}
+.hje-adm-gate-card input {
+  height: 2.5rem;
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-sm);
+}
+.hje-adm-gate-card input:focus {
+  outline: none;
+  border-color: var(--hje-gold);
+  box-shadow: 0 0 0 3px var(--hje-focus);
+}
+.hje-adm-gate-card .hje-adm-btn-primary { width: 100%; }
+
+
+/* -------------------------------------------------------------------------
+   10. SUPPORT BUBBLE + remaining surfaces.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-support-bubble {
+  padding: 0.6rem 0.95rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--hje-r-md);
+  background: #1d7d4b;
+  box-shadow: var(--hje-el-2);
+}
+.hje-adm-support-bubble svg { width: 1rem; height: 1rem; }
+
+.hje-adm-card,
+.hje-adm-prices-card,
+.hje-adm-hero-slide-card {
+  background: var(--hje-surface);
+}
+.hje-adm-prices-card {
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-lg);
+  box-shadow: var(--hje-el-1);
+  padding: 1.5rem;
+  max-width: 620px;
+}
+.hje-adm-prices-card input {
+  height: 2.4rem;
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-sm);
+}
+.hje-adm-hero-slide-card {
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-md);
+}
+
+
+/* -------------------------------------------------------------------------
+   Admin redesign, round 1 corrections (verified against Playwright captures):
+
+   (a) the mobile tab-strip rules sit after the >=1024px rail block in source
+       order, and media queries add no specificity — so the strip's
+       `color: var(--hje-ink)` was repainting the rail's active item black on
+       black. Re-assert the rail's active state after both.
+   (b) card media was 4:3 cover over 4:5 source photography, which cropped
+       the actual piece out of frame on most products — the one thing an
+       admin card has to show.
+   (c) Editar read as disabled (filled grey); the two card actions needed
+       the same outline/ghost pairing as the toolbar.
+   ------------------------------------------------------------------------- */
+
+@media (min-width: 1024px) {
+  .hje-adm-tabs .hje-adm-tab.hje-active {
+    background: var(--hje-ink);
+    color: #fff;
+    border-bottom-color: transparent;
+  }
+  .hje-adm-tabs .hje-adm-tab.hje-active:hover {
+    background: var(--hje-ink);
+    color: #fff;
+  }
+}
+
+/* (b) match the source photography's aspect so nothing is cropped away */
+.hje-adm-card-media {
+  aspect-ratio: 4 / 5;
+}
+
+/* (c) */
+.hje-adm-card-btn {
+  background: var(--hje-surface);
+}
+.hje-adm-card-btn:hover {
+  background: var(--hje-app-bg);
+}
+.hje-adm-card-btn-sale {
+  border-color: rgba(29, 125, 75, 0.4);
+  background: rgba(29, 125, 75, 0.07);
+  color: #1a6b40;
+}
+.hje-adm-card-btn-sale:hover {
+  background: #1d7d4b;
+  border-color: #1d7d4b;
+  color: #fff;
+}
+
+
+/* -------------------------------------------------------------------------
+   Admin redesign, round 2:
+   (a) `.hje-adm-modal-actions button { flex: 1 }` from the original sheet
+       stretched Cancelar and Guardar to half the modal each, which reads as
+       two equal choices. They're not.
+   (b) the sales tab's summary reused .hje-adm-stat but not the strip
+       container, so it rendered as three loose boxes with a dead cell.
+   (c) renderSalesChart() emits `<svg width="100%" viewBox="0 0 300 80">`.
+       At the rail layout's content width that scales to ~290px tall — a
+       near-empty band taller than the summary above it. Cap it.
+   (d) stat values now bottom-align, so a label that wraps to two lines
+       ("Valor inventario (venta)") doesn't knock its figure out of line
+       with its neighbours.
+   ------------------------------------------------------------------------- */
+
+/* (a) */
+.hje-adm-modal-actions button,
+.hje-adm-modal-actions .hje-adm-btn-outline,
+.hje-adm-modal-actions .hje-adm-btn-primary {
+  flex: 0 0 auto;
+  min-width: 6.5rem;
+  height: 2.4rem;
+}
+.hje-adm-modal-actions .hje-adm-btn-primary { min-width: 8rem; }
+
+/* (b) */
+.hje-adm-sales-summary {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+  margin-bottom: 1.25rem;
+  background: var(--hje-surface);
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-lg);
+  overflow: hidden;
+  box-shadow: var(--hje-el-1);
+}
+@media (min-width: 760px) {
+  .hje-adm-sales-summary { grid-template-columns: repeat(3, 1fr); }
+}
+.hje-adm-sales-summary .hje-adm-stat:last-child { border-right: none; }
+@media (min-width: 760px) {
+  .hje-adm-sales-summary .hje-adm-stat { border-bottom: none; }
+}
+
+/* (c) */
+#hje-adm-sales-chart {
+  margin: 0 0 1.25rem !important;
+  padding: 1rem 1.1rem 0.9rem;
+  background: var(--hje-surface);
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-lg);
+  box-shadow: var(--hje-el-1);
+  min-height: 0 !important;
+}
+#hje-adm-sales-chart svg {
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+}
+#hje-adm-sales-chart p {
+  margin: 0 0 0.5rem !important;
+  font-size: 0.625rem !important;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hje-ink-3) !important;
+}
+
+/* (d) */
+.hje-adm-stat .hje-adm-stat-value { margin-top: auto; }
+
+/* change-log / sales rows: hairline list, not framed boxes */
+.hje-adm-changelog-list { gap: 0.5rem; }
+.hje-adm-changelog-item {
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-md);
+  padding: 0.7rem 0.9rem;
+  box-shadow: var(--hje-el-1);
+}
+.hje-adm-changelog-item .hje-adm-cl-meta {
+  font-size: 0.6875rem;
+  color: var(--hje-ink-3);
+  margin-bottom: 0.2rem;
+}
+.hje-adm-changelog-item .hje-adm-cl-summary {
+  font-size: 0.8125rem;
+  color: var(--hje-ink);
+  font-variant-numeric: tabular-nums;
+}
+.hje-adm-changelog-item.hje-adm-sale-item:hover {
+  border-color: #d5c9b2;
+  box-shadow: var(--hje-el-2);
+}
+
+/* Editar is the card's main action; Eliminar recedes until hovered */
+.hje-adm-card-btn {
+  border-color: #ddd2bb;
+  color: var(--hje-ink);
+}
+.hje-adm-card-btn:hover {
+  border-color: var(--hje-ink);
+  background: var(--hje-ink);
+  color: #fff;
+}
+.hje-adm-card-btn.hje-adm-card-btn-danger {
+  border-color: transparent;
+  color: var(--hje-ink-3);
+}
+.hje-adm-card-btn.hje-adm-card-btn-danger:hover {
+  background: rgba(122, 28, 40, 0.09);
+  border-color: transparent;
+  color: var(--hje-burgundy);
+}
+
+
+/* -------------------------------------------------------------------------
+   Admin redesign, round 3 — the Inicio (Homepage Manager) tab.
+
+   Two structural bugs surfaced once the rest of the console got quiet
+   enough to read:
+
+   (a) every field rule in the original sheet is scoped to .hje-adm-modal
+       (`.hje-adm-modal label { display:block }`, `.hje-adm-modal input
+       { width:100% }`). The Inicio tab reuses .hje-adm-form-grid *outside*
+       a modal, so its labels sat inline against browser-default-width
+       inputs — "Titular del hero [tiny box]". The field styling belongs to
+       the grid, not to the modal that happened to be its first user.
+   (b) .hje-adm-card carries no padding of its own (product cards get it
+       from .hje-adm-card-body). The Inicio panel uses .hje-adm-card as a
+       plain section container, so its content ran flush against the border.
+   ------------------------------------------------------------------------- */
+
+/* (a) fields are fields wherever the grid is used */
+.hje-adm-form-grid label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hje-ink-3);
+  margin-bottom: 0.3rem;
+}
+.hje-adm-form-grid input,
+.hje-adm-form-grid select,
+.hje-adm-form-grid textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--hje-line);
+  border-radius: var(--hje-r-sm);
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--hje-ink);
+  background: var(--hje-surface);
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.hje-adm-form-grid input:focus,
+.hje-adm-form-grid select:focus,
+.hje-adm-form-grid textarea:focus {
+  outline: none;
+  border-color: var(--hje-gold);
+  box-shadow: 0 0 0 3px var(--hje-focus);
+}
+.hje-adm-form-grid .hje-adm-checkbox-row input {
+  width: auto;
+}
+
+/* (b) */
+.hje-adm-panel > .hje-adm-card,
+.hje-adm-panel > .hje-adm-card + .hje-adm-card {
+  padding: 1.35rem 1.45rem;
+}
+.hje-adm-panel > .hje-adm-card + .hje-adm-card {
+  margin-top: 1rem;
+}
+.hje-adm-prices-help {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--hje-ink-2);
+  max-width: 70ch;
+}
+
+/* the per-category video rows become a proper settings list: label left,
+   state and action pinned right */
+.hje-adm-sv-row-item {
+  gap: 0.6rem;
+  padding: 0.65rem 0;
+  border-bottom-color: var(--hje-line-soft);
+}
+.hje-adm-sv-row-label {
+  min-width: 0;
+  flex: 1 1 auto;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.hje-adm-sv-indicator {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--hje-r-sm);
+  background: rgba(29, 125, 75, 0.08);
+  color: #1a6b40;
+}
+.hje-adm-sv-indicator.hje-adm-sv-none {
+  background: var(--hje-app-bg);
+  color: var(--hje-ink-3);
+}
+
+/* the Inicio tab's single save action shouldn't inherit the modal footer's
+   right-aligned sticky chrome it borrows the class name from */
+.hje-adm-panel > .hje-adm-modal-actions {
+  position: static;
+  border-top: none;
+  background: transparent;
+  padding: 0;
+  margin: 1rem 0 0;
+  justify-content: flex-start;
+}
+.hje-adm-prices-status,
+.hje-adm-inicio-status {
+  font-size: 0.8125rem;
+  color: var(--hje-ink-2);
+  margin-top: 0.75rem;
+}
+
+/* file-picker labels used as buttons across the hero/video tools */
+.hje-adm-slide-file-label {
+  display: inline-flex;
+  align-items: center;
+  height: 2.1rem;
+  padding: 0 0.8rem;
+  border: 1px solid #ddd2bb;
+  border-radius: var(--hje-r-sm);
+  background: var(--hje-surface);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hje-ink);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.hje-adm-slide-file-label:hover {
+  background: var(--hje-ink);
+  border-color: var(--hje-ink);
+  color: #fff;
+}
+
+
+/* -------------------------------------------------------------------------
+   Round 3 (cont.) — the access gates are the console's first impression.
+   ------------------------------------------------------------------------- */
+
+.hje-adm-gate-card {
+  position: relative;
+  width: min(94vw, 400px);
+  padding: 2rem 1.85rem 1.85rem;
+  text-align: left;
+  overflow: hidden;
+}
+.hje-adm-gate-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-image: var(--hje-gold-foil);
+  background-size: 300% 100%;
+}
+.hje-adm-gate-card > .hje-adm-subtitle {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.hje-adm-gate-card h1 {
+  font-size: 1.5rem;
+  margin: 0.6rem 0 0.5rem;
+}
+.hje-adm-gate-card p {
+  font-size: 0.8125rem;
+  color: var(--hje-ink-2);
+  margin: 0 0 1.35rem;
+  line-height: 1.6;
+}
+.hje-adm-gate-card label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hje-ink-3);
+}
+.hje-adm-gate-card input {
+  font-size: 0.9rem;
+  margin-bottom: 0.85rem;
+}
+.hje-adm-gate-help {
+  font-size: 0.6875rem;
+  line-height: 1.55;
+  color: var(--hje-ink-3);
+  padding: 0.6rem 0.7rem;
+  background: var(--hje-app-bg);
+  border-radius: var(--hje-r-sm);
+  margin: 0 0 1rem;
+}
+
+/* a section legend that opens a card shouldn't draw its divider rule —
+   the card's own top edge already is one. The original sheet only handled
+   this case inside .hje-adm-form-grid. */
+.hje-adm-card > .hje-adm-section-legend:first-child,
+.hje-adm-prices-card > .hje-adm-section-legend:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+.hje-adm-prices-help { max-width: 78ch; }
+/* sit the gate's gold rule over the card's own border so overflow:hidden
+   clips it cleanly to the corner radius */
+.hje-adm-gate-card::before {
+  top: -1px;
+  left: -1px;
+  right: -1px;
+}
+
+
+/* -------------------------------------------------------------------------
+   Admin redesign, round 4 — small screens.
+   The app bar's fixed height plus flex-wrap:nowrap let the wordmark wrap to
+   three lines and overflow at 390px; the toolbar's `margin-left:auto` on
+   Descartar left a hole once the row wrapped.
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .hje-adm-header {
+    height: auto;
+    min-height: 3.4rem;
+    padding: 0.55rem 0.9rem;
+    gap: 0.6rem;
+  }
+  .hje-adm-header-text {
+    min-width: 0;
+  }
+  .hje-adm-header .hje-adm-title {
+    font-size: 0.875rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hje-adm-header .hje-adm-subtitle {
+    display: none;
+  }
+  .hje-adm-header img {
+    height: 1.75rem;
+    width: 1.75rem;
+  }
+  .hje-adm-header-actions .hje-adm-btn-outline {
+    padding: 0 0.6rem;
+    font-size: 0.7rem;
+    height: 1.9rem;
+  }
+
+  .hje-adm-main { padding: 1rem 0.9rem 3.5rem; }
+
+  /* the two taxonomy filters read fine side by side */
+  .hje-adm-filter-row select:not(.hje-adm-status-select) {
+    flex: 1 1 45%;
+    min-width: 0;
+  }
+  .hje-adm-filter-row .hje-adm-status-select { flex: 1 1 100%; }
+  .hje-adm-filter-row input[type="search"] { flex: 1 1 100%; }
+
+  /* let the toolbar flow instead of holding a gap open for a right-pinned
+     button that has nowhere to be pinned to */
+  #hje-adm-discard-btn { margin-left: 0; }
+  .hje-adm-action-grid > * { flex: 1 1 auto; }
+  #hje-adm-publish-btn { flex: 1 1 100%; }
+
+  .hje-adm-modal { max-height: calc(100vh - 2rem); }
+  .hje-adm-modal > h2 { padding: 0.9rem 1.1rem; font-size: 1.2rem; }
+  .hje-adm-modal > form,
+  .hje-adm-modal > .hje-adm-form-grid { padding: 1rem 1.1rem 0; }
+  .hje-adm-modal > form > .hje-adm-modal-actions,
+  .hje-adm-modal > .hje-adm-modal-actions {
+    margin-left: -1.1rem;
+    margin-right: -1.1rem;
+    padding: 0.75rem 1.1rem;
+  }
+  .hje-adm-modal-actions button { flex: 1 1 auto; min-width: 0; }
+
+  .hje-adm-panel > .hje-adm-card,
+  .hje-adm-panel > .hje-adm-card + .hje-adm-card { padding: 1.1rem; }
+
+  .hje-adm-support-bubble { right: 0.9rem; bottom: 0.9rem; }
+}
