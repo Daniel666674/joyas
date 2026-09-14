@@ -558,6 +558,100 @@ pages without any per-page work):
 No HTML, JS, or `products.json` changes in this pass — everything lives in
 the one CSS file, so there is nothing to regenerate on any product page.
 
+## Atelier pass v3 — senior design pass (2026-09-14)
+
+Requested ahead of a client sign-up demo: "professional level design work...
+more than WordPress, premium and high end, fully maximize." Where v1/v2
+added polish on top of the exported template, v3 re-cuts the page as a
+**system**: one modular type scale (`--hje-display` / `--hje-h2` / `--hje-h3`
+/ `--hje-micro` clamps), one accent (gold used as hairline and rule, not
+fill), a real vertical rhythm, and photography given room to carry the page.
+
+Still **pure CSS appended to `assets/premium.css`** — zero DOM edits, so the
+same zero-hydration-risk profile as every other rule in that file, and it
+applies identically to `index.html`, the runtime-rendered shop/category
+pages, and both legacy and admin-generated product detail pages with no
+per-page work. Verified with Playwright across index, shop, cadenas,
+collections, about, a legacy product page, and 390px mobile.
+
+Where a v1/v2 rule is superseded the same selector is repeated in the v3
+block and wins on source order; the older rule is left in place so the
+intent history stays readable. `admin.html` and `inventario.html` do not
+load `premium.css`, so neither is affected.
+
+**The headline moves:**
+
+- **Transparent masthead over a full-bleed hero (homepage only).** The hero
+  is pulled up under the sticky header (`margin-top: calc(-1 * var(--hje-hdr))`)
+  and the header goes transparent with cream type until `premium.js` adds
+  `.hje-scrolled`, at which point it resolves into cream glass with the gold
+  foil hairline. Scoped by `body:has(<hero class chain>)` — that chain
+  exists only on index.html (verified by grep). `--hje-hdr` (4rem, 5rem at
+  lg) is the single source of truth for the header height and the hero's
+  pull-up; it is deliberately **constant per breakpoint, never animated** —
+  a sticky header that shrinks on scroll shifts everything below it and
+  jitters. The transparent state also gets its own gradient scrim
+  (`header::before`, `z-index:-1` inside the header's own z-40 stacking
+  context): the hero scrim alone can't be trusted when the footage rotates
+  through bright frames.
+- **The hero's media layer was never actually full-bleed.** It is
+  `position:absolute; inset:0` against the `mx-auto max-w-7xl px-8`
+  container, so above 1280px it left 80px letterbox bars. Broken out with
+  `inset: 0 auto 0 50%; width:100vw; transform:translateX(-50%)` — the
+  section's own `overflow-hidden` clips it.
+- **Section numerals.** `main { counter-reset }` / `main > section
+  { counter-increment }` renders `01`, `02`, … into each eyebrow's
+  `::before`. Homepage only: inner pages nest their sections
+  (`main > div > section`), so the counter never incremented there and every
+  eyebrow rendered a literal "00". Non-homepage eyebrows get a gold hairline
+  mark instead.
+- **Categories** went from the v1 funnel-compression strip (six squat
+  thumbnails, reads as a filter bar) to six portrait plates, 3-up on
+  desktop / 2-up on mobile, with a deep caption gradient, an inner hairline
+  frame on hover, and a "Ver piezas" line that rises in. The gradient has to
+  be much deeper than a stock overlay because the source photography is
+  mostly bright white jewellery-box lining.
+- **Materials** went from bare pills to five equal-width plates spanning the
+  container, each re-showing the photo the link already carried (v1 hid it)
+  as a round 54px thumbnail, plus a trailing hairline arrow.
+- **Product cards** sitewide: gold-foil `Destacado` pill (the badge's own
+  class chain is the only reliable hook — three different renderers emit it,
+  and `homepage-featured-refresh.js` wraps it in `.hje-badge-stack` while
+  `category-render.js`/`admin.js` emit a bare positioned div), serif name,
+  letterspaced-caps meta, hairline-separated price row, ghost circular
+  action controls, wishlist heart revealed on hover/focus, and a "Ver pieza"
+  plate rising from the foot of the photo (`a::after` — the photo div's own
+  `::after` is already v1's warm-light sweep).
+- **Instagram wall** restored to the full 4x2 (v1 clipped it to 4 tiles).
+- Testimonials, FAQ (now a centred editorial Q&A list, not a boxed
+  accordion), newsletter band, footer, product detail page (framed image,
+  caps meta pills, price with a gold rule, engraved-caps CTAs, spec table),
+  and the shop/category filter bar all re-cut to the same system.
+
+**Things worth knowing next time:**
+
+- The shop's filter form posts to `/joyas/shop.html`, **not** `/shop`, so
+  v1's `form[action="/shop"]` rules never applied to the page they were
+  written for. v3 uses `form[action*="shop"]`.
+- `store.js` adds a cart `<button>` to the card action row and a
+  `.hje-detail-cart-btn` to the detail page; both carry their own classes,
+  not the template's button utilities, so they need explicit rules or the
+  row looks half-styled.
+- `--muted-foreground` shipped at rgb(118,105,96) on the cream ground —
+  5.1:1, clears AA but reads washed at the longer measures this pass opens
+  up. Nudged to `25 11% 37%` (~6.3:1), same hue and warmth.
+- A two-up product grid at 390px overflowed the viewport by 24px (price +
+  three 40px controls in one non-wrapping row). Fixed by letting that row
+  wrap and tightening the controls below 640px — worth re-checking
+  `document.documentElement.scrollWidth` vs `clientWidth` after any card
+  change.
+- `text-wrap: balance` on display type and `pretty` on body copy does the
+  rag control that would otherwise need hand-inserted breaks in the Spanish
+  copy ("Compras acompanadas de principio a / fin").
+- When screenshotting with Playwright, `html { scroll-behavior: smooth }` is
+  set sitewide — inject `html{scroll-behavior:auto}` before scripted
+  scrolling or captures land mid-animation at the wrong offset.
+
 ## PR lifecycle on this branch
 
 PRs opened from `claude/spanish-translation-photo-fix-qp9s55` have

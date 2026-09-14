@@ -1150,3 +1150,1394 @@ form[action="/shop"] input:focus,
 form[action="/shop"] select:focus {
   border-color: var(--hje-gold);
 }
+
+
+/* =========================================================================
+   ATELIER PASS v3 (2026-09-14) — full senior-design pass for the client
+   sign-up demo. Where v1/v2 added polish on top of the exported template,
+   this pass re-architects the page as a *system*: one modular type scale,
+   one accent (gold, used as hairline/rule rather than fill), a real
+   vertical rhythm, and photography given room to carry the page.
+
+   Same hard constraint as every rule above: pure CSS against the existing
+   DOM, no structural edits, so it carries zero hydration risk and applies
+   identically to index.html, the runtime-rendered shop/category pages, and
+   both legacy and admin-generated product detail pages.
+
+   Where a v1/v2 rule is deliberately superseded, the same selector is
+   repeated here and wins on source order — the older rule is left in place
+   so the intent history stays readable.
+   ========================================================================= */
+
+:root {
+  /* header height — the hero pulls itself up underneath this on the
+     homepage, so the two must stay in sync. Constant per breakpoint (never
+     animated) so nothing below the sticky header jumps on scroll. */
+  --hje-hdr: 4rem;
+
+  --hje-cream: #faf6ef;
+  --hje-champagne: #f0dfae;
+  --hje-ink: #241c12;
+  --hje-ink-soft: #5c4c37;
+  --hje-rule: rgba(168, 120, 42, 0.22);
+  --hje-rule-soft: rgba(168, 120, 42, 0.12);
+
+  /* modular scale (1.25) anchored at 1rem, expressed as clamps so the
+     desktop end is genuinely editorial without breaking small screens */
+  --hje-display: clamp(2.75rem, 6.4vw, 5.25rem);
+  --hje-h2: clamp(2rem, 3.4vw, 3.25rem);
+  --hje-h3: clamp(1.15rem, 1.5vw, 1.5rem);
+  --hje-micro: 0.68rem;
+}
+
+@media (min-width: 1024px) {
+  :root { --hje-hdr: 5rem; }
+}
+
+/* ---------- micro-typography baseline ---------- */
+body {
+  letter-spacing: 0.002em;
+}
+/* prices, SKUs and counts align in a column instead of wobbling */
+.hje-sku,
+span.text-sm.font-semibold,
+main p.mt-3.text-2xl.font-semibold {
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* =========================================================================
+   1. HEADER — a boutique masthead, not a web-app toolbar.
+   Caps nav at micro size with real letterspacing, a taller bar on desktop,
+   and (homepage only) a transparent state over the hero that resolves into
+   a solid cream bar the moment the page moves.
+   ========================================================================= */
+
+header.sticky > div.flex.h-16 {
+  height: var(--hje-hdr);
+}
+
+/* nav: sentence-case links -> letterspaced caps. Reads as a house, not a CMS. */
+header nav a.text-muted-foreground.transition.hover\:text-foreground {
+  font-size: var(--hje-micro);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hje-ink-soft);
+}
+header nav.hidden.items-center.gap-6 {
+  gap: 1.85rem;
+}
+
+/* wordmark: optical letterspacing + a hairline-framed logo mark */
+header a[href="/joyas"].font-serif {
+  letter-spacing: 0.06em;
+  font-size: 1.4rem;
+  color: var(--hje-ink);
+}
+header a[href="/joyas"] img {
+  box-shadow: 0 0 0 1px var(--hje-rule);
+}
+
+/* --- homepage only: hero runs full-bleed *under* a transparent masthead.
+   `body:has(...)` pins this to index.html, the only page carrying the hero
+   section's class chain (verified by grep across all *.html). --- */
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) main > section.relative.overflow-hidden.bg-\[\#f8f3eb\] {
+  margin-top: calc(-1 * var(--hje-hdr));
+}
+
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) {
+  background-color: transparent !important;
+  border-bottom-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+/* the permanent gold foil hairline belongs to the *solid* state only */
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled)::after {
+  opacity: 0;
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) a[href="/joyas"].font-serif,
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) nav a.text-muted-foreground {
+  color: rgba(250, 246, 239, 0.92);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) nav a.text-muted-foreground:hover {
+  color: #fff;
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) button[aria-label] {
+  color: rgba(250, 246, 239, 0.92);
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) button[aria-label]:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) a[href="/joyas"] img {
+  box-shadow: 0 0 0 1px rgba(250, 246, 239, 0.45);
+}
+/* nav dropdown triggers keep their caret legible in the transparent state */
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) .hje-nav-drop-trigger::after {
+  opacity: 0.8;
+}
+
+/* solid state: cream glass, not a flat opaque slab */
+header.sticky.hje-scrolled {
+  background-color: rgba(250, 246, 239, 0.88) !important;
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+}
+
+
+/* =========================================================================
+   2. HERO — a fashion-house opening spread.
+   Display type at true editorial scale, a hairline frame that reads as a
+   printed plate, a cleaner two-stop scrim, and a scroll cue.
+   ========================================================================= */
+
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.max-w-2xl {
+  min-height: 100vh;
+  padding-top: calc(var(--hje-hdr) + 3rem);
+  padding-bottom: 6rem;
+}
+
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+  font-size: var(--hje-display);
+  line-height: 0.99;
+  letter-spacing: -0.028em;
+  font-weight: 400;
+  max-width: 13ch;
+  text-shadow: 0 6px 40px rgba(0, 0, 0, 0.5);
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 + p {
+  margin-top: 1.75rem;
+  max-width: 46ch;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: rgba(250, 246, 239, 0.82);
+}
+
+/* eyebrow: champagne caps on a gold hairline */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700 {
+  letter-spacing: 0.34em;
+  font-size: 0.6875rem;
+  color: var(--hje-champagne);
+}
+
+/* CTA row: more air, and the gold button leads */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .mt-8.flex.flex-col.gap-3 {
+  margin-top: 2.75rem;
+  gap: 0.9rem;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .mt-8.flex.flex-col.gap-3 > a {
+  height: 3.35rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  border-radius: 2px;
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* printed-plate hairline frame: sits above the scrim, below nothing
+   interactive (pointer-events:none), inset from the viewport edge */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\]::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: calc(var(--hje-hdr) + 1.25rem) 1.25rem 1.25rem;
+  border: 1px solid rgba(240, 223, 174, 0.22);
+  pointer-events: none;
+}
+@media (min-width: 1024px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\]::before {
+    inset: calc(var(--hje-hdr) + 1.75rem) 1.75rem 1.75rem;
+  }
+}
+
+/* scroll cue: a hairline with a gold bead travelling down it */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\]::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  bottom: 2.75rem;
+  width: 1px;
+  height: 62px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(240, 223, 174, 0.05), rgba(240, 223, 174, 0.5));
+  pointer-events: none;
+  overflow: hidden;
+  animation: hje-cue 2.6s var(--hje-ease-soft) infinite;
+}
+@keyframes hje-cue {
+  0%, 100% { opacity: 0.35; transform: translateX(-50%) scaleY(0.72); transform-origin: bottom; }
+  50%      { opacity: 1;    transform: translateX(-50%) scaleY(1);    transform-origin: bottom; }
+}
+
+/* the scrim gets cleaner: one directional wash + one floor, no muddy
+   uniform darkening that flattens the gold in the footage */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+  background-color: rgba(8, 6, 4, 0.14);
+  background-image: linear-gradient(78deg, rgba(8, 6, 4, 0.88) 0%, rgba(8, 6, 4, 0.6) 34%, rgba(8, 6, 4, 0.26) 58%, transparent 82%),
+    linear-gradient(0deg, rgba(8, 6, 4, 0.72) 0%, rgba(8, 6, 4, 0.22) 30%, transparent 55%),
+    linear-gradient(180deg, rgba(8, 6, 4, 0.6) 0%, rgba(8, 6, 4, 0.12) 18%, transparent 34%);
+}
+
+
+/* =========================================================================
+   3. SECTION SYSTEM — rhythm, numerals, and headline scale.
+   Numbered eyebrows (01 / 02 / …) via CSS counters give the page an
+   editorial spine with no markup at all. Supersedes v2's diamond mark.
+   ========================================================================= */
+
+main { counter-reset: hje-sec; }
+main > section { counter-increment: hje-sec; }
+
+p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700 {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  letter-spacing: 0.28em;
+  font-size: 0.6875rem;
+  color: var(--hje-gold-deep);
+}
+p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700::before {
+  content: counter(hje-sec, decimal-leading-zero);
+  width: auto;
+  height: auto;
+  margin: 0;
+  transform: none;
+  background-image: none;
+  box-shadow: none;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--hje-gold);
+  opacity: 0.85;
+}
+/* the hero's own eyebrow is not part of the numbered run */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700::before {
+  content: "";
+  width: 26px;
+  height: 1px;
+  align-self: center;
+  background-image: var(--hje-gold-foil);
+  opacity: 0.9;
+}
+
+/* headline scale + measure */
+h2.font-serif.text-3xl.text-foreground.sm\:text-4xl,
+h2.font-serif.text-3xl.sm\:text-4xl {
+  font-size: var(--hje-h2);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+  font-weight: 400;
+  max-width: 18ch;
+}
+@media (min-width: 1024px) {
+  h2.font-serif.text-3xl.text-foreground.sm\:text-4xl { font-size: var(--hje-h2); }
+}
+/* section intro copy: longer measure, softer ink */
+main section > div > div > div.max-w-2xl > p.mt-3,
+main section > div > div > div > p.mt-3.max-w-2xl {
+  max-width: 52ch;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--hje-ink-soft);
+}
+
+/* vertical rhythm: luxury is mostly whitespace */
+section.bg-background.py-16.sm\:py-20,
+section.bg-\[\#f8f3eb\].py-16.sm\:py-20 {
+  padding-top: 5.5rem;
+  padding-bottom: 5.5rem;
+}
+@media (min-width: 1024px) {
+  section.bg-background.py-16.sm\:py-20,
+  section.bg-\[\#f8f3eb\].py-16.sm\:py-20 {
+    padding-top: 8.5rem;
+    padding-bottom: 8.5rem;
+  }
+  main section > div > div.mb-8 { margin-bottom: 3.5rem; }
+}
+
+/* the dot-grain from v2 was slightly too present at the new section size */
+section.bg-background.py-16.sm\:py-20,
+section.bg-\[\#f8f3eb\].py-16.sm\:py-20 {
+  background-image: radial-gradient(rgba(122, 28, 40, 0.035) 1px, transparent 1.4px);
+  background-size: 30px 30px;
+}
+/* full-width hairline at the section seam rather than a floating 1180px rule */
+section.bg-background.py-16.sm\:py-20::before,
+section.bg-\[\#f8f3eb\].py-16.sm\:py-20::before {
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--hje-rule) 22%, var(--hje-rule) 78%, transparent);
+}
+
+
+/* =========================================================================
+   4. CATEGORIES — supersedes the v1 "funnel compression" strip.
+   Six squat thumbnails read as a filter bar; six portrait plates read as a
+   collection index. Same markup, same six links, completely different
+   register.
+   ========================================================================= */
+
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (min-width: 640px) {
+  div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) {
+    gap: 2rem;
+  }
+}
+
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a {
+  border-radius: 3px;
+  background: transparent;
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a .aspect-\[5\/4\] {
+  aspect-ratio: 4 / 5;
+  border-radius: 3px;
+}
+/* gold hairline frame drawn *inside* the plate, revealed on hover */
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a .aspect-\[5\/4\]::after {
+  content: "";
+  position: absolute;
+  inset: 0.7rem;
+  z-index: 2;
+  border: 1px solid rgba(250, 246, 239, 0.55);
+  opacity: 0;
+  transform: scale(1.03);
+  transition: opacity 0.5s var(--hje-ease), transform 0.5s var(--hje-ease);
+  pointer-events: none;
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a:hover .aspect-\[5\/4\]::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* caption plate: deeper gradient, serif label at real size, and a
+   "Ver piezas" line that rises in on hover */
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a > div.p-2 {
+  padding: 2.75rem 1.1rem 1.25rem;
+  background-image: linear-gradient(0deg, rgba(16, 12, 8, 0.82) 0%, rgba(16, 12, 8, 0.42) 55%, transparent 100%);
+  text-align: center;
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a > div.p-2 h3 {
+  font-size: var(--hje-h3);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: var(--hje-cream);
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
+}
+@media (min-width: 640px) {
+  div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a > div.p-2 h3 {
+    font-size: var(--hje-h3);
+  }
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a > div.p-2::after {
+  content: "Ver piezas";
+  display: block;
+  margin-top: 0.4rem;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hje-champagne);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.4s var(--hje-ease), transform 0.4s var(--hje-ease);
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a:hover > div.p-2::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 26px 50px -22px rgba(40, 30, 12, 0.55);
+}
+
+
+/* =========================================================================
+   5. MATERIALS — supersedes the v1 bare-pill row.
+   The photo each link already carries was hidden by the compression pass;
+   bringing it back as a small round plate turns a filter bar into a proper
+   index of materials, at the same compact height.
+   ========================================================================= */
+
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 {
+  gap: 0.85rem;
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a {
+  padding: 0.5rem 1.5rem 0.5rem 0.5rem;
+  border: 1px solid var(--hje-rule);
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: var(--hje-shadow-sm);
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a:hover {
+  background: #fff;
+  border-color: var(--hje-gold);
+  transform: translateY(-3px);
+  box-shadow: var(--hje-shadow-md);
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a .aspect-\[5\/4\] {
+  display: block;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  aspect-ratio: 1 / 1;
+  margin-right: 0.95rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px var(--hje-rule);
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a h3 {
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  color: var(--hje-ink);
+}
+
+
+/* =========================================================================
+   6. PRODUCT CARDS — sitewide (homepage, shop, every category page, and
+   both legacy and generated detail pages' related rows).
+   Quieter chrome, louder photography, one clear price. The wishlist control
+   stops competing with the product and appears on intent.
+   ========================================================================= */
+
+article.group > a.block.overflow-hidden.rounded-md.bg-muted {
+  border: 1px solid var(--hje-rule-soft);
+  border-radius: 3px;
+}
+
+/* "Destacado" / tag pills: gold foil on dark ink, not a white chip */
+article.group span.absolute.left-3.top-3 {
+  border: none;
+  border-radius: 2px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background-image: var(--hje-gold-foil) !important;
+  background-size: 200% 200%;
+  color: #2a1c08 !important;
+  box-shadow: 0 2px 10px -2px rgba(40, 30, 12, 0.45);
+}
+
+/* wishlist heart: hidden until the card is engaged with */
+article.group button[aria-label^="Guardar"] {
+  opacity: 0;
+  transform: translateY(-4px);
+  border-radius: 999px;
+  transition: opacity 0.35s var(--hje-ease-soft), transform 0.35s var(--hje-ease), background-color 0.2s;
+}
+article.group:hover button[aria-label^="Guardar"],
+article.group:focus-within button[aria-label^="Guardar"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (hover: none) {
+  article.group button[aria-label^="Guardar"] { opacity: 1; transform: none; }
+}
+
+/* "Ver pieza" bar rising from the foot of the photo on hover.
+   ::after on the anchor — the photo div's own ::after is already the
+   warm-light sweep from v1, so this needs its own pseudo-element. */
+article.group > a.block.overflow-hidden.rounded-md.bg-muted::after {
+  content: "Ver pieza";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 0.8rem 0;
+  text-align: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hje-cream);
+  background: linear-gradient(0deg, rgba(16, 12, 8, 0.92), rgba(16, 12, 8, 0.55));
+  transform: translateY(101%);
+  transition: transform 0.45s var(--hje-ease);
+  pointer-events: none;
+}
+article.group:hover > a.block.overflow-hidden.rounded-md.bg-muted::after {
+  transform: translateY(0);
+}
+
+/* name / meta / price hierarchy */
+article.group .mt-4.space-y-3 > div > a.font-medium {
+  display: inline-block;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.0625rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.3;
+  color: var(--hje-ink);
+}
+article.group .mt-4.space-y-3 > div > p.mt-1.text-sm {
+  margin-top: 0.35rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(92, 76, 55, 0.72);
+}
+article.group .flex.items-center.justify-between.gap-3 {
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--hje-rule-soft);
+}
+article.group .flex.items-center.justify-between.gap-3 > span.text-sm.font-semibold {
+  font-size: 1.15rem;
+}
+
+/* the two contact icon buttons: quiet round ghosts, gold on hover */
+article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 > a {
+  height: 2.1rem;
+  width: 2.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--hje-rule-soft);
+  color: var(--hje-ink-soft);
+  transition: color 0.25s, border-color 0.25s, background-color 0.25s, transform 0.25s var(--hje-ease);
+}
+article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 > a:hover {
+  color: var(--hje-gold-deep);
+  border-color: var(--hje-gold);
+  background-color: rgba(168, 120, 42, 0.08);
+  transform: translateY(-2px);
+}
+
+
+/* =========================================================================
+   7. INSTAGRAM WALL — v1 clipped this to 4 tiles as part of the homepage
+   compression. At the new section rhythm a single short row reads thin, so
+   the full eight-tile wall is restored as a 4x2 grid.
+   ========================================================================= */
+
+div.grid.grid-cols-2.gap-3.md\:grid-cols-4 > a:nth-child(n + 5) {
+  display: block;
+}
+div.grid.grid-cols-2.gap-3.md\:grid-cols-4 {
+  gap: 0.75rem;
+}
+div.grid.grid-cols-2.gap-3.md\:grid-cols-4 > a {
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--hje-rule-soft);
+  transition: box-shadow 0.4s var(--hje-ease-soft), transform 0.4s var(--hje-ease);
+}
+div.grid.grid-cols-2.gap-3.md\:grid-cols-4 > a:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 1px var(--hje-gold), var(--hje-shadow-md);
+}
+
+
+/* =========================================================================
+   8. TESTIMONIALS — from bordered boxes to quiet quoted plates.
+   ========================================================================= */
+
+figure.rounded-md.border.border-border.bg-background.p-6 {
+  padding: 2.5rem 2rem 2rem;
+  border: 1px solid var(--hje-rule-soft);
+  border-left: none;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.72);
+}
+figure.rounded-md.border.border-border.bg-background.p-6::before {
+  top: 0.6rem;
+  left: 1.6rem;
+  right: auto;
+  font-size: 4.5rem;
+  color: rgba(168, 120, 42, 0.18);
+}
+figure.rounded-md.border.border-border.bg-background.p-6 blockquote {
+  font-size: 1.1rem;
+  line-height: 1.75;
+  font-style: normal;
+  color: #3a2f22;
+}
+figure.rounded-md.border.border-border.bg-background.p-6 figcaption {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.75rem;
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+figure.rounded-md.border.border-border.bg-background.p-6 figcaption::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  flex: none;
+  background-image: var(--hje-gold-foil);
+}
+div.grid.gap-4.md\:grid-cols-3:has(> figure) {
+  gap: 1.5rem;
+}
+
+
+/* =========================================================================
+   9. FAQ — an editorial Q&A list rather than a boxed accordion.
+   ========================================================================= */
+
+div.divide-y.divide-border.rounded-md.border.border-border {
+  border: none;
+  border-top: 1px solid var(--hje-rule);
+  border-radius: 0;
+  box-shadow: none;
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 {
+  padding: 1.6rem 0.25rem;
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5:hover,
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5[open] {
+  background: transparent;
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 > summary {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  color: var(--hje-ink);
+  padding-right: 3rem;
+  transition: color 0.25s;
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5:hover > summary {
+  color: var(--hje-gold-deep);
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 > summary::after {
+  top: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: -0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--hje-rule);
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1;
+  transition: transform 0.3s var(--hje-ease-soft), border-color 0.25s, background-color 0.25s;
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5[open] > summary::after {
+  border-color: var(--hje-gold);
+  background: rgba(168, 120, 42, 0.1);
+}
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 > p.mt-3 {
+  max-width: 62ch;
+  font-size: 0.95rem;
+  line-height: 1.85;
+  color: var(--hje-ink-soft);
+}
+
+
+/* =========================================================================
+   10. NEWSLETTER BAND + FOOTER — closing chord.
+   ========================================================================= */
+
+section.bg-foreground.text-background h2.font-serif.text-3xl.sm\:text-4xl {
+  color: var(--hje-cream);
+}
+section.bg-foreground.text-background p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700 {
+  color: var(--hje-champagne);
+}
+section.bg-foreground.text-background p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700::before {
+  color: var(--hje-champagne);
+  opacity: 0.7;
+}
+section.bg-foreground.text-background input[type="email"] {
+  height: 3.25rem;
+  border-radius: 2px;
+}
+section.bg-foreground.text-background .bg-gold-500.text-white.hover\:bg-gold-700 {
+  height: 3.25rem;
+  border-radius: 2px;
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+footer.border-t.border-border.bg-\[\#f8f3eb\] {
+  padding-top: 1rem;
+}
+footer h2.text-sm.font-semibold.uppercase.tracking-\[0\.18em\] {
+  font-size: 0.625rem;
+  letter-spacing: 0.22em;
+}
+footer a {
+  transition: color 0.22s var(--hje-ease-soft);
+}
+
+
+/* =========================================================================
+   11. INNER PAGES — shop / category / material listing pages get the same
+   masthead-to-content treatment: a proper page opening instead of a
+   breadcrumb dropped straight under the header.
+   ========================================================================= */
+
+main > section:first-child h1.font-serif {
+  font-size: clamp(2.25rem, 4.6vw, 3.75rem);
+  line-height: 1.05;
+  letter-spacing: -0.022em;
+  font-weight: 400;
+}
+
+/* filter bar on the category pages: hairline-framed, uppercase labels */
+form[action="/shop"] {
+  border-radius: 3px;
+}
+form[action="/shop"] input,
+form[action="/shop"] select {
+  border-radius: 2px;
+  height: 2.75rem;
+}
+
+
+/* =========================================================================
+   12. MOTION — one shared reveal curve so the page settles rather than
+   pops. Paired with premium.js's existing .hje-in toggling.
+   ========================================================================= */
+
+@media (prefers-reduced-motion: no-preference) {
+  main section h2,
+  article.group {
+    transition-timing-function: var(--hje-ease);
+  }
+}
+
+
+/* -------------------------------------------------------------------------
+   v3 corrections, round 1 (verified against Playwright captures):
+
+   (a) the hero's photo/video layer was `inset:0` against the *container*
+       (mx-auto max-w-7xl px-8), so at >1280px it left 80px letterbox bars
+       and was never genuinely full-bleed. Break it out to the viewport.
+   (b) a transparent masthead over live video needs its own legibility
+       base — the hero's scrim alone can't be trusted when the footage
+       rotates through bright frames.
+   (c) the hero eyebrow's mark still inherited v2's 45deg diamond rotation.
+   (d) hero measures exactly one viewport: the wrapper's own py-12 was
+       stacking on top of the inner column's min-height:100vh.
+   ------------------------------------------------------------------------- */
+
+/* (a) full-bleed hero media */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+  inset: 0 auto 0 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+}
+
+/* (b) masthead scrim, transparent state only. z-index:-1 keeps it behind the
+   header's own content but inside the header's (z-40) stacking context. */
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(8, 6, 4, 0.62) 0%, rgba(8, 6, 4, 0.34) 55%, rgba(8, 6, 4, 0) 100%);
+  pointer-events: none;
+}
+
+/* (c) hero eyebrow mark: a hairline, not a rotated diamond */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700::before {
+  transform: none;
+  box-shadow: none;
+  margin-top: 0;
+}
+
+/* (d) hero occupies exactly one viewport */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+  padding-top: 0;
+  padding-bottom: 0;
+  min-height: 0;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.max-w-2xl {
+  min-height: 100vh;
+  padding-top: calc(var(--hje-hdr) + 2rem);
+  padding-bottom: 7rem;
+}
+
+/* gold CTA: ink text on metal reads as engraving; white on gold is mush */
+.bg-gold-500.text-white.hover\:bg-gold-700 {
+  color: #2a1c08;
+}
+.bg-gold-500.text-white.hover\:bg-gold-700 svg {
+  color: #2a1c08;
+}
+
+
+/* -------------------------------------------------------------------------
+   v3 corrections, round 2:
+   (a) `max-width: 18ch` on section headings produced bad rags on the real
+       Spanish copy ("Aprende antes de / elegir"). The existing max-w-2xl
+       wrapper is already the right measure — let it govern.
+   (b) the materials row read as five small chips floating in a very large
+       empty band. Equal-width cards spanning the full container give the
+       section something to sit on at the new vertical rhythm.
+   (c) category caption plates: the source photography is mostly bright
+       white jewellery-box lining, so the label gradient has to be much
+       deeper than a stock overlay to stay legible.
+   (d) hero: a soft edge vignette so the frame reads cinematic rather than
+       like a photo pasted edge to edge.
+   ------------------------------------------------------------------------- */
+
+/* (a) */
+h2.font-serif.text-3xl.text-foreground.sm\:text-4xl,
+h2.font-serif.text-3xl.sm\:text-4xl {
+  max-width: none;
+}
+/* give the intro column a touch more room so headings set on one or two
+   confident lines instead of three short ones */
+main section > div > div.mb-8 > div.max-w-2xl {
+  max-width: 44rem;
+}
+
+/* (b) materials: five equal plates across the container */
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a {
+  flex: 1 1 160px;
+  padding: 0.7rem 1.25rem 0.7rem 0.7rem;
+  border-radius: 999px;
+}
+@media (min-width: 1024px) {
+  div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 {
+    gap: 1rem;
+    flex-wrap: nowrap;
+  }
+  div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a {
+    flex: 1 1 0;
+    justify-content: flex-start;
+  }
+  div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a .aspect-\[5\/4\] {
+    width: 54px;
+    height: 54px;
+  }
+  div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a h3 {
+    font-size: 1.05rem;
+  }
+}
+
+/* (c) category caption: deeper, taller plate */
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a > div.p-2 {
+  padding: 4.5rem 1.1rem 1.4rem;
+  background-image: linear-gradient(0deg, rgba(12, 9, 6, 0.94) 0%, rgba(12, 9, 6, 0.78) 32%, rgba(12, 9, 6, 0.4) 62%, rgba(12, 9, 6, 0.08) 88%, transparent 100%);
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-3:has(> div > a[href="/joyas/cadenas"]) > div > a > div.p-2 h3 {
+  font-size: clamp(1.25rem, 1.7vw, 1.65rem);
+  letter-spacing: 0.03em;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+}
+
+/* (d) hero edge vignette, layered under the directional scrim */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(125% 105% at 50% 45%, transparent 42%, rgba(8, 6, 4, 0.42) 82%, rgba(8, 6, 4, 0.66) 100%);
+}
+
+/* slightly calmer section rhythm — 8.5rem left the shorter sections looking
+   under-filled rather than generous */
+@media (min-width: 1024px) {
+  section.bg-background.py-16.sm\:py-20,
+  section.bg-\[\#f8f3eb\].py-16.sm\:py-20 {
+    padding-top: 7rem;
+    padding-bottom: 7rem;
+  }
+  main section > div > div.mb-8 { margin-bottom: 3rem; }
+}
+
+
+/* -------------------------------------------------------------------------
+   v3 corrections, round 3:
+   (a) the "Destacado" pill is emitted by three different renderers
+       (homepage-featured-refresh.js wraps it in .hje-badge-stack,
+       category-render.js and admin.js emit a bare positioned div), so the
+       only reliable hook is the pill's own class chain, not its position
+       utilities. Also: the foil gradient defaults to background-position
+       0% 0% — the pale end of the ramp — which read as a cream chip rather
+       than gold.
+   (b) store.js adds a cart <button> to the card's action row alongside the
+       two <a> links; all three need the same treatment or the row looks
+       half-styled.
+   ------------------------------------------------------------------------- */
+
+/* (a) */
+article.group span.rounded-full.border.border-border.bg-white\/90.text-gold-700 {
+  border: none;
+  border-radius: 2px;
+  padding: 0.32rem 0.62rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background-color: transparent;
+  background-image: var(--hje-gold-foil);
+  background-size: 220% 220%;
+  background-position: 35% 35%;
+  color: #2a1c08;
+  box-shadow: 0 2px 10px -2px rgba(40, 30, 12, 0.5);
+}
+
+/* (b) */
+article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 > a,
+article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 > button {
+  height: 2.2rem;
+  width: 2.2rem;
+  min-width: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--hje-rule-soft);
+  color: var(--hje-ink-soft);
+  background-color: transparent;
+  transition: color 0.25s, border-color 0.25s, background-color 0.25s, transform 0.25s var(--hje-ease);
+}
+article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 > a:hover,
+article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 > button:hover {
+  color: var(--hje-gold-deep);
+  border-color: var(--hje-gold);
+  background-color: rgba(168, 120, 42, 0.08);
+  transform: translateY(-2px);
+}
+article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 {
+  gap: 0.4rem;
+}
+article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 svg {
+  height: 0.95rem;
+  width: 0.95rem;
+}
+
+/* material plates: a trailing hairline arrow so each reads as a destination */
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a::after {
+  content: "\2192";
+  margin-left: auto;
+  padding-left: 0.75rem;
+  font-size: 0.95rem;
+  color: var(--hje-gold);
+  opacity: 0.45;
+  transition: transform 0.3s var(--hje-ease), opacity 0.3s;
+}
+div.grid.gap-4.sm\:grid-cols-2.lg\:grid-cols-5 > a:hover::after {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+
+/* -------------------------------------------------------------------------
+   v3 corrections, round 4:
+   (a) section numerals only make sense where the numbered run actually
+       exists. Inner pages nest their sections (main > div > section) so the
+       counter never incremented and every eyebrow rendered a literal "00".
+       Numerals are now homepage-only; every other page keeps a gold
+       hairline mark, matching the hero's own eyebrow.
+   (b) --hje-ink-soft was too brown at body-copy size — intro paragraphs
+       read as tinted rather than neutral. Warm grey, not gold.
+   (c) the shop's filter form posts to /joyas/shop.html, not /shop, so the
+       v1 filter-bar rules never applied to the page they were written for.
+   ------------------------------------------------------------------------- */
+
+:root {
+  --hje-ink-soft: #5d5348;
+}
+
+/* (a) */
+p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700::before {
+  content: "";
+  align-self: center;
+  width: 26px;
+  height: 1px;
+  background-image: var(--hje-gold-foil);
+  opacity: 0.9;
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) main > section p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700::before {
+  content: counter(hje-sec, decimal-leading-zero);
+  width: auto;
+  height: auto;
+  align-self: baseline;
+  background-image: none;
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--hje-gold);
+  opacity: 0.85;
+}
+/* the eyebrow's own underline belongs to the numbered treatment only */
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700::after {
+  display: none;
+}
+
+/* (c) */
+form[action*="shop"] {
+  border-radius: 3px;
+  border-color: var(--hje-rule);
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: var(--hje-shadow-sm);
+}
+form[action*="shop"] label > span,
+form[action*="shop"] label {
+  color: var(--hje-gold-deep);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+form[action*="shop"] input,
+form[action*="shop"] select {
+  height: 2.85rem;
+  border-radius: 2px;
+  border-color: var(--hje-rule);
+  background: #fff;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--hje-ink);
+}
+form[action*="shop"] input:focus,
+form[action*="shop"] select:focus {
+  border-color: var(--hje-gold);
+}
+
+
+/* =========================================================================
+   13. PRODUCT DETAIL PAGE — the page that actually closes the sale.
+   Applies to both the 66 legacy Next-hydrated pages and every page
+   admin.html generates, since both share this markup.
+   ========================================================================= */
+
+/* hero image: a hairline-framed plate rather than a bare rounded box */
+main section.grid > div.grid.gap-3 > div.relative.aspect-\[4\/5\] {
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--hje-rule), var(--hje-shadow-md);
+}
+
+/* meta pills: letterspaced caps, gold hairline */
+span.inline-flex.items-center.rounded-full.border.border-border.bg-background.text-muted-foreground {
+  border-radius: 2px;
+  border-color: var(--hje-rule);
+  background: transparent;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hje-gold-deep);
+}
+
+main h1.mt-5.font-serif.text-5xl {
+  font-size: clamp(2.25rem, 3.6vw, 3.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.022em;
+  font-weight: 400;
+  margin-top: 1.5rem;
+}
+main p.mt-3.text-2xl.font-semibold {
+  font-size: 1.85rem;
+  margin-top: 0.85rem;
+}
+main h1.mt-5.font-serif.text-5xl + p.mt-3.text-2xl.font-semibold::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 1px;
+  margin-top: 1.35rem;
+  background-image: var(--hje-gold-foil);
+}
+main p.mt-5.leading-7.text-muted-foreground {
+  max-width: 54ch;
+  line-height: 1.85;
+  color: var(--hje-ink-soft);
+}
+
+/* CTA row: same engraved-caps treatment as the hero's buttons */
+main .mt-8.grid.gap-3.sm\:grid-cols-2 > a,
+main a.hje-add-to-cart,
+main button.hje-add-to-cart {
+  height: 3.25rem;
+  border-radius: 2px;
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* specification list: a proper spec table */
+main dl.mt-4.grid.gap-3.text-sm > div {
+  border-bottom-color: var(--hje-rule-soft);
+  padding-bottom: 0.85rem;
+}
+main dl.mt-4.grid.gap-3.text-sm dt {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hje-gold-deep);
+}
+main section.mt-8 > h2.font-serif.text-3xl {
+  font-size: clamp(1.5rem, 2vw, 1.9rem);
+  letter-spacing: -0.01em;
+  font-weight: 400;
+}
+
+/* trust strip between the CTAs and the specs */
+main .mt-8.grid.gap-3.border-y.border-border {
+  border-color: var(--hje-rule-soft);
+}
+main .mt-8.grid.gap-3.border-y.border-border p {
+  color: var(--hje-ink-soft);
+}
+main .mt-8.grid.gap-3.border-y.border-border svg {
+  color: var(--hje-gold);
+}
+
+
+/* =========================================================================
+   14. FAQ + FOOTER final trim.
+   ========================================================================= */
+
+/* the FAQ sits in a narrow centered column; a left-aligned header inside it
+   leaves a large dead field to its right. Centre the whole block. */
+main section > div.max-w-4xl > div.mb-8 {
+  text-align: center;
+  justify-content: center;
+}
+main section > div.max-w-4xl > div.mb-8 > div.max-w-2xl {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+div.divide-y.divide-border.rounded-md.border.border-border > details.group.p-5 > summary::after {
+  color: var(--hje-gold-deep);
+  border-color: var(--hje-rule);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+footer a:not(.bg-gold-500):not(.bg-primary):hover {
+  color: var(--hje-gold-deep);
+}
+footer nav a,
+footer ul a {
+  display: inline-block;
+}
+footer .font-serif {
+  letter-spacing: 0.04em;
+}
+
+/* store.js's detail-page cart button carries its own class, not the
+   template's button utilities — bring it into the same engraved-caps
+   hierarchy as the two CTAs above it. */
+main .hje-detail-cart-btn {
+  height: 3.25rem;
+  border-radius: 2px;
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-color: var(--hje-rule);
+  transition: border-color 0.25s, background-color 0.25s, transform 0.25s var(--hje-ease);
+}
+main .hje-detail-cart-btn:hover {
+  border-color: var(--hje-gold);
+  transform: translateY(-2px);
+}
+
+/* -------------------------------------------------------------------------
+   v3 corrections, round 5 — mobile.
+   The card's price row (price + three 40px action controls) overflowed a
+   two-up grid column at 390px, which pushed the whole document 24px wider
+   than the viewport. Let the row wrap and tighten the controls below 640px.
+   ------------------------------------------------------------------------- */
+article.group .flex.items-center.justify-between.gap-3 {
+  flex-wrap: wrap;
+  row-gap: 0.6rem;
+}
+@media (max-width: 640px) {
+  article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 {
+    gap: 0.3rem;
+  }
+  article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 > a,
+  article.group .flex.items-center.justify-between.gap-3 .flex.items-center.gap-1 > button {
+    height: 1.95rem;
+    width: 1.95rem;
+    min-width: 1.95rem;
+  }
+  article.group .flex.items-center.justify-between.gap-3 > span.text-sm.font-semibold {
+    font-size: 1rem;
+  }
+  article.group .mt-4.space-y-3 > div > a.font-medium {
+    font-size: 0.95rem;
+  }
+}
+
+
+/* =========================================================================
+   15. FINAL TRIM — small-screen typography, secondary link treatment, and
+   the footer's closing details.
+   ========================================================================= */
+
+@media (max-width: 640px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700 {
+    letter-spacing: 0.2em;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 + p {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.max-w-2xl {
+    padding-bottom: 5rem;
+  }
+  p.text-xs.font-semibold.uppercase.tracking-\[0\.18em\].text-gold-700 {
+    letter-spacing: 0.2em;
+  }
+}
+
+/* secondary "Ver todo" / "Seguir" style links share the buttons' engraved
+   caps so the page has exactly two link registers, not five */
+a.text-sm.font-medium.text-gold-700.underline-offset-4.hover\:underline {
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hje-gold-deep);
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--hje-rule);
+  text-decoration: none;
+}
+a.text-sm.font-medium.text-gold-700.underline-offset-4.hover\:underline:hover {
+  border-bottom-color: var(--hje-gold);
+  text-decoration: none;
+}
+
+main .border.border-border.bg-background.hover\:bg-muted.h-10 {
+  border-radius: 2px;
+  border-color: var(--hje-rule);
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* footer: give the link columns real rhythm and a closing hairline */
+footer ul.mt-4.space-y-2,
+footer ul.space-y-2 {
+  margin-top: 1.25rem;
+}
+footer ul li + li {
+  margin-top: 0.55rem;
+}
+footer ul a {
+  font-size: 0.9rem;
+  color: var(--hje-ink-soft);
+}
+footer p {
+  color: var(--hje-ink-soft);
+}
+footer .font-serif.text-2xl {
+  font-size: 1.5rem;
+  letter-spacing: 0.05em;
+}
+
+
+/* =========================================================================
+   16. BODY COPY CONTRAST + THE GENERIC CONTENT CARD.
+
+   --muted-foreground shipped at rgb(118,105,96) on the cream ground: 5.1:1,
+   which clears AA but reads washed at the long measures this pass opens up.
+   Nudged to ~6.3:1 — same hue, same warmth, just enough weight to feel
+   printed rather than greyed out.
+   ========================================================================= */
+
+:root {
+  --muted-foreground: 25 11% 37%;
+}
+
+/* The image+title+paragraph card on collections.html / materials.html shares
+   its class chain with the homepage's category plates, which this pass
+   re-cut into full-bleed overlay tiles. Scope the card treatment to pages
+   that are NOT the homepage so the two never collide. */
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) a.group.block.rounded-md.border.border-border.bg-card.p-3 {
+  border-radius: 3px;
+  border-color: var(--hje-rule-soft);
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.7);
+  transition: transform 0.4s var(--hje-ease), box-shadow 0.4s var(--hje-ease-soft), border-color 0.3s;
+}
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) a.group.block.rounded-md.border.border-border.bg-card.p-3:hover {
+  transform: translateY(-5px);
+  border-color: var(--hje-rule);
+  box-shadow: 0 22px 44px -20px rgba(40, 30, 12, 0.45);
+}
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) a.group.block.rounded-md.border.border-border.bg-card.p-3 .aspect-\[5\/4\] {
+  border-radius: 2px;
+}
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) a.group.block.rounded-md.border.border-border.bg-card.p-3 h3 {
+  font-size: 1.3rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--hje-ink);
+}
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) a.group.block.rounded-md.border.border-border.bg-card.p-3 > div.p-2 {
+  padding: 1.1rem 0.6rem 0.6rem;
+}
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) a.group.block.rounded-md.border.border-border.bg-card.p-3 h3::after {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 1px;
+  margin: 0.7rem 0 0.85rem;
+  background-image: var(--hje-gold-foil);
+  opacity: 0;
+  transition: opacity 0.35s var(--hje-ease), width 0.35s var(--hje-ease);
+}
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) a.group.block.rounded-md.border.border-border.bg-card.p-3:hover h3::after {
+  opacity: 1;
+  width: 46px;
+}
+
+/* long-form editorial copy (about / blog / material explainers) */
+main p.leading-7,
+main p.text-base.leading-7 {
+  max-width: 66ch;
+  line-height: 1.85;
+}
+
+/* final polish: the card's reveal bar reads as a gilded plate edge rather
+   than a grey scrim, and the collections card's hover rule reserves a
+   slightly tighter gap so the title/description pair stays close-set. */
+article.group > a.block.overflow-hidden.rounded-md.bg-muted::after {
+  background: linear-gradient(0deg, rgba(12, 9, 6, 0.96), rgba(12, 9, 6, 0.7));
+  border-top: 1px solid rgba(223, 185, 104, 0.5);
+  color: var(--hje-champagne);
+}
+body:not(:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\])) a.group.block.rounded-md.border.border-border.bg-card.p-3 h3::after {
+  margin: 0.6rem 0 0.6rem;
+}
+
+/* Rag control. `text-wrap: balance` on display type stops headings breaking
+   to a one-word last line ("Compras acompanadas de principio a / fin"), and
+   `pretty` keeps orphans out of body copy. Both degrade to normal wrapping
+   where unsupported, so there is no fallback to write. */
+h1, h2,
+h3.font-serif,
+main section > div > div.mb-8 > div.max-w-2xl > h2 {
+  text-wrap: balance;
+}
+main p,
+footer p,
+blockquote {
+  text-wrap: pretty;
+}
