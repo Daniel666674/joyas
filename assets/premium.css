@@ -2541,3 +2541,336 @@ footer p,
 blockquote {
   text-wrap: pretty;
 }
+
+
+/* =========================================================================
+   HERO v4 — EDITORIAL SPLIT (2026-09-14)
+
+   Supersedes the v3 full-bleed cover treatment entirely. Every v3 hero rule
+   it contradicts is explicitly reversed below rather than left to chance,
+   since several of them were structural (absolute positioning, display:none,
+   a 100vw break-out).
+
+   Why the change: the cover video/photo was phone footage of a chain on a
+   white backdrop. At full-bleed size its softness and blown highlights are
+   the first thing a visitor sees, and a scrim heavy enough to make cream
+   type legible over it turned the whole frame muddy. No scrim fixes weak
+   source material — so the layout stops leaning on it.
+
+   The exported markup was always a two-column editorial hero: a text column
+   beside a three-plate photo collage (one 4:5 portrait + two squares). v3
+   flattened that into a background layer. v4 restores the real structure and
+   designs it properly: a deep vitrine-dark ground where the gold reads hot,
+   typography carrying the page, and the photography reduced to small framed
+   plates where its weaknesses don't show.
+
+   `assets/hero-video.js` no longer starts its default clip rotation (see the
+   comment in its init()); the admin's hero-slides tool still drives the same
+   slot when the owner configures one.
+   ========================================================================= */
+
+/* ---------- ground ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] {
+  isolation: isolate;
+  background-color: #120e08;
+  background-image:
+    radial-gradient(88% 68% at 10% 6%, rgba(122, 28, 40, 0.42), transparent 62%),
+    radial-gradient(72% 62% at 94% 98%, rgba(168, 120, 42, 0.26), transparent 60%),
+    linear-gradient(162deg, #1a1409 0%, #120e08 55%, #0a0704 100%);
+}
+/* fine grain so the large dark field doesn't band on cheap panels */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border: none;
+  background-image: radial-gradient(rgba(255, 244, 214, 0.045) 1px, transparent 1.3px);
+  background-size: 22px 22px;
+  opacity: 0.85;
+}
+
+/* ---------- layout: back to a real two-column grid ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-items: center;
+  gap: 2.5rem;
+  min-height: 100vh;
+  padding-top: calc(var(--hje-hdr) + 3.5rem);
+  padding-bottom: 4rem;
+}
+@media (min-width: 1024px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+    grid-template-columns: 1.04fr 0.96fr;
+    gap: 4.5rem;
+    padding-top: calc(var(--hje-hdr) + 2rem);
+    padding-bottom: 3rem;
+  }
+}
+
+/* text column: no longer a full-height flex box of its own */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.max-w-2xl {
+  position: relative;
+  z-index: 2;
+  display: block;
+  min-height: 0;
+  max-width: none;
+  padding: 0;
+}
+
+/* ---------- media: reverse v3's break-out, restore the collage ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+  position: relative;
+  z-index: 1;
+  inset: auto;
+  width: auto;
+  height: auto;
+  transform: none;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 0.72fr;
+  align-items: center;
+  gap: 1rem;
+}
+/* v3 used this pseudo-element as the full-bleed legibility scrim; it is now
+   a large gold arc sitting behind the plates */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  width: 118%;
+  aspect-ratio: 1;
+  transform: translate(-46%, -50%);
+  border: 1px solid rgba(223, 185, 104, 0.16);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 120, 42, 0.1), transparent 68%);
+  pointer-events: none;
+  background-color: transparent;
+  background-image: radial-gradient(circle, rgba(168, 120, 42, 0.1), transparent 68%);
+}
+
+/* the big portrait plate */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] {
+  position: relative;
+  inset: auto;
+  width: auto;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(223, 185, 104, 0.34), 0 34px 70px -28px rgba(0, 0, 0, 0.85);
+}
+/* the stacked pair — v3 hid this entirely */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 {
+  display: grid;
+  gap: 1rem;
+  transform: translateY(-8%);
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 > a {
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(223, 185, 104, 0.24), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+  transition: box-shadow 0.45s var(--hje-ease), transform 0.45s var(--hje-ease);
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 > a:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 0 1px rgba(223, 185, 104, 0.6), 0 24px 48px -20px rgba(0, 0, 0, 0.85);
+}
+/* a soft inner vignette on each plate ties the three bright jewellery-box
+   photos together instead of leaving three white rectangles on the dark */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\]::before,
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 > a::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 40%, transparent 46%, rgba(12, 8, 4, 0.34) 100%);
+}
+
+/* ---------- typography ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700 {
+  color: var(--hje-champagne);
+  letter-spacing: 0.32em;
+  font-size: 0.6875rem;
+  margin-bottom: 0.25rem;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+  margin-top: 1.5rem;
+  font-size: clamp(2.6rem, 4.6vw, 4.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  font-weight: 400;
+  color: #fbf7f0;
+  max-width: 15ch;
+  text-shadow: none;
+}
+/* gold hairline between the display line and the lede */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 1px;
+  margin-top: 2rem;
+  background-image: var(--hje-gold-foil);
+  background-size: 300% 100%;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 + p {
+  margin-top: 1.75rem;
+  max-width: 44ch;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: rgba(250, 246, 239, 0.74);
+  text-shadow: none;
+}
+
+/* ---------- calls to action ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .mt-8.flex.flex-col.gap-3 {
+  margin-top: 2.5rem;
+  gap: 0.75rem;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .mt-8.flex.flex-col.gap-3 > a {
+  height: 3.35rem;
+  padding-left: 2.1rem;
+  padding-right: 2.1rem;
+  border-radius: 2px;
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+/* the ghost is a hairline on dark, not a frosted panel */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90 {
+  background-image: none;
+  background-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: #fbf7f0;
+  border: 1px solid rgba(250, 246, 239, 0.4);
+  box-shadow: none;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90:hover {
+  background-color: rgba(250, 246, 239, 0.08);
+  border-color: #fbf7f0;
+  box-shadow: none;
+}
+
+/* ---------- frame + scroll cue ---------- */
+/* the printed-plate frame moves off the section (now used for grain) and
+   onto the inner container, so it tracks the content column instead of the
+   viewport edge */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: calc(var(--hje-hdr) + 1rem) -1rem 1rem;
+  border: 1px solid rgba(240, 223, 174, 0.13);
+  pointer-events: none;
+}
+@media (min-width: 1024px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div::before {
+    inset: calc(var(--hje-hdr) - 0.25rem) -1.5rem 1.25rem;
+  }
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\]::after {
+  background: linear-gradient(180deg, rgba(240, 223, 174, 0.04), rgba(240, 223, 174, 0.55));
+  bottom: 1.75rem;
+  height: 54px;
+}
+
+/* ---------- small screens: three equal plates in one row ---------- */
+@media (max-width: 1023px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+  }
+  /* flatten the stacked pair into the same row */
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 {
+    display: contents;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] {
+    aspect-ratio: 1;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+    display: none;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+    max-width: 18ch;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1::after {
+    margin-top: 1.5rem;
+  }
+}
+@media (max-width: 640px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+    padding-top: calc(var(--hje-hdr) + 2.5rem);
+    padding-bottom: 3rem;
+    gap: 2rem;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] .mt-8.flex.flex-col.gap-3 > a {
+    height: 3.1rem;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Hero v4 corrections, round 1 (measured off the Playwright capture):
+
+   (a) the collage read as lopsided rather than staggered: at 1fr/0.72fr the
+       stacked pair (2 squares + gap) is taller than the 4:5 plate beside it,
+       so the offset looked accidental. At 1.25fr/0.75fr the two columns
+       resolve to the same height — 4:5 gives h = 1.25w for the plate, and
+       the pair is 2(0.6w) + gap ≈ 1.25w — so the remaining translate reads
+       as a deliberate stagger.
+   (b) `max-width: 15ch` broke the headline into four short lines with a
+       ragged left-heavy shape. 18ch sets it in three.
+   ------------------------------------------------------------------------- */
+
+@media (min-width: 1024px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+    grid-template-columns: 1.25fr 0.75fr;
+    align-items: start;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 {
+    transform: translateY(-4.5%);
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] {
+    transform: translateY(4.5%);
+  }
+}
+
+/* (b) */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+  max-width: 18ch;
+}
+
+/* centre the gold arc on the collage rather than on its left column */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+  width: 104%;
+  transform: translate(-50%, -50%);
+}
+
+/* Hero v4, round 2: give the display line a little back on small screens so
+   the collage clears the fold, and deepen the plate vignette so three bright
+   jewellery-box photos read as lit vitrines rather than white rectangles cut
+   out of the dark ground. */
+@media (max-width: 640px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+    font-size: clamp(2.3rem, 9vw, 2.9rem);
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1::after {
+    margin-top: 1.25rem;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 + p {
+    margin-top: 1.4rem;
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\]::before,
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 > a::before {
+  background: radial-gradient(115% 95% at 50% 38%, transparent 38%, rgba(12, 8, 4, 0.2) 72%, rgba(12, 8, 4, 0.48) 100%);
+}

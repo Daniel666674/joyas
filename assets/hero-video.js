@@ -255,11 +255,19 @@
       if (!slot.querySelector(".hje-hero-slide")) {
         initManifestSlides(slot, slides);
       }
-    } else {
-      if (!slot.querySelector("video")) {
-        initVideoClips(slot);
-      }
+      return;
     }
+
+    // The hardcoded CLIPS rotation is deliberately NOT started any more
+    // (2026-09-14). The hero was rebuilt as a two-column editorial layout
+    // where the media slot is one framed portrait plate, not a full-bleed
+    // cover video — the source clips are phone footage on a white backdrop
+    // and no amount of scrim made them read as premium at full-bleed size.
+    //
+    // Everything below (CLIPS, initVideoClips, playSafely) is left intact
+    // rather than deleted: the admin's "Hero — Diapositivas" tool still
+    // drives initManifestSlides() above, and restoring the default rotation
+    // is a one-line change here if it is ever wanted again.
   }
 
   function deferredInit() {
