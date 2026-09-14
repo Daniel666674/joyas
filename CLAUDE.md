@@ -652,6 +652,50 @@ load `premium.css`, so neither is affected.
   set sitewide — inject `html{scroll-behavior:auto}` before scripted
   scrolling or captures land mid-animation at the wrong offset.
 
+## Hero v4 — editorial split, cover video removed (2026-09-14)
+
+Asked for directly: "remove the whole cover video and redesign the whole
+hero thing." Supersedes v3's full-bleed cover treatment entirely.
+
+**Why the cover had to go**: the clips are phone footage of a chain on a
+white backdrop. At full-bleed size their softness and blown highlights are
+the first thing a visitor sees, and a scrim heavy enough to keep cream type
+legible over them turned the whole frame muddy. No scrim fixes weak source
+material, so the layout stops leaning on it.
+
+**The exported markup was always a two-column editorial hero** — a text
+column beside a three-plate collage (one 4:5 portrait + two squares). v3
+flattened that into a background layer; v4 restores the real structure and
+designs it: a deep vitrine-dark ground (near-black with a burgundy radial
+top-left and a gold one bottom-right, plus fine grain so the large dark
+field doesn't band), cream serif display type carrying the page, and the
+photography reduced to small gold-hairline-framed plates where its
+weaknesses don't show. A large low-opacity gold arc sits behind the collage.
+
+Still pure CSS in `premium.css`. Because several v3 hero rules were
+*structural* (absolute positioning, `display:none` on the stacked pair, a
+100vw break-out), v4 reverses each one explicitly rather than relying on
+cascade order alone.
+
+**Collage proportions are load-bearing**: at `1fr / 0.72fr` the stacked pair
+(2 squares + gap) is taller than the 4:5 plate beside it, so the stagger
+read as accidental. At `1.25fr / 0.75fr` the columns resolve to the same
+height — the plate is `h = 1.25w`, the pair is `2(0.6w) + gap ≈ 1.25w` — so
+the remaining ±4.5% translate reads as a deliberate stagger. Below 1024px
+the pair becomes `display: contents` and all three plates sit in one
+three-up row of squares, which keeps the hero at exactly 100vh on a phone.
+
+**`assets/hero-video.js` no longer starts its default clip rotation.** Its
+`init()` now returns after the manifest branch. `CLIPS`, `initVideoClips()`
+and `playSafely()` are left intact rather than deleted for two reasons: the
+admin's "Hero — Diapositivas" tool still drives the same slot through
+`initManifestSlides()` when the owner configures slides, and restoring the
+default rotation is a one-line change. **Do not delete that dead code
+without also checking the Homepage Manager tab.**
+
+`h1` sets to `max-width: 18ch`; 15ch broke the Spanish headline into four
+short lines with a ragged left-heavy shape.
+
 ## Admin console redesign (2026-09-14)
 
 The 2026-07-28 restyle copied a reference tool's "2px black border on every
@@ -723,7 +767,7 @@ sales-log and changelog tabs render real data. The passcode is the
 ## Stylesheet cache-busting
 
 `premium.css` / `admin.css` / `inventario.css` / `fonts.css` are linked with
-a `?v=<YYYYMMDD>` query across all 100 HTML files (added 2026-09-14, after a
+a `?v=<YYYYMMDD>` query across all 100 HTML files (added 2026-09-14, bumped to `20260914b` with hero v4, which also busts `hero-video.js`; after a
 design pass appeared not to land for a returning visitor). GitHub Pages
 serves CSS with a `max-age` long enough that a repeat visitor can keep the
 previous file, so **bump the version on every visual change** or the work
