@@ -2874,3 +2874,462 @@ section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1f
 section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 > a::before {
   background: radial-gradient(115% 95% at 50% 38%, transparent 38%, rgba(12, 8, 4, 0.2) 72%, rgba(12, 8, 4, 0.48) 100%);
 }
+
+
+/* =========================================================================
+   HERO v5 — WIDE BANNER (2026-09-14)
+
+   Chosen by the owner from three mocked directions after v3 (full-bleed
+   cover video) and v4 (dark editorial split) were both rejected. The brief
+   all along was "WordPress/professional" — a bright, conventional,
+   obviously-finished commercial hero — not the editorial/luxury-house
+   minimalism v3 and v4 were pushing toward.
+
+   Shape: full-width photographic banner, a white-to-transparent wash from
+   the left, and the copy set in dark ink over the light side. A four-item
+   guarantee strip sits directly underneath (injected by
+   `assets/trust-bar.js`, since it needs new DOM).
+
+   This supersedes BOTH v3 and v4. Several rules in those blocks are
+   structural, and v4 in particular flipped the whole section to a dark
+   ground and a transparent masthead — all of it is reversed explicitly
+   below rather than left to cascade order.
+   ========================================================================= */
+
+/* ---------- masthead goes back to solid: the hero is light again ---------- */
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) main > section.relative.overflow-hidden.bg-\[\#f8f3eb\] {
+  margin-top: 0;
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border-bottom-color: var(--hje-rule-soft);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled)::before {
+  display: none;
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled)::after {
+  opacity: 0.55;
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) a[href="/joyas"].font-serif {
+  color: var(--hje-ink);
+  text-shadow: none;
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) nav a.text-muted-foreground {
+  color: var(--hje-ink-soft);
+  text-shadow: none;
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) nav a.text-muted-foreground:hover {
+  color: var(--hje-ink);
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) button[aria-label] {
+  color: var(--hje-ink-soft);
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) button[aria-label]:hover {
+  background-color: rgba(168, 120, 42, 0.08);
+}
+body:has(section.relative.overflow-hidden.bg-\[\#f8f3eb\]) header.sticky:not(.hje-scrolled) a[href="/joyas"] img {
+  box-shadow: 0 0 0 1px var(--hje-rule);
+}
+
+/* ---------- section: a banner, not a full viewport ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] {
+  isolation: isolate;
+  background-color: #fbf8f3;
+  background-image: none;
+}
+/* v4 used ::before for grain and ::after for a scroll cue; a commercial
+   banner wants neither */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\]::before,
+section.relative.overflow-hidden.bg-\[\#f8f3eb\]::after,
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div::before {
+  content: none;
+  display: none;
+}
+
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  height: clamp(470px, 62vh, 610px);
+  padding-top: 0;
+  padding-bottom: 0;
+  gap: 0;
+}
+
+/* ---------- media becomes the full-width banner layer ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] {
+  position: absolute;
+  z-index: 0;
+  inset: 0 auto 0 50%;
+  width: 100vw;
+  height: 100%;
+  transform: translateX(-50%);
+  display: block;
+  margin: 0;
+  grid-template-columns: none;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  overflow: hidden;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] img {
+  object-position: 50% 42%;
+}
+/* the stacked pair has no role in a banner */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.grid.gap-4 {
+  display: none;
+}
+/* v4's plate vignettes and gold arc */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\]::before {
+  content: none;
+  display: none;
+}
+/* the legibility wash: solid at the left, clear by the middle */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  top: auto;
+  left: 0;
+  width: 100%;
+  aspect-ratio: auto;
+  height: 100%;
+  transform: none;
+  border: none;
+  border-radius: 0;
+  pointer-events: none;
+  background-color: transparent;
+  background-image: linear-gradient(90deg,
+    rgba(251, 248, 243, 0.97) 0%,
+    rgba(251, 248, 243, 0.94) 30%,
+    rgba(251, 248, 243, 0.62) 48%,
+    rgba(251, 248, 243, 0.12) 66%,
+    rgba(251, 248, 243, 0) 80%);
+}
+
+/* ---------- copy block ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.max-w-2xl {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  max-width: 34rem;
+  min-height: 0;
+  padding: 0;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700 {
+  color: var(--hje-gold);
+  letter-spacing: 0.24em;
+  font-size: 0.6875rem;
+  margin-bottom: 0;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.text-xs.font-semibold.uppercase.tracking-\[0\.2em\].text-gold-700::before {
+  width: 26px;
+  height: 2px;
+  background-image: none;
+  background-color: var(--hje-gold);
+  opacity: 1;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+  margin-top: 1.25rem;
+  font-size: clamp(2.35rem, 3.9vw, 3.5rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+  color: var(--hje-ink);
+  max-width: 16ch;
+  text-shadow: none;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1::after {
+  content: none;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 + p {
+  margin-top: 1.25rem;
+  max-width: 44ch;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--hje-ink-soft);
+  text-shadow: none;
+}
+
+/* ---------- buttons: gold leads, dark outline second ---------- */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .mt-8.flex.flex-col.gap-3 {
+  margin-top: 1.9rem;
+  gap: 0.75rem;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .mt-8.flex.flex-col.gap-3 > a {
+  height: 3.3rem;
+  padding-left: 1.9rem;
+  padding-right: 1.9rem;
+  border-radius: 3px;
+  font-size: var(--hje-micro);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+/* "Ver catalogo" is the template's .bg-primary slot — make it the gold one */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90 {
+  background-color: transparent;
+  background-image: var(--hje-gold-foil);
+  background-size: 220% 220%;
+  background-position: 35% 35%;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: #2a1c08;
+  border: none;
+  box-shadow: 0 10px 22px -10px rgba(168, 120, 42, 0.75);
+  transition: background-position 0.5s var(--hje-ease), box-shadow 0.3s var(--hje-ease-soft), transform 0.2s var(--hje-ease-soft);
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90:hover {
+  background-position: 65% 65%;
+  background-color: transparent;
+  border: none;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -10px rgba(168, 120, 42, 0.8);
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-primary.text-primary-foreground.hover\:bg-primary\/90 svg {
+  color: #2a1c08;
+}
+/* the WhatsApp slot becomes the dark outline secondary */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-gold-500.text-white.hover\:bg-gold-700 {
+  background-image: none;
+  background-color: transparent;
+  color: var(--hje-ink);
+  border: 1.5px solid var(--hje-ink);
+  box-shadow: none;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-gold-500.text-white.hover\:bg-gold-700:hover {
+  background-color: var(--hje-ink);
+  color: #fff;
+  box-shadow: none;
+  transform: translateY(-2px);
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-gold-500.text-white.hover\:bg-gold-700 svg { color: inherit; }
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] .bg-gold-500.text-white.hover\:bg-gold-700::before { content: none; }
+
+
+/* =========================================================================
+   TRUST BAR + hero rating line — the markup is injected by
+   assets/trust-bar.js well after hydration (bucket 2 in CLAUDE.md), so
+   these are plain .hje-* classes with no Tailwind dependency.
+   ========================================================================= */
+
+.hje-hero-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.6rem;
+  font-size: 0.8125rem;
+  color: var(--hje-ink-soft);
+}
+.hje-hero-rating .hje-stars {
+  color: #d4a24a;
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+}
+.hje-hero-rating b {
+  color: var(--hje-ink);
+  font-weight: 700;
+}
+
+.hje-trustbar {
+  border-top: 1px solid var(--hje-rule-soft);
+  border-bottom: 1px solid var(--hje-rule-soft);
+  background: #fff;
+}
+.hje-trustbar-inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 640px) {
+  .hje-trustbar-inner { padding: 0 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .hje-trustbar-inner { grid-template-columns: repeat(4, 1fr); padding: 0 2rem; }
+}
+.hje-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1.25rem 1.1rem;
+  border-right: 1px solid var(--hje-rule-soft);
+  border-bottom: 1px solid var(--hje-rule-soft);
+}
+.hje-trust-item:nth-child(2n) { border-right: none; }
+@media (min-width: 1024px) {
+  .hje-trust-item { border-bottom: none; }
+  .hje-trust-item:nth-child(2n) { border-right: 1px solid var(--hje-rule-soft); }
+  .hje-trust-item:last-child { border-right: none; }
+}
+.hje-trust-ico {
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: none;
+  border-radius: 999px;
+  background: rgba(168, 120, 42, 0.1);
+  color: var(--hje-gold-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hje-trust-ico svg { width: 1.05rem; height: 1.05rem; }
+.hje-trust-t {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--hje-ink);
+}
+.hje-trust-s {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--hje-ink-3, #8b8172);
+  margin-top: 0.15rem;
+}
+
+/* ---------- hero on small screens: copy over a darker wash ---------- */
+@media (max-width: 767px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div {
+    height: auto;
+    min-height: 0;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.max-w-2xl {
+    max-width: none;
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+    background-image: linear-gradient(180deg,
+      rgba(251, 248, 243, 0.97) 0%,
+      rgba(251, 248, 243, 0.93) 55%,
+      rgba(251, 248, 243, 0.86) 100%);
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 {
+    max-width: none;
+    font-size: clamp(2rem, 8.4vw, 2.6rem);
+  }
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] .mt-8.flex.flex-col.gap-3 > a {
+    width: 100%;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Hero v5 corrections, round 1 (measured off the Playwright capture):
+   the wash was tuned against the mockup's crop, but the real banner is busy
+   and bright right where the lede sits, so the paragraph was close to
+   illegible. Two changes: hold the wash near-opaque further across, and push
+   the photo's subject to the right so the copy sits over quieter frame.
+   ------------------------------------------------------------------------- */
+
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] img {
+  object-position: 78% 45%;
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+  background-image: linear-gradient(90deg,
+    rgba(251, 248, 243, 0.995) 0%,
+    rgba(251, 248, 243, 0.985) 34%,
+    rgba(251, 248, 243, 0.9) 46%,
+    rgba(251, 248, 243, 0.55) 58%,
+    rgba(251, 248, 243, 0.18) 70%,
+    rgba(251, 248, 243, 0) 84%);
+}
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] h1 + p {
+  color: #4f4638;
+}
+
+/* The lede was still rendering cream-on-cream: v3's
+   `section…bg-[#f8f3eb] p.max-w-xl.text-base.leading-7.text-muted-foreground`
+   scores (0,7,2) and out-specifies the `h1 + p` shorthand used above, so the
+   override has to repeat v3's own selector chain and win on source order. */
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.text-base.leading-7.text-muted-foreground,
+section.relative.overflow-hidden.bg-\[\#f8f3eb\] p.max-w-xl.text-base.leading-7.text-muted-foreground {
+  color: #4f4638;
+  text-shadow: none;
+}
+
+/* -------------------------------------------------------------------------
+   Hero v5 corrections, round 2 — small screens.
+
+   (a) The mobile wash was written before the round-1 horizontal wash, and
+       media queries add no specificity, so the later unconditional rule
+       overrode it and the copy sat straight on the photo. (Same failure mode
+       as the admin rail's active tab — worth watching for whenever a
+       correction is appended after a breakpoint block.) Re-declared here,
+       last, so it wins.
+   (b) Two trust-bar columns at 390px leaves ~160px for icon + two lines of
+       text, which wrapped into five lines per cell. One column below 480px.
+   ------------------------------------------------------------------------- */
+
+@media (max-width: 767px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+    background-image: linear-gradient(180deg,
+      rgba(251, 248, 243, 0.97) 0%,
+      rgba(251, 248, 243, 0.95) 45%,
+      rgba(251, 248, 243, 0.92) 100%);
+  }
+  /* the photo still needs to read as a photo, so hold it back a little more */
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\] > div.relative.aspect-\[4\/5\] img {
+    object-position: 60% 45%;
+  }
+}
+
+@media (max-width: 479px) {
+  .hje-trustbar-inner {
+    grid-template-columns: 1fr;
+  }
+  .hje-trust-item {
+    border-right: none;
+    padding: 0.95rem 0.4rem;
+  }
+  .hje-trust-item:last-child {
+    border-bottom: none;
+  }
+}
+@media (max-width: 1023px) {
+  .hje-trust-t { font-size: 0.78rem; }
+  .hje-trust-s { font-size: 0.7rem; }
+  .hje-trust-ico { width: 2.1rem; height: 2.1rem; }
+}
+
+/* The mobile wash computed correctly but never painted: v4's
+   `@media (max-width: 1023px)` block set `display: none` on this same
+   ::after (it was the gold arc back then), and none of the v5 rules
+   re-declare `display`, so at equal specificity the old `none` still won
+   below 1024px. Third time this exact trap has bitten in this file — when
+   repurposing a pseudo-element across passes, reset every property the
+   previous pass set, not just the ones you care about. */
+@media (max-width: 1023px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+    display: block;
+  }
+}
+
+/* Final hero v5 trim: let a little more of the photograph through on mobile
+   (0.95 flat alpha rendered it almost invisible) and top-align the rating
+   row so its stars sit with the first line when the label wraps. */
+@media (max-width: 767px) {
+  section.relative.overflow-hidden.bg-\[\#f8f3eb\] > div > div.grid.grid-cols-\[1fr_0\.75fr\]::after {
+    background-image: linear-gradient(180deg,
+      rgba(251, 248, 243, 0.95) 0%,
+      rgba(251, 248, 243, 0.925) 45%,
+      rgba(251, 248, 243, 0.9) 100%);
+  }
+}
+@media (max-width: 640px) {
+  .hje-hero-rating { align-items: flex-start; }
+  .hje-hero-rating .hje-stars { line-height: 1.5; }
+}
