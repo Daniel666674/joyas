@@ -20,7 +20,7 @@
 
   var HOME_PATHS = ["/joyas/", "/joyas", "/joyas/index.html"];
   var TARGET = "/joyas/disenador-ia.html";
-  var IMG = "/joyas/brand/ai-designer-pendant.webp?v=20261028";
+  var IMG = "/joyas/brand/ai-designer-piece.webp?v=20261028b";
 
   function isHomepage() {
     var p = window.location.pathname;
@@ -69,7 +69,7 @@
 
     var copy = el("div", "hje-aipromo-copy");
     copy.appendChild(el("p", "hje-aipromo-eyebrow", "Nuevo · Demostración"));
-    copy.appendChild(el("h2", "hje-aipromo-title", "Diseña tu dije con inteligencia artificial"));
+    copy.appendChild(el("h2", "hje-aipromo-title", "Diseña la joya de tu mascota con inteligencia artificial"));
     copy.appendChild(
       el(
         "p",
@@ -93,7 +93,7 @@
     img.height = 640;
     img.loading = "lazy";
     img.decoding = "async";
-    img.alt = "Dije de huella de mascota en oro, vista previa 3D de ejemplo";
+    img.alt = "Anillo de huella de mascota en oro con diamantes, vista previa 3D de ejemplo";
     media.appendChild(img);
 
     card.appendChild(copy);

@@ -287,21 +287,21 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 410px;
+  height: 470px;
   overflow: hidden;
   border: 1px solid var(--ai-line);
   border-radius: 18px;
   background: radial-gradient(120% 90% at 50% 28%, #ffffff 0%, #f5ecdb 55%, #e8dabf 100%);
   box-shadow: var(--ai-shadow);
 }
-@media (min-width: 640px) { .hje-ai-stage { height: 460px; } }
+@media (min-width: 640px) { .hje-ai-stage { height: 520px; } }
 /* Declared after the base rule on purpose: a later `position: relative` would
    silently cancel the sticky behaviour (same source order, same specificity). */
 @media (min-width: 960px) {
   .hje-ai-stage {
     position: sticky;
     top: calc(var(--hje-hdr, 5rem) + 16px);
-    height: clamp(480px, 72vh, 660px);
+    height: clamp(540px, 76vh, 700px);
   }
 }
 
@@ -314,9 +314,38 @@
   --poster-color: transparent;
 }
 
+/* top row of the stage: piece picker on the left, "simulated" badge on the right */
+.hje-ai-top {
+  position: relative; z-index: 3; flex: 0 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px 12px;
+  padding: 12px 14px 0;
+}
+.hje-ai-pieces { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.hje-ai-piece { position: relative; display: inline-block; cursor: pointer; }
+.hje-ai-piece input {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  opacity: 0; cursor: pointer;
+}
+.hje-ai-piece span {
+  display: inline-block; padding: 7px 13px;
+  border: 1px solid var(--ai-field); border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ai-ink); font-size: 0.78rem; font-weight: 600; line-height: 1.2;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+.hje-ai-piece:hover span { border-color: var(--ai-gold); }
+.hje-ai-piece:has(input:checked) span {
+  border-color: var(--ai-burgundy); background: #fdf5f4; color: var(--ai-burgundy);
+  box-shadow: 0 0 0 1px var(--ai-burgundy);
+}
+.hje-ai-piece input:focus-visible + span { outline: 3px solid rgba(168, 120, 42, 0.45); outline-offset: 2px; }
+.hje-ai-piece input:disabled { cursor: not-allowed; }
+.hje-ai-piece input:disabled + span { opacity: 0.55; }
+@media (max-width: 420px) { .hje-ai-piece span { padding: 6px 10px; font-size: 0.74rem; } }
+
 .hje-ai-badge {
-  position: absolute; left: 14px; top: 14px; z-index: 3;
-  max-width: calc(100% - 28px);
+  max-width: 100%;
   padding: 6px 12px;
   border: 1px solid var(--ai-line);
   border-radius: 999px;
