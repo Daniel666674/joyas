@@ -835,11 +835,28 @@ the planning conversation.
 from `cadenas.html` so header, footer, floating buttons and the
 `premium.js`/`nav-funnel.js`/`store.js`/`cookie-consent.js` set are
 byte-identical to the rest of the site, with no Next.js on it, so no
-hydration risk. `noindex`, absent from `sitemap.xml`, and **not linked from
-the nav**: adding a nav link to any still-hydrated page would be reverted
-(see the hydration trap), and the page spends real credits once live. Share
-the URL directly (`/joyas/disenador-ia`). If a link is wanted later, inject
-it post-hydration with the `deferredInit()` pattern.
+hydration risk. `noindex`, absent from `sitemap.xml`, and **not in the nav**
+(a nav link on any still-hydrated page would be reverted, see the hydration
+trap). Its only entry point is a burgundy/gold promo band on the **homepage
+only** (2026-10-28), injected by `assets/ai-designer-promo.js` (bucket 2,
+same pattern as `trust-bar.js`: one new sibling inserted under the guarantee
+strip ~650ms after load, re-checked once at +1.4s; verified still present 7s
+past load). It is a `<div>`, **not a `<section>`**, because premium.css numbers
+homepage sections with `main > section { counter-increment }` and an extra
+`<section>` would renumber every eyebrow below it (checked: numerals identical
+with and without the band). Its CSS is a `<style>` inside the injected node, so
+it touches neither premium.css nor `<head>`. It links to
+`/joyas/disenador-ia.html` (with the extension, so it also works on a plain
+local static server). Image: `brand/ai-designer-pendant.webp`, a transparent
+render of the gold sample model (~25 KB; the 1 MB viewer is deliberately not
+loaded on the homepage).
+
+**OWNER DECISION (2026-10-28): the demo must never use credits of any kind.**
+So `assets/ai-designer-config.js` keeps `apiBase: ""` (simulation only) and the
+Vercel backend / Meshy are **not deployed or connected**. Verified: a whole
+visit to the designer page (load, upload, generate, result) makes only GET
+requests to the site's own host, nothing external. Turning the backend on
+later is a deliberate, separate decision by the owner, not a default next step.
 `assets/ai-designer.js` (plain JS, no build step), `assets/ai-designer.css`
 (every class is `hje-ai-` prefixed so premium.css's Tailwind-chain rules can't
 catch it), `assets/ai-designer-config.js` (the only place that knows the

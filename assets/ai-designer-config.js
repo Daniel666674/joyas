@@ -10,6 +10,9 @@
  *                   (PROVIDER setting), and the page shows a notice if fake.
  *
  * Only a public web address belongs here. NEVER put an API key in this file.
+ *
+ * OWNER DECISION: the demo must not use credits of any kind, so keep apiBase
+ * EMPTY. Setting it is the single switch that makes the page talk to a server.
  */
 window.HJE_AI_DESIGNER = {
   apiBase: "",

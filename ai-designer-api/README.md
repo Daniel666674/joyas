@@ -1,5 +1,10 @@
 # AI designer backend (Habibi Eisaa demo)
 
+> **Status: NOT in use, on purpose.** The owner decided the demo must not use
+> credits of any kind, so nothing here is deployed and the page runs its
+> built-in simulation (`apiBase` in `assets/ai-designer-config.js` stays empty).
+> Everything below is for the day that decision changes.
+
 A small TypeScript backend that lets the page `disenador-ia.html` turn a pet
 photo into a 3D jewelry preview. It exists for one reason: **the Meshy API key
 must live on a server, never in the website's code.** The website (GitHub
