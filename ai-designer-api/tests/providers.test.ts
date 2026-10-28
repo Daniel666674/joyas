@@ -120,7 +120,7 @@ test("classifyFailure", () => {
   assert.equal(classifyFailure("server exploded"), "provider_error");
 });
 
-test("mock: progresses with time and finishes with the matching sample", async () => {
+test("mock: progresses with time and finishes with the example piece", async () => {
   let clock = 1_000_000;
   const provider = createMockProvider({ modelBaseUrl: "https://x.test/m", durationMs: 10_000, now: () => clock });
   const { jobId } = await provider.createJob({ ...input, material: "plata" });
@@ -133,15 +133,15 @@ test("mock: progresses with time and finishes with the matching sample", async (
   clock += 5_000;
   const end = await provider.getJob(jobId);
   assert.equal(end.state, "succeeded");
-  assert.equal(end.modelUrl, "https://x.test/m/dije-huella-plata.glb");
+  assert.equal(end.modelUrl, "https://x.test/m/anillo.glb");
 });
 
-test("mock: photo-only falls back to the gold sample; unknown ids are not found", async () => {
+test("mock: photo-only works too; unknown ids are not found", async () => {
   let clock = 5_000_000;
   const provider = createMockProvider({ modelBaseUrl: "https://x.test/m", durationMs: 1_000, now: () => clock });
   const { jobId } = await provider.createJob({ ...input, material: null });
   clock += 2_000;
-  assert.equal((await provider.getJob(jobId)).modelUrl, "https://x.test/m/dije-huella-oro.glb");
+  assert.equal((await provider.getJob(jobId)).modelUrl, "https://x.test/m/anillo.glb");
   assert.equal(await errorCode(provider.getJob("mock_zzzz")), "not_found");
 });
 

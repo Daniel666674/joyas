@@ -23,6 +23,20 @@
 
   var DOT_COLOR = { oro: "#d9a93b", plata: "#c9ccd1", "oro-rosa": "#d9967f" };
   var SAMPLE_LABEL = { oro: "oro", plata: "plata", "oro-rosa": "oro rosa" };
+
+  // Hand-built, pet-themed example pieces (see models/samples). The camera is
+  // framed per piece: the necklace tight on its pendant, the others whole.
+  var PIECES = {
+    anillo: { label: "anillo de huella", alt: "Anillo de huella de mascota", orbit: "20deg 70deg 90%", target: "auto auto auto" },
+    collar: { label: "collar con dije de perro", alt: "Collar con dije de cara de perro", orbit: "0deg 82deg 28%", target: "0m -0.45m 0m" },
+    pulsera: { label: "pulsera con dijes", alt: "Pulsera con dijes de hueso, huella y corazón", orbit: "10deg 78deg 100%", target: "auto auto auto" }
+  };
+  // Base colour of the "Metal" material per choice (standard PBR reflectance values).
+  var METAL = {
+    oro: [1.0, 0.766, 0.336],
+    plata: [0.972, 0.96, 0.915],
+    "oro-rosa": [0.957, 0.68, 0.6]
+  };
   var MSG = {
     network: "No pudimos conectar con el diseñador. Revisa tu conexión e inténtalo de nuevo.",
     generic: "Algo falló al crear tu diseño. Inténtalo de nuevo en unos minutos.",
@@ -39,6 +53,7 @@
   var el = {
     form: $("hje-ai-form"),
     stage: $("hje-ai-stage"),
+    pieces: $("hje-ai-pieces"),
     viewer: $("hje-ai-viewer"),
     badge: $("hje-ai-badge"),
     caption: $("hje-ai-caption"),
@@ -102,8 +117,28 @@
     return checked ? checked.value : "photo";
   }
 
-  function sampleUrl(material) {
-    return sampleBase + "/dije-huella-" + (material || "oro") + ".glb";
+  function currentPiece() {
+    var checked = el.pieces && el.pieces.querySelector('input[name="piece"]:checked');
+    return checked && PIECES[checked.value] ? checked.value : "anillo";
+  }
+
+  function currentMaterial() {
+    return currentMode() === "material" ? el.material.value : "oro";
+  }
+
+  function sampleUrl(piece) {
+    return sampleBase + "/" + (PIECES[piece] ? piece : "anillo") + ".glb";
+  }
+
+  // Recolour the model's "Metal" material (gold / silver / rose gold) without
+  // reloading it. Gems and enamel keep their own materials.
+  function applyMetal() {
+    var model = el.viewer.model;
+    if (!model || !model.materials) return;
+    var c = METAL[currentMaterial()] || METAL.oro;
+    model.materials.forEach(function (m) {
+      if (m.name === "Metal") m.pbrMetallicRoughness.setBaseColorFactor([c[0], c[1], c[2], 1]);
+    });
   }
 
   /* ---------------------------------------------------------- transports -- */
@@ -150,21 +185,21 @@
     start: function (payload) {
       var style = payload.style || "";
       var flag = /!rechazar/i.test(style) ? "r" : /!falla/i.test(style) ? "f" : /!lento/i.test(style) ? "s" : "0";
-      var id = "sim_" + Date.now() + "_" + (payload.material || "oro") + "_" + flag;
+      var id = "sim_" + Date.now() + "_" + (payload.material || "oro") + "_" + flag + "_" + (payload.piece || "anillo");
       return delay(600).then(function () { return { jobId: id }; });
     },
     poll: function (jobId) {
       var parts = jobId.split("_");
       var elapsed = Date.now() - Number(parts[1]);
-      var material = parts[2] || "oro";
       var flag = parts[3] || "0";
+      var piece = parts[4] || "anillo";
       var progress = Math.max(0, Math.min(100, Math.round((elapsed / SIM_MS) * 100)));
       var state = elapsed < 1500 ? "queued" : "running";
       var job;
       if (flag === "s") job = { state: state, progress: Math.min(progress, 85) };
       else if (flag === "r" && progress >= 40) job = { state: "failed", progress: 40, error: { code: "content_rejected", message: MSG.rejected } };
       else if (flag === "f" && progress >= 60) job = { state: "failed", progress: 60, error: { code: "provider_error", message: MSG.generic } };
-      else if (progress >= 100) job = { state: "succeeded", progress: 100, modelUrl: sampleUrl(material) };
+      else if (progress >= 100) job = { state: "succeeded", progress: 100, modelUrl: sampleUrl(piece) };
       else job = { state: state, progress: progress };
       return Promise.resolve(job);
     }
@@ -312,15 +347,26 @@
     show(el.caption, next === "idle");
     show(el.resultbar, next === "done");
     el.go.disabled = next === "working" || next === "loading";
+    // the piece can only be changed while idle: it decides what the result will be
+    Array.prototype.forEach.call(el.pieces.querySelectorAll("input"), function (input) {
+      input.disabled = next !== "idle";
+    });
     el.go.textContent = el.go.disabled ? "Creando tu diseño…" : "Crear mi diseño 3D";
     if (next === "loading") el.stageLabel.textContent = "Preparando la vista 3D…";
   }
 
   function showSample() {
-    var material = currentMode() === "material" ? el.material.value : "oro";
-    var url = sampleUrl(material);
-    if (el.viewer.getAttribute("src") !== url) el.viewer.setAttribute("src", url);
-    el.caption.textContent = "Ejemplo: dije de huella en " + SAMPLE_LABEL[material];
+    var piece = currentPiece();
+    var url = sampleUrl(piece);
+    if (el.viewer.getAttribute("src") !== url) {
+      el.viewer.setAttribute("camera-target", PIECES[piece].target);
+      el.viewer.setAttribute("camera-orbit", PIECES[piece].orbit);
+      el.viewer.setAttribute("alt", PIECES[piece].alt + " en 3D (ejemplo)");
+      el.viewer.setAttribute("src", url); // the "load" listener applies the metal
+    } else {
+      applyMetal();
+    }
+    el.caption.textContent = "Ejemplo: " + PIECES[piece].label + " en " + SAMPLE_LABEL[currentMaterial()];
   }
 
   function fail(message) {
@@ -392,6 +438,7 @@
       clearTimeout(guard);
       busy = false;
       if (ok) {
+        applyMetal();
         setState("done");
         announce("Tu diseño 3D está listo.");
         el.again.focus({ preventScroll: true });
@@ -453,6 +500,7 @@
       payload.material = el.material.value;
       if (el.style.value.trim()) payload.style = el.style.value.trim();
     }
+    if (transport.simulated) payload.piece = currentPiece(); // only the simulation needs it
 
     transport.start(payload, code).then(
       function (data) {
@@ -494,6 +542,12 @@
     radio.addEventListener("change", syncMode);
   });
   el.material.addEventListener("change", syncMaterial);
+  Array.prototype.forEach.call(el.pieces.querySelectorAll('input[name="piece"]'), function (radio) {
+    radio.addEventListener("change", function () {
+      if (state === "idle") showSample();
+    });
+  });
+  el.viewer.addEventListener("load", applyMetal);
 
   /* ---------------------------------------------------------------- init -- */
 

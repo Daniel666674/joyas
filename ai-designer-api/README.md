@@ -19,7 +19,7 @@ It runs in two modes, chosen by one setting (`PROVIDER`):
 
 | `PROVIDER` | What happens | Cost |
 |---|---|---|
-| `mock` | Pretends to generate for ~12 s, then returns a ready-made sample model | free |
+| `mock` | Pretends to generate for ~12 s, then returns a ready-made example piece | free |
 | `meshy` | Real generation through Meshy | about 15 credits per model on `meshy-6-lite` |
 
 The page also has a built-in simulation that needs **no backend at all** (its
@@ -120,8 +120,10 @@ contract in `lib/providers/types.ts` (`createJob`, `getJob`). Add
 `lib/providers/tripo.ts` implementing it, add one line in
 `lib/providers/index.ts`, and set `PROVIDER=tripo`.
 
-## Regenerating the sample models
+## Regenerating the example pieces
 
-`node scripts/make-sample-models.mjs ../models/samples` rebuilds the three
-paw-print pendants (gold, silver, rose gold) used before and instead of a real
-generation.
+`node scripts/make-realistic-pieces.mjs ../models/samples ../assets/studio-env.hdr`
+rebuilds the three pet-themed pieces (paw ring, dog-face necklace, charm
+bracelet) and the studio lighting map. They are hand-built examples used instead
+of a real generation, not made from a visitor's photo. Re-validate the output
+with the Khronos glTF validator after editing the script.

@@ -38,7 +38,7 @@ test("generate -> status works end to end with the mock provider", async () => {
   assert.equal(status.status, 200);
   const data = await body(status);
   assert.equal(data.state, "succeeded");
-  assert.match(data.modelUrl, /dije-huella-oro\.glb$/);
+  assert.match(data.modelUrl, /anillo\.glb$/);
 });
 
 test("a wrong or missing demo code is refused before anything happens", async () => {

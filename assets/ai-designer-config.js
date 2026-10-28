@@ -2,7 +2,7 @@
  * AI designer: the one place that knows where the backend lives.
  *
  *   apiBase: ""  -> built-in SIMULATION. No server, no credits: the page runs
- *                   a fake progress bar and shows a pre-made sample model. The
+ *                   a fake progress bar and shows a pre-made example piece. The
  *                   page says so on screen.
  *   apiBase: "https://<your-project>.vercel.app"
  *                -> real backend (see ai-designer-api/README.md). Whether that

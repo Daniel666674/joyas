@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Binary assets: never normalize line endings inside them (a stray CR LF pair in
+# the pixel/vertex data would silently corrupt the file on commit).
+*.hdr binary
+*.glb binary

@@ -23,12 +23,6 @@ export interface MockOptions {
 }
 
 const MATERIAL_CHAR: Record<Material, string> = { oro: "o", plata: "p", "oro-rosa": "r" };
-const CHAR_MATERIAL: Record<string, Material | null> = {
-  o: "oro",
-  p: "plata",
-  r: "oro-rosa",
-  n: null,
-};
 
 const JOB_ID = /^mock_([0-9a-z]+)_([oprn])([0rfs])$/;
 
@@ -57,7 +51,6 @@ export function createMockProvider(options: MockOptions): ModelProvider {
       if (!match) throw new ApiError("not_found", `unknown mock job id: ${jobId}`);
 
       const startedAt = Number.parseInt(match[1] ?? "", 36);
-      const material = CHAR_MATERIAL[match[2] ?? "n"] ?? null;
       const flag = match[3] ?? "0";
 
       const elapsed = now() - startedAt;
@@ -74,12 +67,9 @@ export function createMockProvider(options: MockOptions): ModelProvider {
         return { state: "failed", progress: 60, error: { code: "provider_error" } };
       }
       if (progress >= 100) {
-        const slug = material ?? "oro";
-        return {
-          state: "succeeded",
-          progress: 100,
-          modelUrl: `${options.modelBaseUrl}/dije-huella-${slug}.glb`,
-        };
+        // Always the same pre-made example piece: a real generation would be
+        // built from the photo, the mock just stands in for it.
+        return { state: "succeeded", progress: 100, modelUrl: `${options.modelBaseUrl}/anillo.glb` };
       }
       return { state, progress };
     },
