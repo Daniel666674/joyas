@@ -473,3 +473,6 @@
 .hje-ai-stage.is-live[data-state="idle"] .hje-ai-empty { display: flex; }
 .hje-ai-stage.is-live[data-state="idle"] model-viewer,
 .hje-ai-stage.is-pending model-viewer { visibility: hidden; }
+
+/* Live mode: the jewelry-type select has no metal dot, so it keeps the normal field padding. */
+.hje-ai-select--plain select { padding-left: 14px; padding-right: 38px; }

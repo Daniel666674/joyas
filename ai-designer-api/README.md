@@ -121,6 +121,14 @@ about 3 days). Then, with the deployed site and one photo:
 Meshy keeps result files for about 3 days; the page shows them right away, so
 nothing needs to be stored. Failed tasks are refunded by Meshy automatically.
 
+## How a real design is made (two steps)
+
+Meshy's image-to-3D copies whatever is in the photo (a cat photo gives a 3D cat), so a
+real generation first asks Meshy's image-to-image model to redraw the animal as the
+jewelry the visitor chose (pendant, ring, earring or bracelet, in the chosen metal, plus
+their own words), then builds the 3D model from that picture. About 18 credits and 2-4
+minutes per design. `MESHY_RESTYLE=false` skips step 1 (old behaviour).
+
 ## What protects your credits, and what does not
 
 Protects: the key never reaches the browser; the demo code; only your site may

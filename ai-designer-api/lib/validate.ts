@@ -1,5 +1,5 @@
 import { ApiError } from "./errors";
-import { MATERIALS, type Material } from "./prompts";
+import { MATERIALS, PIECES, type Material, type Piece } from "./prompts";
 
 export const MAX_STYLE_CHARS = 200;
 const MIN_IMAGE_BYTES = 2048;
@@ -7,6 +7,8 @@ const MIN_IMAGE_BYTES = 2048;
 export interface GenerateRequest {
   imageDataUri: string;
   material: Material | null;
+  /** Which kind of jewelry to make (null = just turn the photo into 3D as it is). */
+  piece: Piece | null;
   styleText: string;
 }
 
@@ -38,7 +40,7 @@ export function parseGenerateBody(body: unknown, maxImageBytes: number): Generat
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw new ApiError("bad_request", "body is not a JSON object");
   }
-  const { image, material, style } = body as Record<string, unknown>;
+  const { image, material, style, piece } = body as Record<string, unknown>;
 
   if (typeof image !== "string") throw new ApiError("bad_request", "image is missing");
   const match = DATA_URI.exec(image);
@@ -60,11 +62,19 @@ export function parseGenerateBody(body: unknown, maxImageBytes: number): Generat
     chosenMaterial = material as Material;
   }
 
+  let chosenPiece: Piece | null = null;
+  if (piece !== undefined && piece !== null && piece !== "") {
+    if (typeof piece !== "string" || !(PIECES as readonly string[]).includes(piece)) {
+      throw new ApiError("bad_request", "unknown piece");
+    }
+    chosenPiece = piece as Piece;
+  }
+
   let styleText = "";
   if (style !== undefined && style !== null) {
     if (typeof style !== "string") throw new ApiError("bad_request", "style must be text");
     styleText = cleanStyleText(style);
   }
 
-  return { imageDataUri: image, material: chosenMaterial, styleText };
+  return { imageDataUri: image, material: chosenMaterial, piece: chosenPiece, styleText };
 }
