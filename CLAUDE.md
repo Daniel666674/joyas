@@ -1044,13 +1044,18 @@ existing number and looks like a placeholder, confirm the real one before the cl
 - **Endpoints:** `POST /api/order` (demo code, creates; 201 `{orderId}`), `GET /api/orders` (admin,
   newest first, max 200), `GET /api/order-file?id&kind=model|photo&offset` (admin, 3.5 MB pieces with
   `X-Model-Total`, same Vercel ~4.5 MB response cap as the model relay), `POST /api/order-status`
-  (admin, `nuevo|cotizado|en-produccion|entregado|cancelado`). Admin endpoints need the **separate
-  `ADMIN_CODE`** (header `x-admin-code`, timing-safe compare): the demo code the client holds is NOT
-  enough to read other people's orders. **Orders are enabled only when BOTH `BLOB_READ_WRITE_TOKEN` and
-  `ADMIN_CODE` exist**; otherwise every order endpoint answers 503 `orders_unavailable` and
-  `/api/health` says `orders:false` (the page then hides nothing but falls back to the recovery-link
-  message). Logs carry ids and sizes only, never names, notes or photos.
-- **Admin tab** (`admin.html`, "Pedidos IA", `assets/admin-orders.js`): asks for the order code (kept in
+  (admin, `nuevo|cotizado|en-produccion|entregado|cancelado`). Admin endpoints take the code in the
+  `x-admin-code` header (timing-safe compare). **Demo shortcut (2026-11-04, owner: "can we do it without the
+  admin code? it's a demo"): when no `ADMIN_CODE` env var is set, the `DEMO_CODE` is also the admin code**
+  (`lib/config.ts`: `adminCode: ADMIN_CODE || demoCode`), so nothing extra is needed in Vercel. Fully
+  open order endpoints were deliberately NOT offered: the backend URL is public and the orders hold
+  customers' names and photos. The cost of the shortcut: whoever holds the demo code (the client) can
+  also open "Pedidos IA". **Set a different `ADMIN_CODE` before real customers use the designer**; that
+  switches the shortcut off (a test covers both cases). **Orders are enabled when `BLOB_READ_WRITE_TOKEN`
+  exists AND there is a code (ADMIN_CODE or DEMO_CODE)**; otherwise every order endpoint answers 503
+  `orders_unavailable` and `/api/health` says `orders:false` (the page then falls back to the
+  recovery-link message). Logs carry ids and sizes only, never names, notes or photos.
+- **Admin tab** (`admin.html`, "Pedidos IA", `assets/admin-orders.js`): asks for the code (the demo code unless an ADMIN_CODE is set; kept in
   `sessionStorage`, key `hje-orders-code`), lists orders as cards (thumbnail of the photo if saved,
   customer text rendered with `textContent` only), "Ver en 3D" (lazy-loads the vendored model-viewer and
   shows the stored .glb), "Descargar 3D (.glb)", "Descargar foto", "Copiar mensaje para WhatsApp", status
@@ -1061,9 +1066,10 @@ existing number and looks like a placeholder, confirm the real one before the cl
   status change, orders off); browser scripts (not in the repo) covered the quote dialog (29 checks) and the
   admin tab (22 checks) against a mocked backend. **Never run against the real Blob store yet**: the first
   real order will confirm `get({access:"private"})`, `list` and the streaming `readRange`.
-- **Owner steps:** set `ADMIN_CODE` in Vercel (Sensitive, Production), redeploy, check `/api/health`
-  says `orders:true`, then do one real quote (design, Cotizar, consent, Guardar pedido, Abrir WhatsApp)
-  and look for it in admin > Pedidos IA.
+- **Owner steps:** none to turn orders on (health says `orders:true`). Do one real quote (design,
+  Cotizar, consent, Guardar pedido, Abrir WhatsApp) and look for it in admin > Pedidos IA, typing the same
+  demo code used in the designer. Later, for real customers: add a different `ADMIN_CODE` in Vercel
+  (Sensitive, Production) and redeploy.
 
 Meshy facts added from the docs: API keys come from
 <https://www.meshy.ai/developers/keys>, can carry a **per-key monthly credit

@@ -227,10 +227,29 @@ test("the admin can change an order's status, and only to a known one", async ()
   assert.equal(((await list.json()) as { orders: OrderRecord[] }).orders[0]?.status, "cotizado");
 });
 
-test("without storage or without an admin code orders are off: 503 everywhere, health says so, nothing is fetched", async () => {
+test("demo shortcut: with no ADMIN_CODE the demo code opens the orders; with one set, only that one does", async () => {
+  const world = fakeWorld();
+  const shared = createContext({ PROVIDER: "meshy", MESHY_API_KEY: "k", DEMO_CODE: "secreto" }, world.fetchImpl, memoryStore().store);
+  const id = ((await (await create(shared, orderBody())).json()) as { orderId: string }).orderId;
+  const list = (ctx: typeof shared, headers: Record<string, string>) => handleOrders(jsonRequest(`${API}/api/orders`, { headers }), ctx);
+  assert.equal((await list(shared, { Origin: SITE })).status, 401, "no code at all never opens the orders");
+  assert.equal((await list(shared, { ...ADMIN, "x-admin-code": "otro" })).status, 401);
+  const ok = await list(shared, { ...ADMIN, "x-admin-code": "secreto" });
+  assert.equal(ok.status, 200);
+  assert.deepEqual(((await ok.json()) as { orders: OrderRecord[] }).orders.map((o) => o.id), [id]);
+  const health = await handleHealth(jsonRequest(`${API}/api/health`, { headers: { Origin: SITE } }), shared);
+  assert.equal(((await health.json()) as { orders: boolean }).orders, true);
+
+  // a separate ADMIN_CODE switches the shortcut off: the demo code is no longer enough
+  const strict = setup();
+  assert.equal((await list(strict.ctx, { ...ADMIN, "x-admin-code": "secreto" })).status, 401);
+});
+
+test("without storage, or with no code at all to protect them, orders are off: 503 everywhere, health says so, nothing is fetched", async () => {
   const world = fakeWorld();
   const noStore = createContext({ PROVIDER: "meshy", MESHY_API_KEY: "k", DEMO_CODE: "secreto", ADMIN_CODE: "jefe" }, world.fetchImpl, null);
-  const noAdmin = createContext({ PROVIDER: "meshy", MESHY_API_KEY: "k", DEMO_CODE: "secreto" }, world.fetchImpl, memoryStore().store);
+  // the mock provider may run without a demo code; then there is nothing to protect the orders with
+  const noAdmin = createContext({ PROVIDER: "mock" }, world.fetchImpl, memoryStore().store);
   for (const ctx of [noStore, noAdmin]) {
     assert.equal((await create(ctx, orderBody())).status, 503);
     assert.equal((await handleOrders(jsonRequest(`${API}/api/orders`, { headers: ADMIN }), ctx)).status, 503);
