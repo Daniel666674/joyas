@@ -480,9 +480,10 @@
     announce(MSG.exampleNote);
   }
 
-  function backToIdle() {
+  // keepResume: a mistyped demo code must not lose the recovery link.
+  function backToIdle(keepResume) {
     revokeBlob();
-    resumeId = "";
+    if (keepResume !== true) resumeId = "";
     stopTicker();
     clearTimeout(pollTimer);
     busy = false;
@@ -652,7 +653,7 @@
       var message = err instanceof UserError ? err.message : MSG.generic;
       if (err && err.code === "unauthorized") {
         // Wrong demo code: go back to the form instead of showing a dead end.
-        backToIdle();
+        backToIdle(true);
         el.formError.textContent = message;
         show(el.formError, true);
         el.code.focus();
@@ -662,8 +663,8 @@
     });
   });
 
-  el.retry.addEventListener("click", backToIdle);
-  el.again.addEventListener("click", backToIdle);
+  el.retry.addEventListener("click", function () { backToIdle(false); });
+  el.again.addEventListener("click", function () { backToIdle(false); });
   el.example.addEventListener("click", showExample);
 
   /* ------------------------------------------------- mode / material UI -- */
