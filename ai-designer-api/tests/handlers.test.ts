@@ -19,7 +19,7 @@ async function body(res: Response): Promise<any> {
 test("health works without a code and says whether one is needed", async () => {
   const res = await handleHealth(jsonRequest(`${API}/api/health`, { headers: { Origin: SITE } }), mockContext());
   assert.equal(res.status, 200);
-  assert.deepEqual(await body(res), { ok: true, enabled: true, provider: "mock", requiresCode: true });
+  assert.deepEqual(await body(res), { ok: true, enabled: true, provider: "mock", requiresCode: true, orders: false });
   assert.equal(res.headers.get("access-control-allow-origin"), SITE);
 });
 

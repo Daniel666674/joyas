@@ -17,12 +17,20 @@ try {
 import generate from "../api/generate";
 import health from "../api/health";
 import model from "../api/model";
+import order from "../api/order";
+import orderFile from "../api/order-file";
+import orderStatus from "../api/order-status";
+import orders from "../api/orders";
 import status from "../api/status";
 
 const routes: Record<string, { fetch: (request: Request) => Promise<Response> | Response }> = {
   "/api/generate": generate,
   "/api/status": status,
   "/api/model": model,
+  "/api/order": order,
+  "/api/orders": orders,
+  "/api/order-file": orderFile,
+  "/api/order-status": orderStatus,
   "/api/health": health,
 };
 

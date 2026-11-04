@@ -13,6 +13,7 @@
   var cfg = window.HJE_AI_DESIGNER || {};
   var apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
   var sampleBase = String(cfg.sampleBase || "/joyas/models/samples").replace(/\/+$/, "");
+  var WA_NUMBER = String(cfg.whatsapp || "573001234567").replace(/\D+/g, "");
 
   var MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
   var MAX_SIDE = 1024; // photos are shrunk to this before upload (keeps requests small and cheap)
@@ -83,6 +84,18 @@
     formError: $("hje-ai-form-error"),
     materialFields: $("hje-ai-material-fields"),
     metals: $("hje-ai-metals"),
+    quote: $("hje-ai-quote"),
+    order: $("hje-ai-order"),
+    orderSummary: $("hje-ai-order-summary"),
+    orderName: $("hje-ai-order-name"),
+    orderNotes: $("hje-ai-order-notes"),
+    orderConsentRow: $("hje-ai-order-consent-row"),
+    orderConsent: $("hje-ai-order-consent"),
+    orderError: $("hje-ai-order-error"),
+    orderOk: $("hje-ai-order-ok"),
+    orderSend: $("hje-ai-order-send"),
+    orderWa: $("hje-ai-order-wa"),
+    orderCancel: $("hje-ai-order-cancel"),
     modes: el_q(".hje-ai-modes"),
     jewelField: $("hje-ai-jewel-field"),
     jewel: $("hje-ai-jewel"),
@@ -149,6 +162,133 @@
 
   // Recolour the model's "Metal" material (gold / silver / rose gold) without
   // reloading it. Gems and enamel keep their own materials.
+  /* ------------------------------------------------ quote on WhatsApp + order -- */
+  // After a design the customer can ask to quote it (it is a handmade piece, so the price and the
+  // delivery time are agreed over WhatsApp). When the backend can keep orders, the 3D file and the photo
+  // (only with the customer's consent) are saved first so the jeweler finds them in the admin panel,
+  // and the WhatsApp message carries the order id. Without that, the message carries the design link.
+  var JEWEL_LABEL = { collar: "Dije para collar", anillo: "Anillo", aretes: "Aretes", pulsera: "Pulsera con dije" };
+  var METAL_LABEL = { oro: "Oro", plata: "Plata", "oro-rosa": "Oro rosa" };
+  var ordersOn = false; // the backend says it can keep orders (/api/health -> orders)
+  var design = null; // { jobId, code, recovered } of the model on screen
+  var savedOrderId = "";
+
+  // What the customer is looking at: a metal picked with the switch wins over the one they asked for.
+  function shownMetal() {
+    if (recolor && recolor.key) return recolor.key;
+    return design && design.recovered ? "" : el.material.value;
+  }
+
+  function quoteFacts() {
+    var facts = { piece: design && design.recovered ? "" : el.jewel.value, metal: shownMetal(), style: design && design.recovered ? "" : el.style.value.trim() };
+    return facts;
+  }
+
+  function buildQuoteMessage(orderId) {
+    var f = quoteFacts();
+    var lines = ["Hola Habibi Eisaa 👋 Quiero cotizar una joya hecha a mano que diseñé en su generador con IA:"];
+    if (f.piece && JEWEL_LABEL[f.piece]) lines.push("• Pieza: " + JEWEL_LABEL[f.piece]);
+    if (f.metal && METAL_LABEL[f.metal]) lines.push("• Metal: " + METAL_LABEL[f.metal]);
+    if (f.style) lines.push("• Detalles: " + f.style);
+    var name = el.orderName.value.trim();
+    if (name) lines.push("• Nombre: " + name);
+    var notes = el.orderNotes.value.trim();
+    if (notes) lines.push("• Notas: " + notes);
+    if (orderId) {
+      lines.push("• Pedido: " + orderId);
+    } else if (design) {
+      var base = window.location.origin + window.location.pathname;
+      lines.push("• Diseño: " + base + "?job=" + encodeURIComponent(design.jobId));
+    }
+    lines.push("¿Me ayudas con el precio y el tiempo de entrega?");
+    return lines.join("\n");
+  }
+
+  function refreshWaLink() {
+    el.orderWa.setAttribute("href", "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(buildQuoteMessage(savedOrderId)));
+  }
+
+  function orderMessage(text, kind) {
+    el.orderError.textContent = kind === "error" ? text : "";
+    show(el.orderError, kind === "error" && !!text);
+    el.orderOk.textContent = kind === "ok" ? text : "";
+    show(el.orderOk, kind === "ok" && !!text);
+  }
+
+  function openOrder() {
+    if (!design) return;
+    savedOrderId = "";
+    orderMessage("", "");
+    var f = quoteFacts();
+    var bits = [];
+    if (f.piece && JEWEL_LABEL[f.piece]) bits.push(JEWEL_LABEL[f.piece]);
+    if (f.metal && METAL_LABEL[f.metal]) bits.push(METAL_LABEL[f.metal]);
+    el.orderSummary.textContent = bits.length ? bits.join(" · ") : "Diseño recuperado";
+    el.orderConsent.checked = false;
+    // With storage the customer first saves the order (consent needed); without it the WhatsApp link is ready at once.
+    show(el.orderConsentRow, ordersOn);
+    show(el.orderSend, ordersOn);
+    show(el.orderWa, !ordersOn);
+    el.orderSend.disabled = false;
+    el.orderSend.textContent = "Guardar pedido";
+    refreshWaLink();
+    show(el.order, true);
+    el.orderName.focus();
+  }
+
+  function closeOrder() {
+    if (el.order.hidden) return;
+    show(el.order, false);
+    if (el.quote && !el.quote.hidden) el.quote.focus({ preventScroll: true });
+  }
+
+  function sendOrder() {
+    if (!design || !ordersOn || el.orderSend.disabled) return;
+    if (!el.orderConsent.checked) {
+      orderMessage("Marca la casilla para que podamos guardar tu pedido.", "error");
+      el.orderConsent.focus();
+      return;
+    }
+    el.orderSend.disabled = true;
+    el.orderSend.textContent = "Guardando…";
+    orderMessage("", "");
+    var f = quoteFacts();
+    var payload = { jobId: design.jobId, consent: true, name: el.orderName.value.trim(), notes: el.orderNotes.value.trim() };
+    if (f.piece) payload.piece = f.piece;
+    if (f.metal) payload.material = f.metal;
+    if (f.style) payload.style = f.style;
+    if (photo && !design.recovered) payload.photo = photo.dataUri;
+    transport.order(payload, design.code).then(
+      function (data) {
+        savedOrderId = data.orderId || "";
+        show(el.orderConsentRow, false);
+        show(el.orderSend, false);
+        orderMessage("¡Pedido guardado! Tu número es " + savedOrderId + ". Ahora ábrelo en WhatsApp para recibir tu cotización.", "ok");
+        refreshWaLink();
+        show(el.orderWa, true);
+        el.orderWa.focus();
+      },
+      function (err) {
+        // Never block the customer: the quote can still go out over WhatsApp, just without the saved file.
+        el.orderSend.disabled = false;
+        el.orderSend.textContent = "Guardar pedido";
+        var why = err && err.message ? err.message : MSG.generic;
+        orderMessage(/WhatsApp/i.test(why) ? why : why + " Puedes cotizar igual por WhatsApp.", "error");
+        savedOrderId = "";
+        refreshWaLink();
+        show(el.orderWa, true);
+      }
+    );
+  }
+
+  el.quote.addEventListener("click", openOrder);
+  el.orderCancel.addEventListener("click", closeOrder);
+  el.orderSend.addEventListener("click", sendOrder);
+  el.order.addEventListener("click", function (e) { if (e.target === el.order) closeOrder(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeOrder(); });
+  el.orderName.addEventListener("input", refreshWaLink);
+  el.orderNotes.addEventListener("input", refreshWaLink);
+
   /* ----------------------------------------- metal switch for generated pieces -- */
   // A generated model has its colour baked into a texture, so unlike the hand-built pieces it
   // has no "Metal" material to recolour. Changing the metal means re-tinting that texture here
@@ -336,6 +476,8 @@
     poll: function (jobId, code) {
       return remoteRequest("GET", "/api/status?id=" + encodeURIComponent(jobId), null, code);
     },
+    // Saves a quote request (the 3D file and, with consent, the photo) so it shows up in the admin panel.
+    order: function (payload, code) { return remoteRequest("POST", "/api/order", payload, code); },
     // Meshy's file host sends no CORS headers, so the browser may not read the model
     // from there. The backend downloads it and hands it over in pieces (a function
     // cannot answer with more than ~4.5 MB at once). Resolves to a Blob.
@@ -602,6 +744,7 @@
     show(el.failure, next === "failed");
     show(el.caption, next === "idle" && !live);
     show(el.resultbar, next === "done" || next === "example");
+    show(el.quote, next === "done" && live);
     el.resultText.textContent = next === "example" ? MSG.exampleNote : MSG.done;
     syncBadge();
     el.go.disabled = next === "working" || next === "loading";
@@ -632,6 +775,8 @@
   }
 
   function fail(message) {
+    closeOrder();
+    design = null;
     resetRecolor();
     stopTicker();
     clearTimeout(pollTimer);
@@ -663,6 +808,8 @@
 
   // keepResume: a mistyped demo code must not lose the recovery link.
   function backToIdle(keepResume) {
+    closeOrder();
+    design = null;
     resetRecolor();
     revokeBlob();
     if (keepResume !== true) leaveRecovery();
@@ -752,6 +899,7 @@
   }
 
   function showResult(job, request) {
+    design = request ? { jobId: request.jobId, code: request.code, recovered: !!request.recovered } : null;
     stopTicker();
     shown = 100;
     paintProgress();
@@ -818,6 +966,7 @@
     }
 
     var started;
+    var wasRecovery = !!(resumeId && !photo && !transport.simulated);
     if (resumeId && !photo && !transport.simulated) {
       started = Promise.resolve({ jobId: resumeId }); // already generated and paid: just fetch it again
     } else {
@@ -837,7 +986,7 @@
         if (code) store("set", code);
         target = Math.max(target, 3);
         return pollUntilDone(data.jobId, code).then(function (done) {
-          showResult(done.job, { jobId: done.jobId, code: code });
+          showResult(done.job, { jobId: done.jobId, code: code, recovered: wasRecovery });
         });
       }
     ).catch(function (err) {
@@ -931,6 +1080,7 @@
         el.badge.textContent = badgeBase;
         show(el.badge, true);
       }
+      ordersOn = !!(info && info.orders === true);
       show(el.codeField, !!(info && info.requiresCode));
       if (info && (info.enabled === false || info.ok === false)) {
         el.go.disabled = true;

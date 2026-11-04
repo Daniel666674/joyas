@@ -1017,7 +1017,55 @@ pink, gold is yellow; hidden in the simulation, in the example fallback and afte
 **tsconfig gotcha:** `module` must be `CommonJS` (+ `moduleResolution: Node10`).
 With `ESNext` the first deploy built fine but every endpoint crashed at runtime
 (`Cannot use import statement outside a module`), visible only in
-`get_runtime_logs`. Meshy facts added from the docs: API keys come from
+`get_runtime_logs`.
+
+**Quote on WhatsApp + saved orders + admin "Pedidos IA" tab (2026-11-04, owner request: "I wanna buy
+it: can the order, with the 3D file, land in the admin panel? build it so they can quote it via WhatsApp,
+since it is a hand-made piece").** Under a finished LIVE result (never the simulation or the example) the
+page shows "Cotizar esta joya por WhatsApp" (`#hje-ai-quote`). It opens a dialog (`#hje-ai-order`: name,
+notes, consent checkbox) and does it in **two steps**: "Guardar pedido" saves the order, then a plain
+`<a target=_blank rel=noopener>` ("Abrir WhatsApp") is revealed; opening `wa.me` from an async callback
+gets blocked as a popup, a real link click does not. The WhatsApp message carries the order id
+(`HE-yymmdd-XXXX`, no 0/O/1/I so it can be read aloud), piece, metal (the chip on screen wins) and the
+words the customer wrote. **Graceful fallback:** if orders are off or the save fails, the same message is
+offered with the `?job=` recovery link instead of an order id, so a quote is never lost.
+The number comes from `whatsapp` in `assets/ai-designer-config.js`; **`573001234567` is the storefront's
+existing number and looks like a placeholder, confirm the real one before the client sees the demo.**
+- **Where orders live: a PRIVATE Vercel Blob store** (`habibi-orders-private`, created with the Vercel
+  MCP, which also created the `BLOB_READ_WRITE_TOKEN` env var; it came out as type "encrypted", not
+  "sensitive", so the owner may convert it in the dashboard). The repo is public, so customer
+  names, photos and 3D files can never go in it. Layout: `orders/<id>/order.json` (written LAST, so a
+  record always has its files), `model.glb`, `photo.jpg|png`. `lib/orders.ts` is the only file that
+  knows Blob (`OrderStore` interface: tests use an in-memory one).
+- **The .glb is copied at order time.** Meshy deletes its files after ~3 days, so `POST /api/order`
+  downloads the whole model server-side and stores it. It is Meshy's ORIGINAL file: the metal chosen
+  with the chips is saved as metadata (`material`), not baked in. The photo is stored ONLY with the
+  customer's consent (the checkbox; the server rejects a missing consent).
+- **Endpoints:** `POST /api/order` (demo code, creates; 201 `{orderId}`), `GET /api/orders` (admin,
+  newest first, max 200), `GET /api/order-file?id&kind=model|photo&offset` (admin, 3.5 MB pieces with
+  `X-Model-Total`, same Vercel ~4.5 MB response cap as the model relay), `POST /api/order-status`
+  (admin, `nuevo|cotizado|en-produccion|entregado|cancelado`). Admin endpoints need the **separate
+  `ADMIN_CODE`** (header `x-admin-code`, timing-safe compare): the demo code the client holds is NOT
+  enough to read other people's orders. **Orders are enabled only when BOTH `BLOB_READ_WRITE_TOKEN` and
+  `ADMIN_CODE` exist**; otherwise every order endpoint answers 503 `orders_unavailable` and
+  `/api/health` says `orders:false` (the page then hides nothing but falls back to the recovery-link
+  message). Logs carry ids and sizes only, never names, notes or photos.
+- **Admin tab** (`admin.html`, "Pedidos IA", `assets/admin-orders.js`): asks for the order code (kept in
+  `sessionStorage`, key `hje-orders-code`), lists orders as cards (thumbnail of the photo if saved,
+  customer text rendered with `textContent` only), "Ver en 3D" (lazy-loads the vendored model-viewer and
+  shows the stored .glb), "Descargar 3D (.glb)", "Descargar foto", "Copiar mensaje para WhatsApp", status
+  select, filter, lock. It reuses `HJE_AI_DESIGNER.apiBase` from the config file. The tab is independent
+  of the product publish flow (no GitHub token involved).
+- **Tests:** backend `tests/orders.test.ts` (in-memory store + faked Meshy, 8 MB model: bytes identical,
+  consent/codes/origin/ids refusals, caps, no personal data in logs, admin list order, chunked download,
+  status change, orders off); browser scripts (not in the repo) covered the quote dialog (29 checks) and the
+  admin tab (22 checks) against a mocked backend. **Never run against the real Blob store yet**: the first
+  real order will confirm `get({access:"private"})`, `list` and the streaming `readRange`.
+- **Owner steps:** set `ADMIN_CODE` in Vercel (Sensitive, Production), redeploy, check `/api/health`
+  says `orders:true`, then do one real quote (design, Cotizar, consent, Guardar pedido, Abrir WhatsApp)
+  and look for it in admin > Pedidos IA.
+
+Meshy facts added from the docs: API keys come from
 <https://www.meshy.ai/developers/keys>, can carry a **per-key monthly credit
 limit** (the safety net to set), shown once; rate limits Pro 20 req/s and 10
 concurrent tasks; results kept 3 days.
