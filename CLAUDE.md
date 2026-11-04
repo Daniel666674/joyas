@@ -997,6 +997,23 @@ rules are all present, come before the customer's words and that the words stay 
 Prompt-level rules steer an image model, they do not guarantee it: judge real results and tighten
 `HOUSE_RULES` rather than adding code. The page says it too (hints under the jewelry type and
 under "Cuéntanos más").
+
+**Metal switch on a generated piece (owner request: change the metal without generating again).**
+Buttons "Original / Oro / Plata / Oro rosa" appear under a finished live result
+(`#hje-ai-metals`, `prepareRecolor()` / `applyGeneratedMetal()` in `ai-designer.js`). They recolour the model
+in the browser: no server, no credits. A Meshy model has its colour baked into a texture (no material named
+"Metal" like the hand-built pieces), so the page reads the texture back with `texture.source.createThumbnail`
+(it comes back UPRIGHT but LINEAR 8-bit, not sRGB), keeps its light/dark pattern and swaps the hue:
+`out = metal * (luminance / mean luminance)^0.8` computed in linear space, then converted to sRGB (LUT) and drawn
+into a `viewer.createCanvasTexture()` canvas **flipped vertically** (canvas textures arrive upside down compared
+with glTF ones) and assigned with `baseColorTexture.setTexture`. Dark areas (enamel, engraving) stay dark and
+highlights stay bright. "Original" puts the untouched texture and factor back; each metal's texture is cached.
+Materials without a texture just get `baseColorFactor`. This vendored model-viewer 4.3.1 has NO `Image.setURI`
+(only `createCanvasTexture`, `setTexture`, `createThumbnail`, `update`). If anything throws, the chips are hidden
+and the model stays as it was. Verified on a synthetic textured GLB (gold albedo with orientation markers,
+`scratchpad/recolor/make-textured-glb.js`): restoring reproduces the original colour, silver is neutral, rose is
+pink, gold is yellow; hidden in the simulation, in the example fallback and after "Crear otro diseño" (17 checks).
+**Not yet seen on a real Meshy GLB** (real textures are 2K and may have more than one material).
 **tsconfig gotcha:** `module` must be `CommonJS` (+ `moduleResolution: Node10`).
 With `ESNext` the first deploy built fine but every endpoint crashed at runtime
 (`Cannot use import statement outside a module`), visible only in
