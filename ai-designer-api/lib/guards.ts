@@ -13,6 +13,15 @@ export function assertDemoCode(request: Request, config: Config): void {
   }
 }
 
+/** Same idea for the admin panel: its own secret (ADMIN_CODE), never the code the client has. */
+export function assertAdminCode(request: Request, adminCode: string | null): void {
+  if (adminCode === null) throw new ApiError("orders_unavailable", "ADMIN_CODE is not set");
+  const given = request.headers.get("x-admin-code") ?? "";
+  if (!timingSafeEqual(sha(given), sha(adminCode))) {
+    throw new ApiError("unauthorized", "wrong or missing admin code");
+  }
+}
+
 function allowedOrigin(request: Request, config: Config): string | null {
   const origin = request.headers.get("origin");
   if (!origin) return null;
@@ -36,7 +45,7 @@ export function corsHeaders(request: Request, config: Config): Record<string, st
   const origin = allowedOrigin(request, config);
   if (origin) {
     headers["Access-Control-Allow-Origin"] = origin;
-    headers["Access-Control-Allow-Headers"] = "content-type, x-demo-code";
+    headers["Access-Control-Allow-Headers"] = "content-type, x-demo-code, x-admin-code";
     headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
     headers["Access-Control-Max-Age"] = "600";
   }

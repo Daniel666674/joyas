@@ -11,6 +11,8 @@ export interface Config {
   maxImageBytes: number;
   meshy: { apiKey: string; model: string; enablePbr: boolean; moderation: boolean; baseUrl: string; restyle: boolean; restyleModel: string };
   mock: { modelBaseUrl: string; durationMs: number };
+  /** Saved orders (3D file + photo) shown in the admin panel. Off unless BOTH an ADMIN_CODE and a Blob store token exist. */
+  orders: { adminCode: string | null; hasStorageToken: boolean };
   /**
    * Human-readable setup mistakes (variable NAMES only, never values). When this
    * is non-empty the API refuses to run instead of running half-configured.
@@ -77,6 +79,10 @@ export function loadConfig(env: Env = process.env): Config {
         env.MOCK_MODEL_BASE_URL?.trim() || "https://daniel666674.github.io/joyas/models/samples"
       ).replace(/\/+$/, ""),
       durationMs: positiveInt(env.MOCK_DURATION_MS, 12_000),
+    },
+    orders: {
+      adminCode: env.ADMIN_CODE?.trim() || null,
+      hasStorageToken: Boolean(env.BLOB_READ_WRITE_TOKEN?.trim()),
     },
     problems,
   };

@@ -19,5 +19,8 @@
  */
 window.HJE_AI_DESIGNER = {
   apiBase: "https://habibi-ai-designer-api-agency6.vercel.app",
+  // WhatsApp number that receives the "Cotizar" messages (country code + number, digits only). This is the
+  // same number the rest of the storefront uses (assets/store.js); confirm it is the real one before the demo.
+  whatsapp: "573001234567",
   sampleBase: "/joyas/models/samples"
 };

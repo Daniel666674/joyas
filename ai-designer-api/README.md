@@ -30,7 +30,7 @@ today on GitHub Pages.
 
 Vercel project **habibi-ai-designer-api** (team AGENCY, free Hobby plan), live at
 `https://habibi-ai-designer-api-agency6.vercel.app`, currently with
-`PROVIDER=mock` (free fake results). It was created **without** a GitHub link:
+`PROVIDER=meshy` (real generation, since 2026-11-04; it started on `mock`). It was created **without** a GitHub link:
 Vercel's GitHub app has no access to the `joyas` repository, so the code was
 uploaded directly and **pushing to GitHub does not redeploy it**. To get
 automatic deploys, give Vercel access to `joyas` (GitHub > Settings >
@@ -128,6 +128,30 @@ real generation first asks Meshy's image-to-image model to redraw the animal as 
 jewelry the visitor chose (pendant, ring, earring or bracelet, in the chosen metal, plus
 their own words), then builds the 3D model from that picture. About 18 credits and 2-4
 minutes per design. `MESHY_RESTYLE=false` skips step 1 (old behaviour).
+
+## Saved orders (quote on WhatsApp)
+
+After a real design, the visitor can press **Cotizar esta joya por WhatsApp**: the page saves
+the order here (name, notes, the 3D file, and the photo only if they tick the consent box) and
+then opens WhatsApp with a ready message that includes the order id (`HE-yymmdd-XXXX`). The owner
+sees every order in `admin.html` > **Pedidos IA**: view the piece in 3D, download the `.glb`,
+download the photo, copy the WhatsApp message and mark the status.
+
+Where it is stored: a **private Vercel Blob store** (the repository is public, so customer data
+can never live in it). The 3D file is copied at order time because Meshy deletes its own copy
+after about 3 days.
+
+To turn it on (the store already exists and is connected, so only the code is missing):
+
+1. Vercel > project **habibi-ai-designer-api** > **Settings > Environment Variables**: add
+   `ADMIN_CODE` (any code you choose, different from `DEMO_CODE`; mark it **Sensitive**, Production).
+   `BLOB_READ_WRITE_TOKEN` is created by Vercel when the Blob store is connected.
+2. **Redeploy** (Deployments > latest > ... > Redeploy).
+3. `/api/health` must now say `"orders":true`. Until then every order endpoint answers 503
+   and the page falls back to a WhatsApp message with the design's recovery link.
+
+The admin tab asks for `ADMIN_CODE` once per browser session. Endpoints: `POST /api/order`
+(demo code), `GET /api/orders`, `GET /api/order-file`, `POST /api/order-status` (admin code).
 
 ## What protects your credits, and what does not
 

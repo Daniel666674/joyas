@@ -10,6 +10,7 @@ export type ErrorCode =
   | "method_not_allowed"
   | "disabled"
   | "not_configured"
+  | "orders_unavailable"
   | "not_found"
   | "image_too_large"
   | "invalid_input"
@@ -26,6 +27,7 @@ const STATUS: Record<ErrorCode, number> = {
   method_not_allowed: 405,
   disabled: 503,
   not_configured: 503,
+  orders_unavailable: 503,
   not_found: 404,
   image_too_large: 413,
   invalid_input: 422,
@@ -43,6 +45,7 @@ const MESSAGE: Record<ErrorCode, string> = {
   method_not_allowed: "Solicitud no permitida.",
   disabled: "El diseñador está en pausa por ahora. Vuelve a intentarlo más tarde.",
   not_configured: "El diseñador no está disponible en este momento.",
+  orders_unavailable: "Por ahora no podemos guardar pedidos. Puedes cotizar igual por WhatsApp.",
   not_found: "No encontramos ese diseño. Empieza uno nuevo.",
   image_too_large: "La foto es demasiado pesada. Elige una más liviana (máximo 5 MB).",
   invalid_input: "No pudimos procesar esa imagen. Usa una foto nítida en JPG o PNG.",
