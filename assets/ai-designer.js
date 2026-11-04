@@ -47,6 +47,7 @@
     viewer: "No pudimos mostrar el modelo 3D. Inténtalo de nuevo.",
     paused: "El diseñador está en pausa por ahora. Vuelve a intentarlo más tarde.",
     needPhoto: "Primero sube una foto de tu mascota.",
+    photoBusy: "Estamos preparando tu foto. Inténtalo de nuevo en un segundo.",
     needCode: "Escribe el código de demostración para continuar.",
     done: "¡Listo! Gira y haz zoom para verlo.",
     exampleNote: "Este es un ejemplo de muestra: no se generó con tu foto.",
@@ -312,12 +313,16 @@
     show(el.fileError, !!message);
   }
 
+  var photoBusy = false; // the chosen file is still being shrunk: generating now would send the previous photo
   function handleFile(file) {
     if (!file) return;
     setFileError("");
     show(el.formError, false);
+    leaveRecovery(); // a new photo means a new design, never the recovered one
+    photoBusy = true;
     prepareImage(file).then(
       function (dataUri) {
+        photoBusy = false;
         photo = { dataUri: dataUri };
         el.preview.src = dataUri;
         show(el.preview, true);
@@ -326,6 +331,7 @@
         el.drop.classList.add("has-photo");
       },
       function (err) {
+        photoBusy = false;
         photo = null;
         el.file.value = "";
         el.preview.removeAttribute("src");
@@ -376,7 +382,26 @@
   })();
   var IDLE_LABEL = "Crear mi diseño 3D";
   var RESUME_LABEL = "Recuperar mi diseño 3D";
-  if (resumeId && el.go) el.go.textContent = RESUME_LABEL;
+  var resumeNote = $("hje-ai-resume-note");
+  if (resumeId) {
+    if (el.go) el.go.textContent = RESUME_LABEL;
+    show(resumeNote, true);
+  }
+  // Back to a normal form: a new photo, "Crear otro diseño" or "Intentar de nuevo" all end recovery,
+  // and the ?job= part leaves the address so a reload does not bring it back.
+  function leaveRecovery() {
+    var was = !!resumeId;
+    resumeId = "";
+    show(resumeNote, false);
+    if (was && el.go && !el.go.disabled) el.go.textContent = IDLE_LABEL;
+    try {
+      var url = new URL(window.location.href);
+      if (url.searchParams.has("job")) {
+        url.searchParams.delete("job");
+        window.history.replaceState(null, "", url.pathname + (url.search ? url.search : "") + url.hash);
+      }
+    } catch (e) { /* ignore */ }
+  }
   var pending = !!apiBase;
 
   function pollMs() {
@@ -490,7 +515,7 @@
   // keepResume: a mistyped demo code must not lose the recovery link.
   function backToIdle(keepResume) {
     revokeBlob();
-    if (keepResume !== true) resumeId = "";
+    if (keepResume !== true) leaveRecovery();
     stopTicker();
     clearTimeout(pollTimer);
     busy = false;
@@ -611,6 +636,11 @@
     show(el.formError, false);
     setFileError("");
 
+    if (photoBusy) {
+      el.formError.textContent = MSG.photoBusy;
+      show(el.formError, true);
+      return;
+    }
     if (!photo && !resumeId) {
       setFileError(MSG.needPhoto);
       el.file.focus();
@@ -637,7 +667,7 @@
     }
 
     var started;
-    if (resumeId && !transport.simulated) {
+    if (resumeId && !photo && !transport.simulated) {
       started = Promise.resolve({ jobId: resumeId }); // already generated and paid: just fetch it again
     } else {
       var withMaterial = currentMode() === "material";

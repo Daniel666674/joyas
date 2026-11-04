@@ -969,6 +969,17 @@ metal and the "Cuéntanos más (opcional)" text; the payload carries `piece`, `m
 and `style`. **Never verified against the real service yet**: the prompt wording is a
 first draft to judge from real results (the likeness, the white-background framing and
 whether the ring/earring/bracelet read well as 3D are the open questions).
+
+**"It keeps generating the first photo" (same day).** Cause: the recovery link
+(`?job=<id>`) outranked a newly chosen photo. A tab opened from a recovery link stayed in
+recovery mode ("Recuperar mi diseño 3D"), so pressing the button re-fetched the first design
+whatever photo was on screen, and a reload kept `?job=` in the address. Fix
+(`leaveRecovery()` in `ai-designer.js`): choosing a photo, "Crear otro diseño" or "Intentar de
+nuevo" ends recovery, removes `?job=` from the address with `history.replaceState`, and the
+button goes back to normal; recovery mode now shows a note ("Vas a recuperar un diseño que ya
+hiciste... para crear uno nuevo, sube otra foto"); the submit only recovers when NO photo is
+chosen; and a photo that is still being shrunk blocks the button (`photoBusy`) so the previous
+photo can never be sent by pressing too fast. A wrong demo code still keeps recovery mode.
 **tsconfig gotcha:** `module` must be `CommonJS` (+ `moduleResolution: Node10`).
 With `ESNext` the first deploy built fine but every endpoint crashed at runtime
 (`Cannot use import statement outside a module`), visible only in
