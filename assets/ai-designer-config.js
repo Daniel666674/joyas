@@ -11,12 +11,13 @@
  *
  * Only a public web address belongs here. NEVER put an API key in this file.
  *
- * Keep apiBase EMPTY until the backend is deployed and tested: setting it is
- * the single switch that makes the page talk to a server (and, with Meshy,
- * spend the owner's credits). The owner lifted the "zero credits" rule on
- * 2026-11-04 and chose Meshy; the order of work is in CLAUDE.md ("Going live").
+ * apiBase is the single switch that makes the page talk to a server (and, with
+ * Meshy, spend the owner's credits). Connected on 2026-11-04 to the Vercel
+ * project habibi-ai-designer-api, which then ran PROVIDER=meshy behind a demo
+ * code. To go back to the free built-in simulation, set it to "" again. The
+ * history and the order of work are in CLAUDE.md ("Going live").
  */
 window.HJE_AI_DESIGNER = {
-  apiBase: "",
+  apiBase: "https://habibi-ai-designer-api-agency6.vercel.app",
   sampleBase: "/joyas/models/samples"
 };
