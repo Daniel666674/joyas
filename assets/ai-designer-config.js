@@ -11,8 +11,10 @@
  *
  * Only a public web address belongs here. NEVER put an API key in this file.
  *
- * OWNER DECISION: the demo must not use credits of any kind, so keep apiBase
- * EMPTY. Setting it is the single switch that makes the page talk to a server.
+ * Keep apiBase EMPTY until the backend is deployed and tested: setting it is
+ * the single switch that makes the page talk to a server (and, with Meshy,
+ * spend the owner's credits). The owner lifted the "zero credits" rule on
+ * 2026-11-04 and chose Meshy; the order of work is in CLAUDE.md ("Going live").
  */
 window.HJE_AI_DESIGNER = {
   apiBase: "",

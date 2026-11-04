@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx scripts/dev-server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "smoke": "tsx scripts/meshy-smoke.ts"
   },
   "engines": {
     "node": "22.x"

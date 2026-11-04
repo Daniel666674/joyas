@@ -851,12 +851,34 @@ local static server). Image: `brand/ai-designer-piece.webp`, a transparent
 render of the gold paw ring (~35 KB; the 1 MB viewer is deliberately not loaded
 on the homepage).
 
-**OWNER DECISION (2026-10-28): the demo must never use credits of any kind.**
-So `assets/ai-designer-config.js` keeps `apiBase: ""` (simulation only) and the
-Vercel backend / Meshy are **not deployed or connected**. Verified: a whole
-visit to the designer page (load, upload, generate, result) makes only GET
-requests to the site's own host, nothing external. Turning the backend on
-later is a deliberate, separate decision by the owner, not a default next step.
+**OWNER DECISIONS ON CREDITS.** 2026-10-28: "the demo must never use credits
+of any kind", so the page ran as a pure simulation (verified then: a whole visit
+made only GET requests to the site's own host). **2026-11-04: the owner LIFTED
+that rule and chose Meshy for a real, working demo** (they are signing up for
+Meshy Pro, $20/month: 1,000 monthly credits, API + MCP + Skills, 10 concurrent
+tasks, private commercial licence). Status today: **the live site is STILL the
+simulation** (`apiBase: ""`), because the backend is not deployed yet. Do not set
+`apiBase` until the steps under "Going live" below are done and the owner has a
+Meshy key and a Vercel project.
+
+**Going live: plan and status (2026-11-04).**
+1. *Phase 0, owner, no code:* test 2-3 real pet photos in Meshy's WEB app (4 free
+   retries per task there; the API has none). Two recipes to compare: photo ->
+   3D directly, vs photo -> "flat gold dog-face pendant" picture (the web app's
+   image generation is unlimited) -> 3D. Decide which recipe, or whether the
+   quality is good enough at all. **Gate: don't build more until this is judged.**
+2. *Phase 1, code:* adapt the backend to the winning recipe; deploy on Vercel with
+   `PROVIDER=meshy`; first real run via `npm run smoke` (free balance check, then
+   a dry run, then `--spend`); live-mode UI (the three example-piece chips go
+   away, the result IS the generated model); a daily cap and an automatic
+   fallback to a pre-generated example if generation fails or times out.
+3. *Phase 2:* owner tests, then shares the link + demo code with the client.
+The API key goes ONLY into Vercel's environment variables (or, for one-off runs
+from a Claude session, an environment secret), never into the chat or the repo.
+Open questions for the owner: client-only or wider audience (decides whether
+per-visitor limits/Redis are needed), and Vercel Hobby vs paid (Hobby's terms
+are for non-commercial use; unverified).
+
 `assets/ai-designer.js` (plain JS, no build step), `assets/ai-designer.css`
 (every class is `hje-ai-` prefixed so premium.css's Tailwind-chain rules can't
 catch it), `assets/ai-designer-config.js` (the only place that knows the
@@ -891,15 +913,35 @@ written for a non-programmer.
   real gate. There is **no per-visitor limit** and no database (Redis was cut);
   the prepaid Meshy balance is the hard ceiling. Add Redis-backed per-IP limits
   and a daily cap before this faces the public.
-- **The Meshy provider has NOT been run against the real service** (no key
-  existed). It was written from docs.meshy.ai on 2026-10-09 and tested against
-  a faked `fetch` only: model `meshy-6-lite`, `POST /openapi/v1/image-to-3d`,
-  `image_url` as a base64 data URI, `texture_prompt` capped at 600 chars,
-  `target_formats: ["glb"]`, status words PENDING/IN_PROGRESS/SUCCEEDED/
-  FAILED/CANCELED. `classifyFailure()` is guesswork until real failures have
-  been seen. README has the first-real-run checklist (credits actually used,
-  `enable_pbr` cost, whether Meshy's file links load cross-origin in the
-  viewer, timing).
+- **The Meshy provider has still NOT been run against the real service**, but
+  since 2026-11-04 it is checked line by line against Meshy's OFFICIAL docs,
+  which are readable from a Claude session with plain `curl`:
+  `https://docs.meshy.ai/llms.txt` indexes every page as Markdown (`/api/<page>.md`;
+  note the *WebFetch* tool could not resolve docs.meshy.ai, `curl` can).
+  Verified there: `POST /openapi/v1/image-to-3d` -> 202 `{result}`;
+  `GET .../:id` -> `status` (PENDING/IN_PROGRESS/SUCCEEDED/FAILED/CANCELED),
+  `progress`, `model_urls.glb`, `thumbnail_url`, `task_error{type,code,message}`,
+  `consumed_credits`, `expires_at`; `texture_prompt` up to 800 chars (we cap 600);
+  images JPG/PNG/WebP up to 20 MB; `input_task_id` accepts a SUCCEEDED Text-to-Image
+  or **Image-to-Image** task (so the restyle recipe works via the API without
+  re-uploading); `GET /openapi/v1/balance` is free; failed tasks are refunded.
+  Official prices (credits): Image to 3D mesh-only 5 (lite) / 20; with 2K textures
+  **15 (meshy-6-lite)** / 30 (meshy-6, 7.1); Image to Image 3 (nano-banana).
+  Typical times: lite+2K ~75 s, 7.1 ~2 min, meshy-6 ~3 min, PBR +30-60 s,
+  Image to Image ~40 s (not guaranteed; the docs say wait up to 60 min).
+  Fixes made from that reading: failures are classified by `task_error.type/code`
+  (`moderation_unavailable` is a TEMPORARY Meshy outage -> "try again", never "your
+  photo is bad"; it was previously misread as a content rejection), and the
+  `moderation` flag is sent only with `meshy-6` (it is ignored by 7.1 and answers
+  HTTP 400 with `meshy-6-lite`, our default).
+  **`npm run smoke`** (`scripts/meshy-smoke.ts`) is the safe first real run: with
+  only `MESHY_API_KEY` it makes the FREE balance call; with `--image` it is a dry
+  run; only `--spend` creates a task. It cross-checks `consumed_credits` against
+  the balance before/after and downloads the .glb immediately (links expire in
+  ~3 days). Still unknown until that run: whether Pro's monthly credits are usable
+  by the API (the balance endpoint suggests one shared pool), real credit use with
+  `enable_pbr`, whether Meshy's file links load cross-origin in the viewer, and
+  above all the visual quality of jewelry from pet photos.
 - Photos are shrunk to ≤1024px JPEG in the browser (also what keeps requests
   under Vercel's body limit) and are never stored or logged server-side.
   Meshy's own retention of inputs was not verified.
