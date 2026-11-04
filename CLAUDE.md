@@ -886,6 +886,29 @@ $20) / another host. Still open: that hosting decision, the Vercel project
 itself (nothing created yet), and a real pet photo for the first `npm run smoke
 --spend` run.
 
+**Backend deployed in MOCK mode (2026-11-04, owner chose free Vercel and asked
+for a project separate from their others).** Vercel project
+`habibi-ai-designer-api` (id `prj_2CJV3ejsym2TE1HVxjrxfRISoeh1`, team AGENCY
+`team_qI0JlACBzvZxPaDmSefFrfuA`; the team's other projects were not touched),
+production URL `https://habibi-ai-designer-api-agency6.vercel.app`, env
+`PROVIDER=mock` + `ALLOWED_ORIGINS=https://daniel666674.github.io`, production
+protection off (Vercel Authentication covers previews only, otherwise the browser
+gets a 401 page). It has **no Git link** (Vercel's GitHub app has no access to
+`joyas`), so it was deployed with the Vercel MCP `create_deployment` and inline
+files; a push to GitHub does NOT redeploy it. Env var changes need a Redeploy
+(dashboard: Deployments > latest > Redeploy). Verified end to end from the real
+GitHub Pages origin with the config swapped by Playwright: health, CORS,
+preflight, generate, status polling, viewer loaded `anillo.glb`, no console
+errors. **`assets/ai-designer-config.js` still has `apiBase: ""`**; set it to the
+URL above only after `PROVIDER=meshy` works.
+**tsconfig gotcha:** `module` must be `CommonJS` (+ `moduleResolution: Node10`).
+With `ESNext` the first deploy built fine but every endpoint crashed at runtime
+(`Cannot use import statement outside a module`), visible only in
+`get_runtime_logs`. Meshy facts added from the docs: API keys come from
+<https://www.meshy.ai/developers/keys>, can carry a **per-key monthly credit
+limit** (the safety net to set), shown once; rate limits Pro 20 req/s and 10
+concurrent tasks; results kept 3 days.
+
 `assets/ai-designer.js` (plain JS, no build step), `assets/ai-designer.css`
 (every class is `hje-ai-` prefixed so premium.css's Tailwind-chain rules can't
 catch it), `assets/ai-designer-config.js` (the only place that knows the
