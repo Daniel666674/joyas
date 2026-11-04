@@ -980,6 +980,23 @@ button goes back to normal; recovery mode now shows a note ("Vas a recuperar un 
 hiciste... para crear uno nuevo, sube otra foto"); the submit only recovers when NO photo is
 chosen; and a photo that is still being shrunk blocks the button (`photoBusy`) so the previous
 photo can never be sent by pressing too fast. A wrong demo code still keeps recovery mode.
+
+**Fixed house rules for the generated piece (owner request, same day: "it will only create a
+logical jewelry piece; if someone uploads a cat it only renders the face").** `HOUSE_RULES` in
+`lib/prompts.ts` are in EVERY step-1 prompt, before anything the customer writes: exactly one
+wearable, physically plausible piece (never a figurine, statue, toy or scene); ONLY the animal's
+face and head as the motif (never body, legs, paws, tail); small, compact, solid and castable
+with a closed silhouette and the fitting that makes it wearable; and if the photo shows no animal
+(a person, an object) it is not copied: a plain elegant piece of that jewelry type is made
+instead (also keeps people's faces out of the pieces). Each `PIECE_BRIEF` describes its piece as
+made from the FACE (head only). The customer's "Cuéntanos más" text goes last, quoted, inside a
+note that limits it to colours, finish, gemstones and small decorative details and tells the model
+to ignore requests for another kind of object, the full body or another jewelry type. A test
+(`house rules`) checks every piece, with no words, normal words and a hostile request, that the
+rules are all present, come before the customer's words and that the words stay inside the note.
+Prompt-level rules steer an image model, they do not guarantee it: judge real results and tighten
+`HOUSE_RULES` rather than adding code. The page says it too (hints under the jewelry type and
+under "Cuéntanos más").
 **tsconfig gotcha:** `module` must be `CommonJS` (+ `moduleResolution: Node10`).
 With `ESNext` the first deploy built fine but every endpoint crashed at runtime
 (`Cannot use import statement outside a module`), visible only in
