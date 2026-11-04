@@ -9,7 +9,7 @@ export interface Config {
   allowedOrigins: string[];
   /** Max decoded size of the (already browser-resized) photo. */
   maxImageBytes: number;
-  meshy: { apiKey: string; model: string; enablePbr: boolean; baseUrl: string };
+  meshy: { apiKey: string; model: string; enablePbr: boolean; moderation: boolean; baseUrl: string };
   mock: { modelBaseUrl: string; durationMs: number };
   /**
    * Human-readable setup mistakes (variable NAMES only, never values). When this
@@ -65,6 +65,8 @@ export function loadConfig(env: Env = process.env): Config {
       apiKey,
       model: env.MESHY_MODEL?.trim() || "meshy-6-lite",
       enablePbr: flag(env.MESHY_ENABLE_PBR, true),
+      // only takes effect with MESHY_MODEL=meshy-6 (see providers/meshy.ts)
+      moderation: flag(env.MESHY_MODERATION, true),
       baseUrl: (env.MESHY_BASE_URL?.trim() || "https://api.meshy.ai").replace(/\/+$/, ""),
     },
     mock: {

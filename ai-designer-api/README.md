@@ -1,9 +1,9 @@
 # AI designer backend (Habibi Eisaa demo)
 
-> **Status: NOT in use, on purpose.** The owner decided the demo must not use
-> credits of any kind, so nothing here is deployed and the page runs its
-> built-in simulation (`apiBase` in `assets/ai-designer-config.js` stays empty).
-> Everything below is for the day that decision changes.
+> **Status (2026-11-04): being prepared for live use, not deployed yet.** The
+> owner chose Meshy for a real demo, so this backend is the path to it. Until it
+> is deployed and `apiBase` in `assets/ai-designer-config.js` is set, the website
+> runs its built-in simulation. The order of work is in `CLAUDE.md` ("Going live").
 
 A small TypeScript backend that lets the page `disenador-ia.html` turn a pet
 photo into a 3D jewelry preview. It exists for one reason: **the Meshy API key
@@ -63,8 +63,21 @@ backend refuses to run (answers "no disponible") instead of running half-open.
 
 ### First real run: checklist
 
-The Meshy part was written from their public docs and tested against a faked
-Meshy, **not against the real service**. On the first real run, with one photo:
+The Meshy part was checked against Meshy's official docs and tested against a
+faked Meshy, but **not yet against the real service**. Do the first run with the
+safe helper, from your own terminal (the key stays on your computer):
+
+```bash
+cd ai-designer-api && npm install
+export MESHY_API_KEY=msy_...            # or put it in a .env file (git-ignored)
+npm run smoke                           # FREE: key works? how many credits?
+npm run smoke -- --image foto.jpg       # FREE dry run: what would be sent + cost
+npm run smoke -- --image foto.jpg --spend --material oro   # REAL: spends ~15 credits
+```
+
+It prints the time taken, the credits Meshy says it charged, your balance
+before and after, and saves the `.glb` straight away (Meshy's links expire in
+about 3 days). Then, with the deployed site and one photo:
 
 - [ ] It finishes, and the model appears in the viewer. If the viewer shows
       "No pudimos mostrar el modelo 3D", Meshy's file link is being blocked

@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ApiError } from "../lib/errors";
-import { classifyFailure, createMeshyProvider } from "../lib/providers/meshy";
+import { buildCreateBody, classifyTaskError, createMeshyProvider } from "../lib/providers/meshy";
 import { createMockProvider } from "../lib/providers/mock";
 import { fakeJpegDataUri } from "./helpers";
 
-const meshyOptions = { apiKey: "test-key", model: "meshy-6-lite", enablePbr: true, baseUrl: "https://api.meshy.test" };
+const meshyOptions = {
+  apiKey: "test-key",
+  model: "meshy-6-lite",
+  enablePbr: true,
+  moderation: true,
+  baseUrl: "https://api.meshy.test",
+};
 
 interface Recorded {
   url: string;
@@ -57,6 +63,8 @@ test("meshy: createJob sends the documented request and returns the task id", as
   assert.deepEqual(sent.target_formats, ["glb"]);
   assert.equal(sent.texture_prompt, "polished yellow gold jewelry");
   assert.equal(sent.image_url, input.imageDataUri);
+  // meshy-6-lite answers HTTP 400 if `moderation` is sent, so it must be absent
+  assert.equal("moderation" in sent, false);
 });
 
 test("meshy: photo-only requests carry no texture_prompt", async () => {
@@ -72,6 +80,8 @@ test("meshy: HTTP failures map to friendly error codes", async () => {
   assert.equal(await errorCode(make(429).createJob(input)), "busy");
   assert.equal(await errorCode(make(401).createJob(input)), "provider_error");
   assert.equal(await errorCode(make(400, { message: "Image failed moderation" }).createJob(input)), "content_rejected");
+  assert.equal(await errorCode(make(400, { message: "Invalid data URI" }).createJob(input)), "invalid_input");
+  assert.equal(await errorCode(make(403).createJob(input)), "provider_error"); // our plan / IP allow-list, not the customer
   assert.equal(await errorCode(make(500).createJob(input)), "provider_error");
   assert.equal(await errorCode(make(200, {}).createJob(input)), "provider_error"); // no task id
 });
@@ -97,8 +107,13 @@ test("meshy: getJob maps each status word", async () => {
   const noFile = await status({ status: "SUCCEEDED", progress: 100, model_urls: {} });
   assert.equal(noFile.state, "failed");
 
-  const rejected = await status({ status: "FAILED", progress: 10, task_error: { message: "blocked by moderation" } });
-  assert.deepEqual(rejected.error, { code: "content_rejected" });
+  // task_error shapes exactly as in Meshy's docs (docs.meshy.ai/api/errors)
+  const failed = (task_error: unknown) => status({ status: "FAILED", progress: 10, task_error });
+  assert.deepEqual((await failed({ type: "invalid_input", code: "moderation_blocked", message: "x" })).error, { code: "content_rejected" });
+  assert.deepEqual((await failed({ type: "invalid_input", code: "image_too_complex", message: "" })).error, { code: "invalid_input" });
+  assert.deepEqual((await failed({ type: "server_error", message: "An internal error occurred. Please retry." })).error, { code: "provider_error" });
+  assert.deepEqual((await failed({ type: "timeout", code: "queue_timeout", message: "" })).error, { code: "timeout" });
+  assert.deepEqual((await status({ status: "CANCELED", progress: 0 })).error, { code: "provider_error" });
 
   const unknown = await status({ status: "SOMETHING_NEW", progress: 5 });
   assert.equal(unknown.state, "running"); // never crash on a new status word
@@ -113,11 +128,28 @@ test("meshy: job ids are URL-encoded", async () => {
   assert.equal(recorded[0]?.url, "https://api.meshy.test/openapi/v1/image-to-3d/a%2Fb%3Fc");
 });
 
-test("classifyFailure", () => {
-  assert.equal(classifyFailure("NSFW content detected"), "content_rejected");
-  assert.equal(classifyFailure("anything", "moderation_blocked"), "content_rejected");
-  assert.equal(classifyFailure("image_too_complex"), "invalid_input");
-  assert.equal(classifyFailure("server exploded"), "provider_error");
+test("classifyTaskError uses the documented type and code", () => {
+  assert.equal(classifyTaskError({ code: "moderation_blocked" }), "content_rejected");
+  // A temporary outage of Meshy's content checker is NOT the customer's fault.
+  assert.equal(classifyTaskError({ type: "server_error", code: "moderation_unavailable" }), "provider_error");
+  assert.equal(classifyTaskError({ code: "image_too_complex" }), "invalid_input");
+  assert.equal(classifyTaskError({ type: "invalid_input" }), "invalid_input");
+  assert.equal(classifyTaskError({ type: "timeout" }), "timeout");
+  assert.equal(classifyTaskError({ code: "queue_timeout" }), "timeout");
+  assert.equal(classifyTaskError({ type: "server_error", message: "server exploded" }), "provider_error");
+  // a code Meshy adds later falls back on its type, then on "provider_error"
+  assert.equal(classifyTaskError({ type: "invalid_input", code: "some_new_code" }), "invalid_input");
+  assert.equal(classifyTaskError({ code: "some_new_code" }), "provider_error");
+  assert.equal(classifyTaskError(undefined), "provider_error");
+  assert.equal(classifyTaskError(null), "provider_error");
+});
+
+test("meshy: moderation is only requested with meshy-6 (lite rejects it, 7.1 ignores it)", () => {
+  const body = (model: string, moderation = true) => buildCreateBody({ ...meshyOptions, model, moderation }, input);
+  assert.equal(body("meshy-6").moderation, true);
+  assert.equal("moderation" in body("meshy-6-lite"), false);
+  assert.equal("moderation" in body("meshy-7.1"), false);
+  assert.equal("moderation" in body("meshy-6", false), false);
 });
 
 test("mock: progresses with time and finishes with the example piece", async () => {
