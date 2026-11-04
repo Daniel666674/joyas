@@ -82,6 +82,7 @@
     fileError: $("hje-ai-file-error"),
     formError: $("hje-ai-form-error"),
     materialFields: $("hje-ai-material-fields"),
+    metals: $("hje-ai-metals"),
     modes: el_q(".hje-ai-modes"),
     jewelField: $("hje-ai-jewel-field"),
     jewel: $("hje-ai-jewel"),
@@ -148,6 +149,152 @@
 
   // Recolour the model's "Metal" material (gold / silver / rose gold) without
   // reloading it. Gems and enamel keep their own materials.
+  /* ----------------------------------------- metal switch for generated pieces -- */
+  // A generated model has its colour baked into a texture, so unlike the hand-built pieces it
+  // has no "Metal" material to recolour. Changing the metal means re-tinting that texture here
+  // in the browser: read it back from the viewer, keep its light/dark pattern (engraving, enamel,
+  // highlights) and swap the hue for the chosen metal. No server, no new generation, no credits.
+  var RECOLOR_SIZE = 2048;
+  var recolor = null; // { entries: [{ m, base, tinfo, origTex, lin, cache }], key }
+
+  // 8-bit linear -> 8-bit sRGB (the viewer hands textures back linear, canvases are sRGB)
+  var SRGB = (function () {
+    var lut = new Uint8Array(256);
+    for (var i = 0; i < 256; i++) {
+      var q = i / 255;
+      q = q <= 0.0031308 ? 12.92 * q : 1.055 * Math.pow(q, 1 / 2.4) - 0.055;
+      lut[i] = Math.round(Math.max(0, Math.min(1, q)) * 255);
+    }
+    return lut;
+  })();
+
+  function resetRecolor() {
+    recolor = null;
+    show(el.metals, false);
+    paintMetalChips("");
+  }
+
+  function paintMetalChips(key) {
+    Array.prototype.forEach.call(el.metals.querySelectorAll(".hje-ai-metal"), function (btn) {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-metal") === key ? "true" : "false");
+    });
+  }
+
+  // The texture exactly as the model has it (upright, linear 8-bit RGBA).
+  function readTexture(texture, size) {
+    return texture.source.createThumbnail(size, size).then(function (url) {
+      return new Promise(function (resolve, reject) {
+        var img = new Image();
+        img.onload = function () {
+          var canvas = document.createElement("canvas");
+          canvas.width = size;
+          canvas.height = size;
+          var ctx = canvas.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(img, 0, 0, size, size);
+          try { URL.revokeObjectURL(url); } catch (e) { /* ignore */ }
+          resolve(ctx.getImageData(0, 0, size, size));
+        };
+        img.onerror = function () { reject(new Error("texture read-back failed")); };
+        img.src = url;
+      });
+    });
+  }
+
+  // Same pattern of light and dark, new hue: out = metal * (luminance / mean luminance) ^ 0.8.
+  // Dark areas (black enamel, engraving) stay dark, highlights stay bright, the hue becomes the metal's.
+  function tintedTexture(linear, metal) {
+    var src = linear.data;
+    var out = new ImageData(linear.width, linear.height);
+    var dst = out.data;
+    var sum = 0;
+    var count = 0;
+    var i;
+    for (i = 0; i < src.length; i += 4) {
+      if (src[i + 3] < 8) continue;
+      sum += 0.2126 * src[i] + 0.7152 * src[i + 1] + 0.0722 * src[i + 2];
+      count++;
+    }
+    var mean = Math.max(1, sum / Math.max(1, count));
+    for (i = 0; i < src.length; i += 4) {
+      dst[i + 3] = src[i + 3];
+      var ratio = Math.pow((0.2126 * src[i] + 0.7152 * src[i + 1] + 0.0722 * src[i + 2]) / mean, 0.8);
+      for (var k = 0; k < 3; k++) {
+        dst[i + k] = SRGB[Math.max(0, Math.min(255, Math.round(metal[k] * 255 * ratio)))];
+      }
+    }
+    var tmp = document.createElement("canvas");
+    tmp.width = linear.width;
+    tmp.height = linear.height;
+    tmp.getContext("2d").putImageData(out, 0, 0);
+    var texture = el.viewer.createCanvasTexture();
+    var canvas = texture.source.element;
+    canvas.width = linear.width;
+    canvas.height = linear.height;
+    var ctx = canvas.getContext("2d");
+    ctx.save();
+    ctx.translate(0, linear.height); // canvas textures arrive upside down compared with glTF ones
+    ctx.scale(1, -1);
+    ctx.drawImage(tmp, 0, 0);
+    ctx.restore();
+    texture.source.update();
+    return texture;
+  }
+
+  function prepareRecolor() {
+    resetRecolor();
+    var model = el.viewer.model;
+    if (!model || !model.materials || !model.materials.length || typeof el.viewer.createCanvasTexture !== "function") return;
+    var mine = {
+      key: "",
+      entries: model.materials.map(function (m) {
+        var tinfo = m.pbrMetallicRoughness.baseColorTexture;
+        return { m: m, base: m.pbrMetallicRoughness.baseColorFactor.slice(), tinfo: tinfo, origTex: tinfo ? tinfo.texture : null, lin: null, cache: {} };
+      })
+    };
+    recolor = mine;
+    Promise.all(mine.entries.filter(function (e) { return e.origTex; }).map(function (e) {
+      return readTexture(e.origTex, RECOLOR_SIZE).then(function (data) { e.lin = data; });
+    })).then(
+      function () {
+        if (recolor !== mine) return; // another design was loaded meanwhile
+        show(el.metals, true);
+      },
+      function (err) {
+        if (window.console && console.warn) console.warn("metal switch unavailable for this model", err && err.message);
+        if (recolor === mine) resetRecolor();
+      }
+    );
+  }
+
+  function applyGeneratedMetal(key) {
+    if (!recolor) return;
+    var metal = METAL[key];
+    try {
+      recolor.entries.forEach(function (e) {
+        var pbr = e.m.pbrMetallicRoughness;
+        if (!metal) { // back to the colours Meshy made
+          if (e.tinfo && e.origTex) e.tinfo.setTexture(e.origTex);
+          pbr.setBaseColorFactor(e.base);
+        } else if (e.lin) {
+          if (!e.cache[key]) e.cache[key] = tintedTexture(e.lin, metal);
+          e.tinfo.setTexture(e.cache[key]);
+          pbr.setBaseColorFactor([1, 1, 1, e.base[3]]);
+        } else {
+          pbr.setBaseColorFactor([metal[0], metal[1], metal[2], e.base[3]]);
+        }
+      });
+      recolor.key = key;
+      paintMetalChips(key);
+    } catch (err) {
+      if (window.console && console.warn) console.warn("metal switch failed", err && err.message);
+      resetRecolor();
+    }
+  }
+
+  Array.prototype.forEach.call(el.metals.querySelectorAll(".hje-ai-metal"), function (btn) {
+    btn.addEventListener("click", function () { applyGeneratedMetal(btn.getAttribute("data-metal") || ""); });
+  });
+
   function applyMetal() {
     var model = el.viewer.model;
     if (!model || !model.materials) return;
@@ -485,6 +632,7 @@
   }
 
   function fail(message) {
+    resetRecolor();
     stopTicker();
     clearTimeout(pollTimer);
     busy = false;
@@ -503,6 +651,7 @@
 
   // Fallback after a failed generation: the hand-built example ring, clearly labelled.
   function showExample() {
+    resetRecolor();
     var p = PIECES.anillo;
     el.viewer.setAttribute("camera-target", p.target);
     el.viewer.setAttribute("camera-orbit", p.orbit);
@@ -514,6 +663,7 @@
 
   // keepResume: a mistyped demo code must not lose the recovery link.
   function backToIdle(keepResume) {
+    resetRecolor();
     revokeBlob();
     if (keepResume !== true) leaveRecovery();
     stopTicker();
@@ -575,6 +725,7 @@
       if (ok) {
         applyMetal();
         setState("done");
+        if (live) prepareRecolor(); else resetRecolor();
         announce("Tu diseño 3D está listo.");
         el.again.focus({ preventScroll: true });
       } else {

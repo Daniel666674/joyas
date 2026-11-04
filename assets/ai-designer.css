@@ -476,3 +476,29 @@
 
 /* Live mode: the jewelry-type select has no metal dot, so it keeps the normal field padding. */
 .hje-ai-select--plain select { padding-left: 14px; padding-right: 38px; }
+
+/* Metal switch under a generated piece: recolours the model in the browser (no new generation, no credits). */
+.hje-ai-metals {
+  order: 3; flex: 1 0 100%;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding-top: 8px; border-top: 1px solid var(--ai-line);
+}
+.hje-ai-metals[hidden] { display: none; }
+.hje-ai-metals-label { margin-right: 2px; font-size: 0.78rem; font-weight: 600; color: var(--ai-soft); }
+.hje-ai-metal {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 34px; padding: 0 12px;
+  border: 1px solid var(--ai-field); border-radius: 999px;
+  background: #fff; color: var(--ai-ink);
+  font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+}
+.hje-ai-metal i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.18); }
+.hje-ai-metal[data-metal=""] i { border-style: dashed; background: transparent; }
+.hje-ai-metal[data-metal="oro"] i { background: #d9a93b; }
+.hje-ai-metal[data-metal="plata"] i { background: #c9ccd1; }
+.hje-ai-metal[data-metal="oro-rosa"] i { background: #d9967f; }
+.hje-ai-metal[aria-pressed="true"] {
+  border-color: var(--ai-burgundy); background: #fdf5f4; color: var(--ai-burgundy);
+  box-shadow: 0 0 0 1px var(--ai-burgundy);
+}
+.hje-ai-metal:focus-visible { outline: 3px solid rgba(168, 120, 42, 0.45); outline-offset: 2px; }
