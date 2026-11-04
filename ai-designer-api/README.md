@@ -26,6 +26,21 @@ The page also has a built-in simulation that needs **no backend at all** (its
 `apiBase` in `assets/ai-designer-config.js` is empty). That is what you see
 today on GitHub Pages.
 
+## Where it runs today (2026-11-04)
+
+Vercel project **habibi-ai-designer-api** (team AGENCY, free Hobby plan), live at
+`https://habibi-ai-designer-api-agency6.vercel.app`, currently with
+`PROVIDER=mock` (free fake results). It was created **without** a GitHub link:
+Vercel's GitHub app has no access to the `joyas` repository, so the code was
+uploaded directly and **pushing to GitHub does not redeploy it**. To get
+automatic deploys, give Vercel access to `joyas` (GitHub > Settings >
+Applications > Vercel > Configure > Repository access) and then connect the
+repo in the project's **Settings > Git** with Root Directory `ai-designer-api`.
+
+`tsconfig.json` must keep `"module": "CommonJS"`. With `ESNext` Vercel emitted
+`import` statements into plain `.js` files and every endpoint crashed with
+`Cannot use import statement outside a module`.
+
 ## Deploy it on Vercel (about 10 minutes, no coding)
 
 1. Create a free account at vercel.com and connect your GitHub.
@@ -51,12 +66,23 @@ did not touch this folder, so the admin panel's product saves do not trigger it.
 
 ## Switch to real 3D generation (Meshy)
 
-1. Create a Meshy account and a **Pro** plan (API access is paid-only; the
-   free plan has none). In the dashboard, buy API credits and **turn auto
-   top-up off**: your balance is the hard spending limit.
-2. Create an API key (it is shown only once) and add it in Vercel as
-   `MESHY_API_KEY`. Change `PROVIDER` to `meshy`.
-3. Environment variable changes only apply after **Redeploy**.
+1. You need a Meshy **Pro** plan (API access is paid-only; the free plan has
+   none). If you buy extra credits, **turn auto top-up off**: your balance is
+   the hard spending limit.
+2. Create the API key on Meshy's **API Keys** page,
+   <https://www.meshy.ai/developers/keys> (**Create API Key**). The key looks
+   like `msy_...` and is shown **only once**, so copy it straight into Vercel.
+   In the same dialog, set a **Monthly credit limit** for this key (for
+   example 300 credits, about 20 models on `meshy-6-lite`): Meshy then refuses
+   to spend more on this key whatever happens, even if the demo code leaks.
+   Do not use the IP allow-list option: Vercel's outgoing addresses change.
+3. In Vercel, project **habibi-ai-designer-api** > **Settings > Environment
+   Variables**, add `MESHY_API_KEY` (mark it **Sensitive**) and `DEMO_CODE`
+   (the code you give your client), and change `PROVIDER` from `mock` to
+   `meshy`.
+4. Environment variable changes only apply after **Redeploy**: **Deployments**
+   > the latest one > **...** > **Redeploy**. Then open `/api/health`: it
+   must say `"provider":"meshy"` and `"requiresCode":true`.
 
 If `PROVIDER=meshy` and either `MESHY_API_KEY` or `DEMO_CODE` is missing, the
 backend refuses to run (answers "no disponible") instead of running half-open.
