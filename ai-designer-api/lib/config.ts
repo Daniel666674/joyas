@@ -11,7 +11,10 @@ export interface Config {
   maxImageBytes: number;
   meshy: { apiKey: string; model: string; enablePbr: boolean; moderation: boolean; baseUrl: string; restyle: boolean; restyleModel: string };
   mock: { modelBaseUrl: string; durationMs: number };
-  /** Saved orders (3D file + photo) shown in the admin panel. Off unless BOTH an ADMIN_CODE and a Blob store token exist. */
+  /**
+   * Saved orders (3D file + photo) shown in the admin panel. Off unless a Blob store token exists AND there is a
+   * code to protect them: ADMIN_CODE, or (demo shortcut) the DEMO_CODE when no ADMIN_CODE is set.
+   */
   orders: { adminCode: string | null; hasStorageToken: boolean };
   /**
    * Human-readable setup mistakes (variable NAMES only, never values). When this
@@ -81,7 +84,10 @@ export function loadConfig(env: Env = process.env): Config {
       durationMs: positiveInt(env.MOCK_DURATION_MS, 12_000),
     },
     orders: {
-      adminCode: env.ADMIN_CODE?.trim() || null,
+      // Demo shortcut: with no separate ADMIN_CODE the demo code also opens the admin's order tab, so a demo needs
+      // no extra setup. Set ADMIN_CODE to a different value as soon as the demo code is handed to anyone who
+      // should not read other people's orders.
+      adminCode: env.ADMIN_CODE?.trim() || demoCode,
       hasStorageToken: Boolean(env.BLOB_READ_WRITE_TOKEN?.trim()),
     },
     problems,

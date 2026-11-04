@@ -141,17 +141,14 @@ Where it is stored: a **private Vercel Blob store** (the repository is public, s
 can never live in it). The 3D file is copied at order time because Meshy deletes its own copy
 after about 3 days.
 
-To turn it on (the store already exists and is connected, so only the code is missing):
+Nothing extra is needed to turn it on: it works as soon as the private Blob store is connected
+(Vercel creates `BLOB_READ_WRITE_TOKEN` itself) and `/api/health` then says `"orders":true`. For a demo,
+the **`DEMO_CODE` also opens the admin's order tab**. Before real customers use the designer, add a
+different `ADMIN_CODE` (Vercel > Settings > Environment Variables, **Sensitive**, Production) and
+**Redeploy**: the demo code then stops opening the orders.
 
-1. Vercel > project **habibi-ai-designer-api** > **Settings > Environment Variables**: add
-   `ADMIN_CODE` (any code you choose, different from `DEMO_CODE`; mark it **Sensitive**, Production).
-   `BLOB_READ_WRITE_TOKEN` is created by Vercel when the Blob store is connected.
-2. **Redeploy** (Deployments > latest > ... > Redeploy).
-3. `/api/health` must now say `"orders":true`. Until then every order endpoint answers 503
-   and the page falls back to a WhatsApp message with the design's recovery link.
-
-The admin tab asks for `ADMIN_CODE` once per browser session. Endpoints: `POST /api/order`
-(demo code), `GET /api/orders`, `GET /api/order-file`, `POST /api/order-status` (admin code).
+The admin tab asks for the code (demo code, or `ADMIN_CODE` if set) once per browser session. Endpoints: `POST /api/order`
+(demo code), `GET /api/orders`, `GET /api/order-file`, `POST /api/order-status` (admin code = demo code unless `ADMIN_CODE` is set).
 
 ## What protects your credits, and what does not
 

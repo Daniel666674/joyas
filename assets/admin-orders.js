@@ -2,7 +2,8 @@
  * Admin panel, tab "Pedidos IA": quote requests that customers send from the AI jewelry designer.
  * Plain JavaScript, no build step. It talks to the designer's backend (apiBase from ai-designer-config.js),
  * which keeps the orders (3D file, photo, notes) in a PRIVATE store; the panel reads them with the admin
- * code (ADMIN_CODE in Vercel), which is asked here and kept only in sessionStorage for this browser tab.
+ * code, which is asked here and kept only in sessionStorage for this browser tab. For the demo that code is
+ * the same DEMO_CODE used in the designer; setting a separate ADMIN_CODE in Vercel makes it a different one.
  * Everything customers wrote is put on screen with textContent, never as HTML.
  */
 (function () {
@@ -69,7 +70,7 @@
 
   function explain(res, data) {
     if (res.status === 401) return "Código incorrecto.";
-    if (res.status === 503) return "Los pedidos todavía no están configurados en Vercel (falta ADMIN_CODE o el almacén Blob privado).";
+    if (res.status === 503) return "Los pedidos todavía no están configurados en Vercel (falta conectar el almacén Blob privado).";
     return (data && data.error && data.error.message) || "No pudimos completar la acción (" + res.status + ").";
   }
 
@@ -283,7 +284,7 @@
 
   el.enter.addEventListener("click", function () {
     var value = el.code.value.trim();
-    if (!value) { el.gateError.textContent = "Escribe el código de pedidos."; show(el.gateError, true); return; }
+    if (!value) { el.gateError.textContent = "Escribe el código del demo."; show(el.gateError, true); return; }
     store("set", value);
     el.code.value = "";
     show(el.gateError, false);

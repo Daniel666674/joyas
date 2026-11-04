@@ -128,9 +128,9 @@
     <div class="hje-ao-gate" id="hje-ao-gate">
       <h2 class="hje-ao-title">Pedidos del diseñador con IA</h2>
       <p class="hje-ao-lead">Aquí llegan las cotizaciones que piden los clientes desde el diseñador. Cada pedido trae el archivo 3D (.glb), la foto de la mascota (si el cliente lo autorizó) y sus notas. El precio y el tiempo de entrega se acuerdan por WhatsApp.</p>
-      <label class="hje-ao-label" for="hje-ao-code">Código de pedidos (el que se puso como ADMIN_CODE en Vercel)</label>
+      <label class="hje-ao-label" for="hje-ao-code">Código del demo (el mismo que se usa en el diseñador)</label>
       <div class="hje-ao-row">
-        <input type="password" id="hje-ao-code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Código de pedidos" />
+        <input type="password" id="hje-ao-code" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Código del demo" />
         <button type="button" class="hje-adm-btn-primary" id="hje-ao-enter">Ver pedidos</button>
       </div>
       <p class="hje-ao-error" id="hje-ao-gate-error" role="alert" hidden></p>
@@ -536,7 +536,7 @@
 
 <script src="/joyas/assets/ai-designer-config.js?v=20261104c"></script>
 <script defer src="/joyas/assets/admin.js"></script>
-<script defer src="/joyas/assets/admin-orders.js?v=20261104a"></script>
+<script defer src="/joyas/assets/admin-orders.js?v=20261104b"></script>
 <script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/joyas/sw-admin.js",{scope:"/joyas/"}).catch(function(){});}</script>
 </body>
 </html>
