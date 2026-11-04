@@ -22,7 +22,15 @@ export interface MeshyOptions {
   /** Ask Meshy to screen the photo first. See buildCreateBody: only `meshy-6` supports it. */
   moderation: boolean;
   baseUrl: string;
+  /** Step 1 (image-to-image): redraw the photo as the chosen jewelry before making the 3D model. */
+  restyle?: boolean;
+  restyleModel?: string;
 }
+
+/** Ids of step-1 tasks carry this prefix so getJob knows which Meshy endpoint to ask. */
+export const RESTYLE_PREFIX = "ii_";
+/** Share of the progress bar given to step 1 (about 40 s of a 2-4 minute job). */
+const RESTYLE_SHARE = 15;
 
 type FetchLike = typeof fetch;
 
@@ -30,6 +38,14 @@ export interface MeshyTaskError {
   type?: string;
   code?: string;
   message?: string;
+}
+
+interface MeshyImageTask {
+  status?: string;
+  progress?: number;
+  image_urls?: string[];
+  task_error?: MeshyTaskError | null;
+  consumed_credits?: number;
 }
 
 interface MeshyTask {
@@ -67,10 +83,14 @@ function classifyBadRequest(message: string): ErrorCode {
   return /moderat|harmful|safety|nsfw|sensitive/i.test(message) ? "content_rejected" : "invalid_input";
 }
 
-/** Exposed so the smoke script can show exactly what would be sent. */
-export function buildCreateBody(options: MeshyOptions, input: CreateJobInput): Record<string, unknown> {
+/**
+ * The image-to-3D request. The source is either the photo itself (`image_url`) or the
+ * finished step-1 picture (`input_task_id`, which Meshy accepts for a SUCCEEDED
+ * image-to-image task that made one image).
+ */
+function modelBody(options: MeshyOptions, source: Record<string, string>): Record<string, unknown> {
   const body: Record<string, unknown> = {
-    image_url: input.imageDataUri,
+    ...source,
     ai_model: options.model,
     should_texture: true,
     // PBR maps (metallic/roughness) are what make gold look like gold; allowed
@@ -79,11 +99,28 @@ export function buildCreateBody(options: MeshyOptions, input: CreateJobInput): R
     // Only the format the page uses: Meshy skips the others, which shortens the task.
     target_formats: ["glb"],
   };
-  if (input.texturePrompt) body.texture_prompt = input.texturePrompt;
   // Meshy's pre-screening only takes effect with `meshy-6`: `meshy-7.1`/`latest`
   // ignore it and `meshy-6-lite` answers HTTP 400, so it must never be sent there.
   if (options.moderation && options.model === "meshy-6") body.moderation = true;
   return body;
+}
+
+/** Exposed so the smoke script can show exactly what would be sent (photo straight to 3D). */
+export function buildCreateBody(options: MeshyOptions, input: CreateJobInput): Record<string, unknown> {
+  const body = modelBody(options, { image_url: input.imageDataUri });
+  if (input.texturePrompt) body.texture_prompt = input.texturePrompt;
+  return body;
+}
+
+/** Step 1: redraw the photo as the chosen jewelry on a clean transparent background. */
+export function buildRestyleBody(options: MeshyOptions, input: CreateJobInput): Record<string, unknown> {
+  return {
+    ai_model: options.restyleModel ?? "nano-banana",
+    prompt: input.restylePrompt,
+    reference_image_urls: [input.imageDataUri],
+    // A transparent PNG gives the 3D step an isolated object instead of a studio backdrop.
+    remove_background: true,
+  };
 }
 
 async function readJson(res: Response): Promise<Record<string, unknown>> {
@@ -113,26 +150,66 @@ export function createMeshyProvider(options: MeshyOptions, fetchImpl: FetchLike 
     "Content-Type": "application/json",
   };
 
+  /** Creates a task and returns its id. */
+  async function post(path: string, body: Record<string, unknown>): Promise<string> {
+    const res = await fetchImpl(`${options.baseUrl}${path}`, { method: "POST", headers, body: JSON.stringify(body) });
+    const data = await readJson(res);
+    if (!res.ok) throw errorForHttp(res.status, data);
+    const taskId = data.result;
+    if (typeof taskId !== "string" || !taskId) {
+      throw new ApiError("provider_error", "meshy create response had no task id");
+    }
+    return taskId;
+  }
+
+  /**
+   * Step 1 status. When the redrawn picture is ready, this call starts step 2 (the 3D
+   * model, made from that picture) and hands back its id as `nextJobId`; the page then
+   * polls that id. Polling a finished step-1 id again would start another model.
+   */
+  async function getRestyleJob(taskId: string): Promise<JobStatus> {
+    const res = await fetchImpl(`${options.baseUrl}/openapi/v1/image-to-image/${encodeURIComponent(taskId)}`, {
+      method: "GET",
+      headers,
+    });
+    const data = await readJson(res);
+    if (res.status === 404) throw new ApiError("not_found", "meshy image task not found (expired?)");
+    if (!res.ok) throw errorForHttp(res.status, data);
+
+    const task = data as MeshyImageTask;
+    const raw = Math.max(0, Math.min(100, Math.round(task.progress ?? 0)));
+    const progress = Math.round((raw * RESTYLE_SHARE) / 100);
+    const creditsUsed = typeof task.consumed_credits === "number" ? task.consumed_credits : undefined;
+
+    switch (task.status) {
+      case "PENDING":
+        return { state: "queued", progress, creditsUsed };
+      case "SUCCEEDED": {
+        if (!task.image_urls?.length) return { state: "failed", progress, error: { code: "provider_error" }, creditsUsed };
+        const nextJobId = await post("/openapi/v1/image-to-3d", modelBody(options, { input_task_id: taskId }));
+        return { state: "running", progress: RESTYLE_SHARE, nextJobId, creditsUsed };
+      }
+      case "FAILED":
+      case "CANCELED":
+        return { state: "failed", progress, error: { code: classifyTaskError(task.task_error) }, creditsUsed };
+      default:
+        return { state: "running", progress, creditsUsed };
+    }
+  }
+
   return {
     name: "meshy",
 
     async createJob(input: CreateJobInput) {
-      const res = await fetchImpl(`${options.baseUrl}/openapi/v1/image-to-3d`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(buildCreateBody(options, input)),
-      });
-      const data = await readJson(res);
-      if (!res.ok) throw errorForHttp(res.status, data);
-
-      const taskId = data.result;
-      if (typeof taskId !== "string" || !taskId) {
-        throw new ApiError("provider_error", "meshy create response had no task id");
+      if (options.restyle && input.restylePrompt) {
+        const taskId = await post("/openapi/v1/image-to-image", buildRestyleBody(options, input));
+        return { jobId: RESTYLE_PREFIX + taskId };
       }
-      return { jobId: taskId };
+      return { jobId: await post("/openapi/v1/image-to-3d", buildCreateBody(options, input)) };
     },
 
     async getJob(jobId: string): Promise<JobStatus> {
+      if (jobId.startsWith(RESTYLE_PREFIX)) return getRestyleJob(jobId.slice(RESTYLE_PREFIX.length));
       const res = await fetchImpl(
         `${options.baseUrl}/openapi/v1/image-to-3d/${encodeURIComponent(jobId)}`,
         { method: "GET", headers },

@@ -9,7 +9,7 @@ export interface Config {
   allowedOrigins: string[];
   /** Max decoded size of the (already browser-resized) photo. */
   maxImageBytes: number;
-  meshy: { apiKey: string; model: string; enablePbr: boolean; moderation: boolean; baseUrl: string };
+  meshy: { apiKey: string; model: string; enablePbr: boolean; moderation: boolean; baseUrl: string; restyle: boolean; restyleModel: string };
   mock: { modelBaseUrl: string; durationMs: number };
   /**
    * Human-readable setup mistakes (variable NAMES only, never values). When this
@@ -68,6 +68,9 @@ export function loadConfig(env: Env = process.env): Config {
       // only takes effect with MESHY_MODEL=meshy-6 (see providers/meshy.ts)
       moderation: flag(env.MESHY_MODERATION, true),
       baseUrl: (env.MESHY_BASE_URL?.trim() || "https://api.meshy.ai").replace(/\/+$/, ""),
+      // Step 1: redraw the photo as the chosen jewelry (3 credits). MESHY_RESTYLE=false = old behaviour (photo straight to 3D).
+      restyle: flag(env.MESHY_RESTYLE, true),
+      restyleModel: env.MESHY_RESTYLE_MODEL?.trim() || "nano-banana",
     },
     mock: {
       modelBaseUrl: (

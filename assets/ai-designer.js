@@ -52,10 +52,11 @@
     exampleNote: "Este es un ejemplo de muestra: no se generó con tu foto.",
     waitSim: "Puede tardar unos minutos. No cierres esta página.",
     // Meshy's own docs give 75 s to ~3.5 min as typical for this kind of task
-    waitLive: "Suele tardar de 1 a 3 minutos. No cierres esta página."
+    waitLive: "Suele tardar de 2 a 4 minutos: primero diseñamos tu joya y luego la modelamos en 3D. No cierres esta página."
   };
 
   function $(id) { return document.getElementById(id); }
+  function el_q(selector) { return document.querySelector(selector); }
 
   var el = {
     form: $("hje-ai-form"),
@@ -80,6 +81,9 @@
     fileError: $("hje-ai-file-error"),
     formError: $("hje-ai-form-error"),
     materialFields: $("hje-ai-material-fields"),
+    modes: el_q(".hje-ai-modes"),
+    jewelField: $("hje-ai-jewel-field"),
+    jewel: $("hje-ai-jewel"),
     material: $("hje-ai-material"),
     dot: $("hje-ai-dot"),
     style: $("hje-ai-style"),
@@ -123,6 +127,7 @@
   }
 
   function currentMode() {
+    if (live) return "material"; // real generations always take the metal and the customer's own words
     var checked = el.form.querySelector('input[name="mode"]:checked');
     return checked ? checked.value : "photo";
   }
@@ -366,7 +371,7 @@
   var resumeId = (function () {
     try {
       var id = new URLSearchParams(window.location.search).get("job") || "";
-      return /^[A-Za-z0-9_-]{6,80}$/.test(id) ? id : "";
+      return /^[A-Za-z0-9_-]{6,80}$/.test(id) && id.indexOf("ii_") !== 0 ? id : "";
     } catch (e) { return ""; }
   })();
   var IDLE_LABEL = "Crear mi diseño 3D";
@@ -386,7 +391,9 @@
     el.ringFg.style.strokeDashoffset = String(RING_LEN * (1 - shown / 100));
     el.pct.textContent = pct + "%";
     var stage = pct < 15 ? 0 : pct < 70 ? 1 : 2;
-    var labels = ["En cola…", "Modelando la forma…", "Aplicando material y brillo…"];
+    var labels = live
+      ? ["Diseñando tu joya…", "Modelando la forma…", "Aplicando material y brillo…"]
+      : ["En cola…", "Modelando la forma…", "Aplicando material y brillo…"];
     if (el.stageLabel.textContent !== labels[stage] && state === "working") el.stageLabel.textContent = labels[stage];
     var items = el.steps.children;
     for (var i = 0; i < items.length; i++) {
@@ -501,17 +508,19 @@
   function pollUntilDone(jobId, code) {
     var startedAt = Date.now();
     var failures = 0;
+    var currentId = jobId; // changes once when the redrawn picture is ready and the 3D model starts
     return new Promise(function (resolve, reject) {
       (function tick() {
         if (Date.now() - startedAt > GIVE_UP_MS) {
           reject(new UserError(MSG.timeout, "timeout"));
           return;
         }
-        transport.poll(jobId, code).then(
+        transport.poll(currentId, code).then(
           function (job) {
             failures = 0;
             if (typeof job.progress === "number") target = Math.max(target, job.progress);
-            if (job.state === "succeeded") { resolve(job); return; }
+            if (job.nextJobId) currentId = job.nextJobId;
+            if (job.state === "succeeded") { resolve({ job: job, jobId: currentId }); return; }
             if (job.state === "failed") {
               reject(new UserError((job.error && job.error.message) || MSG.generic, job.error && job.error.code));
               return;
@@ -637,7 +646,8 @@
         payload.material = el.material.value;
         if (el.style.value.trim()) payload.style = el.style.value.trim();
       }
-      if (transport.simulated) payload.piece = currentPiece(); // only the simulation needs it
+      if (transport.simulated) payload.piece = currentPiece(); // the simulation picks one of the example pieces
+      else if (live) payload.piece = el.jewel.value; // real generations: which jewelry to design from the photo
       started = transport.start(payload, code);
     }
 
@@ -645,8 +655,8 @@
       function (data) {
         if (code) store("set", code);
         target = Math.max(target, 3);
-        return pollUntilDone(data.jobId, code).then(function (job) {
-          showResult(job, { jobId: data.jobId, code: code });
+        return pollUntilDone(data.jobId, code).then(function (done) {
+          showResult(done.job, { jobId: done.jobId, code: code });
         });
       }
     ).catch(function (err) {
@@ -715,6 +725,10 @@
     if (live) {
       show(el.pieces, false); // the example pieces make no sense when the result IS the generated model
       show(el.caption, false);
+      show(el.modes, false); // photo-only would just copy the animal: the jewelry type is always asked
+      show(el.jewelField, true);
+      syncMode();
+      if (el.steps && el.steps.children[0]) el.steps.children[0].textContent = "Diseñando tu joya";
       el.waitHint.textContent = MSG.waitLive;
     } else {
       el.waitHint.textContent = MSG.waitSim;

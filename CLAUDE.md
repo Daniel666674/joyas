@@ -942,6 +942,33 @@ size}` (`sha1sum`), so a redeploy only needs to resend changed files; a typo in 
 sha shows up as `missing_files`. (3) `pieces-check.js`-style local tests must
 intercept `ai-designer-config.js` with `apiBase: ""` now that the repo config
 points at the real backend.
+
+**Second real run: it modelled the actual cat, not a jewel (2026-11-04).** Meshy's
+image-to-3D copies the subject of the photo; `texture_prompt` only steers colour and
+finish, never the shape, so no prompt on that call can turn a cat into a pendant.
+Fix: a **two-step job** (`lib/providers/meshy.ts`). Step 1 is Meshy **image-to-image**
+(`POST /openapi/v1/image-to-image`, `nano-banana`, 3 credits, ~40 s,
+`remove_background: true`, the photo as a data URI in `reference_image_urls`) with a
+prompt built by `buildRestylePrompt` (`lib/prompts.ts`) from the chosen **piece**
+(`collar` = pendant, `anillo`, `aretes` = one drop earring, `pulsera` with a charm),
+the metal and the customer's own words (quoted, max 200 chars). Step 2 is image-to-3D
+with `input_task_id` = the finished picture (Meshy accepts a SUCCEEDED image-to-image
+task that made one image) and no `image_url`. Cost about 18 credits instead of 15.
+**Stateless handover:** step-1 ids carry the prefix `ii_`; when `getJob("ii_<id>")`
+sees the picture SUCCEEDED it creates the 3D task and answers `{state:"running",
+progress:15, nextJobId:<3D id>}`; the page (`pollUntilDone`) switches to that id and the
+relay/recovery link use the plain 3D id. Polling a finished `ii_` id again would start
+another model (15 credits), so: the page polls sequentially, `handleModel` rejects `ii_`
+ids, and the recovery link ignores them; a lost response followed by a retry could still
+duplicate a model (accepted, rare). The first 15 % of the bar belongs to step 1 and
+its label reads "Diseñando tu joya". No piece sent, or `MESHY_RESTYLE=false`, = the old
+single step (photo straight to 3D). `MESHY_RESTYLE_MODEL` can switch the image model
+(`nano-banana-pro` needs Pro; check `pricing.md`). **Page (live mode):** the "photo only
+/ photo + material" cards are hidden; the form always shows the jewelry type select, the
+metal and the "Cuéntanos más (opcional)" text; the payload carries `piece`, `material`
+and `style`. **Never verified against the real service yet**: the prompt wording is a
+first draft to judge from real results (the likeness, the white-background framing and
+whether the ring/earring/bracelet read well as 3D are the open questions).
 **tsconfig gotcha:** `module` must be `CommonJS` (+ `moduleResolution: Node10`).
 With `ESNext` the first deploy built fine but every endpoint crashed at runtime
 (`Cannot use import statement outside a module`), visible only in

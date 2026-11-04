@@ -1,7 +1,7 @@
 import { loadConfig, type Config } from "./config";
 import { ApiError, friendlyMessage } from "./errors";
 import { assertDemoCode, assertOriginAllowed, corsHeaders } from "./guards";
-import { buildTexturePrompt } from "./prompts";
+import { buildRestylePrompt, buildTexturePrompt } from "./prompts";
 import { createProvider, type ModelProvider } from "./providers";
 import type { JobStatus } from "./providers/types";
 import { parseGenerateBody } from "./validate";
@@ -126,9 +126,16 @@ export function handleGenerate(request: Request, ctx: Context = defaultContext()
 
     const input = parseGenerateBody(json, ctx.config.maxImageBytes);
     const texturePrompt = buildTexturePrompt(input.material, input.styleText) || null;
-    const { jobId } = await provider.createJob({ ...input, texturePrompt });
+    const restylePrompt = input.piece ? buildRestylePrompt(input.piece, input.material, input.styleText) : null;
+    const { jobId } = await provider.createJob({ ...input, texturePrompt, restylePrompt });
 
-    log("job_created", { provider: provider.name, jobId, material: input.material, withStyle: input.styleText !== "" });
+    log("job_created", {
+      provider: provider.name,
+      jobId,
+      piece: input.piece,
+      material: input.material,
+      withStyle: input.styleText !== "",
+    });
     return { status: 202, body: { jobId } };
   });
 }
@@ -139,6 +146,7 @@ function publicStatus(job: JobStatus) {
     progress: job.progress,
     ...(job.modelUrl ? { modelUrl: job.modelUrl } : {}),
     ...(job.thumbnailUrl ? { thumbnailUrl: job.thumbnailUrl } : {}),
+    ...(job.nextJobId ? { nextJobId: job.nextJobId } : {}),
     ...(job.error ? { error: { code: job.error.code, message: friendlyMessage(job.error.code) } } : {}),
   };
 }
@@ -150,6 +158,7 @@ export function handleStatus(request: Request, ctx: Context = defaultContext()):
     if (!JOB_ID.test(id)) throw new ApiError("bad_request", "bad job id");
 
     const job = await provider.getJob(id);
+    if (job.nextJobId) log("stage_advanced", { provider: provider.name, jobId: id, nextJobId: job.nextJobId, creditsUsed: job.creditsUsed });
     if (job.state === "succeeded" || job.state === "failed") {
       log("job_finished", {
         provider: provider.name,
@@ -197,7 +206,8 @@ export function handleModel(request: Request, ctx: Context = defaultContext()): 
     const provider = requireProvider(ctx);
     const params = new URL(request.url).searchParams;
     const id = params.get("id") ?? "";
-    if (!JOB_ID.test(id)) throw new ApiError("bad_request", "bad job id");
+    // A step-1 id would make getJob() start a new 3D task (and spend credits): only finished 3D ids are served.
+    if (!JOB_ID.test(id) || id.startsWith("ii_")) throw new ApiError("bad_request", "bad job id");
     const offsetText = params.get("offset") ?? "0";
     if (!/^\d{1,9}$/.test(offsetText)) throw new ApiError("bad_request", "bad offset");
     const offset = Number(offsetText);
