@@ -17,7 +17,8 @@
   var MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
   var MAX_SIDE = 1024; // photos are shrunk to this before upload (keeps requests small and cheap)
   var MIN_SIDE = 256;
-  var POLL_MS = 3000;
+  var POLL_MS = 3000; // simulation / mock backend
+  var POLL_MS_LIVE = 5000; // Meshy's docs: poll about every 5 s (each poll is one Meshy request)
   var GIVE_UP_MS = 8 * 60 * 1000;
   var CODE_KEY = "hje-ai-code";
 
@@ -45,7 +46,12 @@
     viewer: "No pudimos mostrar el modelo 3D. Inténtalo de nuevo.",
     paused: "El diseñador está en pausa por ahora. Vuelve a intentarlo más tarde.",
     needPhoto: "Primero sube una foto de tu mascota.",
-    needCode: "Escribe el código de demostración para continuar."
+    needCode: "Escribe el código de demostración para continuar.",
+    done: "¡Listo! Gira y haz zoom para verlo.",
+    exampleNote: "Este es un ejemplo de muestra: no se generó con tu foto.",
+    waitSim: "Puede tardar unos minutos. No cierres esta página.",
+    // Meshy's own docs give 75 s to ~3.5 min as typical for this kind of task
+    waitLive: "Suele tardar de 1 a 3 minutos. No cierres esta página."
   };
 
   function $(id) { return document.getElementById(id); }
@@ -80,6 +86,9 @@
     code: $("hje-ai-code"),
     go: $("hje-ai-go"),
     retry: $("hje-ai-retry"),
+    example: $("hje-ai-example"),
+    waitHint: $("hje-ai-wait-hint"),
+    resultText: $("hje-ai-resulttext"),
     again: $("hje-ai-again"),
     live: $("hje-ai-live")
   };
@@ -310,6 +319,14 @@
   var ticker = null;
   var pollTimer = null;
   var busy = false;
+  // Mode, learned from the backend's /api/health. `pending`: a backend is configured but
+  // has not answered yet, so nothing is shown. `live`: it is the real Meshy generator.
+  var live = false;
+  var pending = !!apiBase;
+
+  function pollMs() {
+    return live ? POLL_MS_LIVE : POLL_MS;
+  }
 
   var RING_LEN = 2 * Math.PI * 52;
   el.ringFg.style.strokeDasharray = String(RING_LEN);
@@ -339,13 +356,25 @@
     if (ticker) { clearInterval(ticker); ticker = null; }
   }
 
+  // The badge must never claim "generated with AI" while the hand-built example is on screen.
+  var BADGE_LIVE = "Demostración · generado con IA";
+  var BADGE_EXAMPLE = "Demostración · ejemplo de muestra";
+  var badgeBase = "";
+  function syncBadge() {
+    if (!badgeBase) return;
+    var text = live && state === "example" ? BADGE_EXAMPLE : badgeBase;
+    if (el.badge.textContent !== text) el.badge.textContent = text;
+  }
+
   function setState(next) {
     state = next;
     el.stage.setAttribute("data-state", next);
     show(el.working, next === "working" || next === "loading");
     show(el.failure, next === "failed");
-    show(el.caption, next === "idle");
-    show(el.resultbar, next === "done");
+    show(el.caption, next === "idle" && !live);
+    show(el.resultbar, next === "done" || next === "example");
+    el.resultText.textContent = next === "example" ? MSG.exampleNote : MSG.done;
+    syncBadge();
     el.go.disabled = next === "working" || next === "loading";
     // the piece can only be changed while idle: it decides what the result will be
     Array.prototype.forEach.call(el.pieces.querySelectorAll("input"), function (input) {
@@ -356,6 +385,8 @@
   }
 
   function showSample() {
+    // With a real backend there is no fake example to show before a generation.
+    if (pending || live) return;
     var piece = currentPiece();
     var url = sampleUrl(piece);
     if (el.viewer.getAttribute("src") !== url) {
@@ -374,8 +405,27 @@
     clearTimeout(pollTimer);
     busy = false;
     el.failureMsg.textContent = message || MSG.generic;
+    show(el.example, live); // live mode: offer a ready-made example so the meeting never stalls
     setState("failed");
     announce(message || MSG.generic);
+  }
+
+  // A model generated from a photo has no fixed shape to frame by hand: let the viewer fit it.
+  function frameGenerated() {
+    el.viewer.setAttribute("camera-target", "auto auto auto");
+    el.viewer.setAttribute("camera-orbit", "20deg 75deg 105%");
+    el.viewer.setAttribute("alt", "Tu joya generada por IA en 3D");
+  }
+
+  // Fallback after a failed generation: the hand-built example ring, clearly labelled.
+  function showExample() {
+    var p = PIECES.anillo;
+    el.viewer.setAttribute("camera-target", p.target);
+    el.viewer.setAttribute("camera-orbit", p.orbit);
+    el.viewer.setAttribute("alt", p.alt + " en 3D (ejemplo)");
+    if (el.viewer.getAttribute("src") !== sampleUrl("anillo")) el.viewer.setAttribute("src", sampleUrl("anillo"));
+    setState("example");
+    announce(MSG.exampleNote);
   }
 
   function backToIdle() {
@@ -411,12 +461,12 @@
               reject(new UserError((job.error && job.error.message) || MSG.generic, job.error && job.error.code));
               return;
             }
-            pollTimer = setTimeout(tick, POLL_MS);
+            pollTimer = setTimeout(tick, pollMs());
           },
           function (err) {
             failures += 1;
             if (failures >= 3 || !isTransient(err)) { reject(err); return; }
-            pollTimer = setTimeout(tick, POLL_MS * 2);
+            pollTimer = setTimeout(tick, pollMs() * 2);
           }
         );
       })();
@@ -457,6 +507,7 @@
       // viewer won't fire another "load" event: it is ready right now.
       done(true);
     } else {
+      if (live) frameGenerated();
       el.viewer.setAttribute("src", job.modelUrl);
     }
   }
@@ -524,6 +575,7 @@
 
   el.retry.addEventListener("click", backToIdle);
   el.again.addEventListener("click", backToIdle);
+  el.example.addEventListener("click", showExample);
 
   /* ------------------------------------------------- mode / material UI -- */
 
@@ -555,15 +607,43 @@
     el.viewer.removeAttribute("auto-rotate");
   }
   el.code.value = store("get");
+  if (pending) {
+    // Talking to a backend: don't download or show an example model until we know
+    // whether it is the real generator (then there is nothing fake to show).
+    el.stage.classList.add("is-pending");
+    el.viewer.removeAttribute("src");
+  }
   syncMaterial();
   syncMode();
 
+  // Called once the backend has answered (or failed to): fixes the mode for the session.
+  function settleMode(info) {
+    pending = false;
+    live = !!(info && info.provider === "meshy");
+    el.stage.classList.remove("is-pending");
+    el.stage.classList.toggle("is-live", live);
+    if (live) {
+      show(el.pieces, false); // the example pieces make no sense when the result IS the generated model
+      show(el.caption, false);
+      el.waitHint.textContent = MSG.waitLive;
+    } else {
+      el.waitHint.textContent = MSG.waitSim;
+      showSample();
+    }
+  }
+
   transport.health().then(
     function (info) {
-      if (transport.simulated || (info && info.provider === "mock")) {
-        el.badge.textContent = transport.simulated
+      settleMode(info);
+      if (live) {
+        badgeBase = BADGE_LIVE;
+      } else if (transport.simulated || (info && info.provider === "mock")) {
+        badgeBase = transport.simulated
           ? "Demostración · vista previa simulada"
           : "Demostración · resultados de ejemplo";
+      }
+      if (badgeBase) {
+        el.badge.textContent = badgeBase;
         show(el.badge, true);
       }
       show(el.codeField, !!(info && info.requiresCode));
@@ -573,6 +653,6 @@
         show(el.formError, true);
       }
     },
-    function () { /* backend unreachable: errors will show up when someone tries to generate */ }
+    function () { settleMode(null); /* backend unreachable: errors will show up when someone tries to generate */ }
   );
 })();

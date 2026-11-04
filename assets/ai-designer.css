@@ -453,3 +453,23 @@
 @media (prefers-reduced-motion: reduce) {
   .hje-ai *, .hje-ai *::before, .hje-ai *::after { transition: none !important; }
 }
+
+/* ------------------------------------------------- live mode (real backend) -- */
+/* With the real Meshy backend there is no fake example to show before a
+   generation: an empty frame says what will happen instead. The viewer stays
+   hidden until the page knows which mode it is in (is-pending), so nothing
+   flashes. */
+.hje-ai-empty {
+  display: none;
+  position: absolute; left: 14px; right: 14px; top: 66px; bottom: 14px; z-index: 1;
+  flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  padding: 20px; text-align: center;
+  border: 2px dashed var(--ai-line); border-radius: 14px;
+  color: var(--ai-soft);
+}
+.hje-ai-empty svg { color: var(--ai-gold); }
+.hje-ai-empty-title { margin: 6px 0 0; font-family: var(--font-serif, "Cormorant Garamond", Georgia, serif); font-size: 1.5rem; font-weight: 500; color: var(--ai-ink); }
+.hje-ai-empty-text { margin: 0; max-width: 30ch; font-size: 0.9rem; line-height: 1.55; }
+.hje-ai-stage.is-live[data-state="idle"] .hje-ai-empty { display: flex; }
+.hje-ai-stage.is-live[data-state="idle"] model-viewer,
+.hje-ai-stage.is-pending model-viewer { visibility: hidden; }

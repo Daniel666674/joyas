@@ -875,9 +875,16 @@ Meshy key and a Vercel project.
 3. *Phase 2:* owner tests, then shares the link + demo code with the client.
 The API key goes ONLY into Vercel's environment variables (or, for one-off runs
 from a Claude session, an environment secret), never into the chat or the repo.
-Open questions for the owner: client-only or wider audience (decides whether
-per-visitor limits/Redis are needed), and Vercel Hobby vs paid (Hobby's terms
-are for non-commercial use; unverified).
+**Owner answers (2026-11-04):** audience is **only the client and the owner**
+(so no per-visitor limits/Redis for now; the demo code + prepaid balance are
+enough), and they want to start on **free Vercel** because it is a demo used to
+negotiate. They already hold a **1-month Meshy Pro subscription** and have used
+Meshy before. **Verified in Vercel's docs: the Hobby plan is for non-commercial,
+personal use only**; showing a pre-sales demo to a paying prospect is a grey
+area, so the owner must accept that risk knowingly or use Vercel Pro (one month,
+$20) / another host. Still open: that hosting decision, the Vercel project
+itself (nothing created yet), and a real pet photo for the first `npm run smoke
+--spend` run.
 
 `assets/ai-designer.js` (plain JS, no build step), `assets/ai-designer.css`
 (every class is `hje-ai-` prefixed so premium.css's Tailwind-chain rules can't
@@ -891,6 +898,29 @@ pre-made example piece); nothing leaves the browser. With an `apiBase` it talks
 to the backend. A badge on the viewer says "simulada" / "resultados de
 ejemplo" whenever results are not real. Don't remove it: showing fake output
 as live to a client would be misleading.
+
+**Live-mode UI (2026-11-04).** The page learns its mode from `/api/health`
+(`settleMode()` in `ai-designer.js`): `provider === "meshy"` means *live*; anything
+else (simulation, `mock`, backend unreachable) keeps the old example-piece
+behaviour. While a backend is configured but has not answered yet the stage
+carries `is-pending` and the viewer has **no `src`** (so the example ring never
+flashes before the real mode is known). In live mode: the three example-piece
+chips and the caption are hidden; the idle stage shows an empty-state frame
+("Tu diseño aparecerá aquí") instead of a model, because the result IS the
+generated model and showing a ring first would imply it is the output; the wait
+hint says 1-3 minutes and polling runs every 5 s (`POLL_MS_LIVE`); the generated
+model gets neutral framing (`frameGenerated()`, since the per-piece cameras were
+tuned for the hand-built pieces); the badge reads "generado con IA". If a live
+generation **fails**, the failure overlay offers "Ver un ejemplo": the hand-built
+ring (`showExample()`, state `example`) labelled "Este es un ejemplo de muestra:
+no se generó con tu foto." and the badge switches to "ejemplo de muestra" while
+it is on screen (`syncBadge()`; never let the "generado con IA" badge sit over
+the sample). Tested with Playwright against a mocked backend (success, failure
+plus example fallback, `provider: "mock"`, backend unreachable; desktop and 390 px;
+70 checks) plus the simulation regression. A mock-backend test needs
+`Access-Control-Allow-Origin` and `x-demo-code` in `Access-Control-Allow-Headers`
+on every mocked response including the OPTIONS preflight, since the page is
+cross-origin to the backend exactly like on GitHub Pages.
 
 **Back end — `ai-designer-api/` (TypeScript, Vercel Functions).** Lives in
 this repo for convenience, so GitHub Pages also publishes its (secret-free)
