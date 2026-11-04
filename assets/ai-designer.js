@@ -20,6 +20,7 @@
   var POLL_MS = 3000; // simulation / mock backend
   var POLL_MS_LIVE = 5000; // Meshy's docs: poll about every 5 s (each poll is one Meshy request)
   var GIVE_UP_MS = 8 * 60 * 1000;
+  var MODEL_FETCH_MS = 90 * 1000; // whole model download through the backend relay
   var CODE_KEY = "hje-ai-code";
 
   var DOT_COLOR = { oro: "#d9a93b", plata: "#c9ccd1", "oro-rosa": "#d9967f" };
@@ -181,6 +182,39 @@
     start: function (payload, code) { return remoteRequest("POST", "/api/generate", payload, code); },
     poll: function (jobId, code) {
       return remoteRequest("GET", "/api/status?id=" + encodeURIComponent(jobId), null, code);
+    },
+    // Meshy's file host sends no CORS headers, so the browser may not read the model
+    // from there. The backend downloads it and hands it over in pieces (a function
+    // cannot answer with more than ~4.5 MB at once). Resolves to a Blob.
+    model: function (jobId, code, onProgress) {
+      var parts = [];
+      var got = 0;
+      var aborter = typeof AbortController === "function" ? new AbortController() : null;
+      var timer = setTimeout(function () { if (aborter) aborter.abort(); }, MODEL_FETCH_MS);
+      function next() {
+        var headers = {};
+        if (code) headers["x-demo-code"] = code;
+        return fetch(apiBase + "/api/model?id=" + encodeURIComponent(jobId) + "&offset=" + got, {
+          headers: headers,
+          signal: aborter ? aborter.signal : undefined
+        }).then(function (res) {
+          if (!res.ok) throw new UserError(MSG.viewer, "model_http_" + res.status);
+          var total = Number(res.headers.get("x-model-total")) || 0;
+          if (!total) throw new UserError(MSG.viewer, "model_no_total");
+          return res.arrayBuffer().then(function (buf) {
+            if (!buf.byteLength) throw new UserError(MSG.viewer, "model_empty");
+            parts.push(buf);
+            got += buf.byteLength;
+            if (onProgress) onProgress(Math.min(1, got / total));
+            if (got < total) return next();
+            return new Blob(parts, { type: "model/gltf-binary" });
+          });
+        });
+      }
+      return next().then(
+        function (blob) { clearTimeout(timer); return blob; },
+        function (err) { clearTimeout(timer); throw err; }
+      );
     }
   };
 
@@ -322,6 +356,22 @@
   // Mode, learned from the backend's /api/health. `pending`: a backend is configured but
   // has not answered yet, so nothing is shown. `live`: it is the real Meshy generator.
   var live = false;
+  // The finished model is held as a blob: URL (see transport.model); freed when no longer shown.
+  var blobUrl = null;
+  function revokeBlob() {
+    if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch (e) { /* ignore */ } blobUrl = null; }
+  }
+  // Recovery link: disenador-ia.html?job=<id> re-opens a design that was already paid for
+  // (Meshy keeps results ~3 days) without a photo and without spending credits again.
+  var resumeId = (function () {
+    try {
+      var id = new URLSearchParams(window.location.search).get("job") || "";
+      return /^[A-Za-z0-9_-]{6,80}$/.test(id) ? id : "";
+    } catch (e) { return ""; }
+  })();
+  var IDLE_LABEL = "Crear mi diseño 3D";
+  var RESUME_LABEL = "Recuperar mi diseño 3D";
+  if (resumeId && el.go) el.go.textContent = RESUME_LABEL;
   var pending = !!apiBase;
 
   function pollMs() {
@@ -380,7 +430,9 @@
     Array.prototype.forEach.call(el.pieces.querySelectorAll("input"), function (input) {
       input.disabled = next !== "idle";
     });
-    el.go.textContent = el.go.disabled ? "Creando tu diseño…" : "Crear mi diseño 3D";
+    el.go.textContent = el.go.disabled
+      ? (resumeId && next === "loading" ? "Recuperando tu diseño…" : "Creando tu diseño…")
+      : (resumeId ? RESUME_LABEL : IDLE_LABEL);
     if (next === "loading") el.stageLabel.textContent = "Preparando la vista 3D…";
   }
 
@@ -429,6 +481,8 @@
   }
 
   function backToIdle() {
+    revokeBlob();
+    resumeId = "";
     stopTicker();
     clearTimeout(pollTimer);
     busy = false;
@@ -473,12 +527,8 @@
     });
   }
 
-  function showResult(job) {
-    stopTicker();
-    shown = 100;
-    paintProgress();
-    setState("loading");
-
+  // Puts a model on screen and settles into "done" (or fails) when the viewer reports back.
+  function displayModel(url) {
     var settled = false;
     function done(ok) {
       if (settled) return;
@@ -497,19 +547,50 @@
       }
     }
     function onLoad() { done(true); }
-    function onError() { done(false); }
+    function onError(event) {
+      if (window.console && console.warn) console.warn("model-viewer could not show the model", event && event.detail);
+      done(false);
+    }
     var guard = setTimeout(function () { done(false); }, 30000);
 
     el.viewer.addEventListener("load", onLoad);
     el.viewer.addEventListener("error", onError);
-    if (el.viewer.getAttribute("src") === job.modelUrl && el.viewer.loaded) {
+    if (el.viewer.getAttribute("src") === url && el.viewer.loaded) {
       // Same model already on screen (the simulation reuses the sample), so the
       // viewer won't fire another "load" event: it is ready right now.
       done(true);
     } else {
       if (live) frameGenerated();
-      el.viewer.setAttribute("src", job.modelUrl);
+      el.viewer.setAttribute("src", url);
     }
+  }
+
+  function showResult(job, request) {
+    stopTicker();
+    shown = 100;
+    paintProgress();
+    setState("loading");
+
+    if (live && transport.model && request) {
+      // Real generations: bring the file through our own backend (see transport.model).
+      el.stageLabel.textContent = "Descargando tu modelo…";
+      transport.model(request.jobId, request.code, function (fraction) {
+        el.stageLabel.textContent = "Descargando tu modelo… " + Math.round(fraction * 100) + "%";
+      }).then(
+        function (blob) {
+          revokeBlob();
+          blobUrl = URL.createObjectURL(blob);
+          el.stageLabel.textContent = "Preparando la vista 3D…";
+          displayModel(blobUrl);
+        },
+        function (err) {
+          if (window.console && console.warn) console.warn("model relay failed, trying the direct link", err && err.code);
+          displayModel(job.modelUrl); // last resort: works only if the file host allows our site
+        }
+      );
+      return;
+    }
+    displayModel(job.modelUrl);
   }
 
   /* -------------------------------------------------------------- submit -- */
@@ -520,7 +601,7 @@
     show(el.formError, false);
     setFileError("");
 
-    if (!photo) {
+    if (!photo && !resumeId) {
       setFileError(MSG.needPhoto);
       el.file.focus();
       return;
@@ -545,21 +626,29 @@
       el.stage.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
-    var withMaterial = currentMode() === "material";
-    var payload = { image: photo.dataUri };
-    if (withMaterial) {
-      payload.material = el.material.value;
-      if (el.style.value.trim()) payload.style = el.style.value.trim();
+    var started;
+    if (resumeId && !transport.simulated) {
+      started = Promise.resolve({ jobId: resumeId }); // already generated and paid: just fetch it again
+    } else {
+      var withMaterial = currentMode() === "material";
+      var payload = { image: photo.dataUri };
+      if (withMaterial) {
+        payload.material = el.material.value;
+        if (el.style.value.trim()) payload.style = el.style.value.trim();
+      }
+      if (transport.simulated) payload.piece = currentPiece(); // only the simulation needs it
+      started = transport.start(payload, code);
     }
-    if (transport.simulated) payload.piece = currentPiece(); // only the simulation needs it
 
-    transport.start(payload, code).then(
+    started.then(
       function (data) {
         if (code) store("set", code);
         target = Math.max(target, 3);
-        return pollUntilDone(data.jobId, code);
+        return pollUntilDone(data.jobId, code).then(function (job) {
+          showResult(job, { jobId: data.jobId, code: code });
+        });
       }
-    ).then(showResult).catch(function (err) {
+    ).catch(function (err) {
       var message = err instanceof UserError ? err.message : MSG.generic;
       if (err && err.code === "unauthorized") {
         // Wrong demo code: go back to the form instead of showing a dead end.

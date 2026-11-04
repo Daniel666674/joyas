@@ -105,9 +105,12 @@ It prints the time taken, the credits Meshy says it charged, your balance
 before and after, and saves the `.glb` straight away (Meshy's links expire in
 about 3 days). Then, with the deployed site and one photo:
 
-- [ ] It finishes, and the model appears in the viewer. If the viewer shows
-      "No pudimos mostrar el modelo 3D", Meshy's file link is being blocked
-      by the browser; tell the developer (a small relay in this backend fixes it).
+- [ ] It finishes, and the model appears in the viewer. (Meshy's own file link
+      is blocked by browsers on other sites, so the page downloads the model
+      through this backend's `/api/model` relay. If the viewer still says "No
+      pudimos mostrar el modelo 3D", open
+      `disenador-ia.html?job=<jobId from the Vercel log>` to retry the same
+      design without spending credits.)
 - [ ] In Vercel > Logs, find `job_finished` and read `creditsUsed`. Expect
       about 15 on `meshy-6-lite`. If it is higher, set `MESHY_ENABLE_PBR` to
       `false` and compare.

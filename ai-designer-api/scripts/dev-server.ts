@@ -16,11 +16,13 @@ try {
 // request, so the .env values above are already in place by then.)
 import generate from "../api/generate";
 import health from "../api/health";
+import model from "../api/model";
 import status from "../api/status";
 
 const routes: Record<string, { fetch: (request: Request) => Promise<Response> | Response }> = {
   "/api/generate": generate,
   "/api/status": status,
+  "/api/model": model,
   "/api/health": health,
 };
 

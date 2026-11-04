@@ -911,6 +911,37 @@ answer whether Pro credits work through the API, the real credit cost per model
 promo band is public, so anyone can open the page but only the code holder can
 generate; the owner's Meshy key also carries a monthly credit limit as a second
 brake. To go back to the free simulation, set `apiBase` back to `""`.
+
+**First real run, same day: Meshy succeeded (15 credits, as predicted for
+`meshy-6-lite` + PBR) but the page showed "No pudimos mostrar el modelo 3D".**
+Cause: Meshy's file host (`assets.meshy.ai`, CloudFront with signed URLs) sends no
+CORS headers, so `<model-viewer>` on GitHub Pages is not allowed to read the
+`.glb` (an error response from it carries no `Access-Control-Allow-Origin`).
+Fix: **`GET /api/model?id=<jobId>&offset=<n>`** (`handleModel` in `lib/handlers.ts`,
+`api/model.ts`) downloads the file server-side with a `Range` request and returns
+it in pieces of 3.5 MB (Vercel functions cannot return more than ~4.5 MB in one
+response; a textured model is several MB) with an `X-Model-Total` header (exposed
+via `Access-Control-Expose-Headers`). It needs the demo code and an allowed Origin
+like every endpoint, only fetches `https://*.meshy.ai` (or the mock's host), and
+falls back to slicing when the host ignores `Range`. The page (`transport.model`
+in `ai-designer.js`) reassembles the pieces into a Blob, shows it through a
+`blob:` URL, and only if the relay fails tries Meshy's direct link, then the
+friendly error with "Ver un ejemplo". The viewer's `error` detail is now logged to
+the console. **Recovery link:** `disenador-ia.html?job=<jobId>` (the id is in the
+Vercel log line `job_created`) re-opens an already-generated design with no photo
+and no new credits (button says "Recuperar mi diseño 3D"); Meshy keeps results
+~3 days, so it also lets the owner show a pre-generated result instantly in a
+meeting. A malformed `?job=` is ignored. Tested with a local file host WITHOUT
+CORS (reproduces the bug), a chunking backend mock, a broken relay, the recovery
+link and the simulation (18 + 70 browser checks, 43 backend tests incl. a 10 MB
+model). **Deployment gotchas:** (1) in `vercel.json` two overlapping `functions`
+patterns (`api/*.ts` and `api/model.ts`) fail the build with `unused_function`
+(the first pattern claims every file); use one pattern. (2) `create_deployment`
+can reference files already uploaded in an earlier deployment by `{file, sha,
+size}` (`sha1sum`), so a redeploy only needs to resend changed files; a typo in a
+sha shows up as `missing_files`. (3) `pieces-check.js`-style local tests must
+intercept `ai-designer-config.js` with `apiBase: ""` now that the repo config
+points at the real backend.
 **tsconfig gotcha:** `module` must be `CommonJS` (+ `moduleResolution: Node10`).
 With `ESNext` the first deploy built fine but every endpoint crashed at runtime
 (`Cannot use import statement outside a module`), visible only in
