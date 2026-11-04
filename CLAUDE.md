@@ -899,8 +899,18 @@ files; a push to GitHub does NOT redeploy it. Env var changes need a Redeploy
 (dashboard: Deployments > latest > Redeploy). Verified end to end from the real
 GitHub Pages origin with the config swapped by Playwright: health, CORS,
 preflight, generate, status polling, viewer loaded `anillo.glb`, no console
-errors. **`assets/ai-designer-config.js` still has `apiBase: ""`**; set it to the
-URL above only after `PROVIDER=meshy` works.
+errors. **UPDATE, same day: the owner added `MESHY_API_KEY` and `DEMO_CODE` (both
+type "sensitive", production only) and switched `PROVIDER` to `meshy`; `/api/health`
+now answers `provider: meshy, requiresCode: true`, and without a valid code
+`/api/generate` and `/api/status` answer 401 (not 503, so the config is complete),
+a foreign Origin gets 403. `assets/ai-designer-config.js` now points `apiBase` at
+the URL above (`?v=20261104b`), so the live page is in live mode.** Nothing has been
+generated for real yet: the first run (owner, from the page, with the code) will
+answer whether Pro credits work through the API, the real credit cost per model
+(`creditsUsed` in the `job_finished` log line) and the real quality. The homepage
+promo band is public, so anyone can open the page but only the code holder can
+generate; the owner's Meshy key also carries a monthly credit limit as a second
+brake. To go back to the free simulation, set `apiBase` back to `""`.
 **tsconfig gotcha:** `module` must be `CommonJS` (+ `moduleResolution: Node10`).
 With `ESNext` the first deploy built fine but every endpoint crashed at runtime
 (`Cannot use import statement outside a module`), visible only in
